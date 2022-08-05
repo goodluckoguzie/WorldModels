@@ -1,25 +1,4 @@
 import torch
-import torch.nn as nn
-import torch; torch.manual_seed(0)
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.utils
-import torch.distributions
-import numpy as np
-import numpy 
-import torch
-import torch.nn as nn
-import time
-import os, time, datetime
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-import argparse
-import torch
-import torch.utils.data
-from torch import nn, optim
-from torch.nn import functional as F
-from torchvision import datasets, transforms
-
 import torch; torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
@@ -52,15 +31,15 @@ from gym import spaces
 import cv2
 import numpy as np
 import math
-import sOcnavenv
+from ENVIRONMENT import sOcnavenv
 #from Socnavenv import SocNavEnv
-from sOcnavenv import SocNavEnv
+#from sOcnavenv import SocNavEnv
 #from draw_socnavenv import SocNavEnv
 from tqdm import tqdm
 from rnn import Rnn, RNN,LSTM
 
 
-
+from UTILITY import utility 
 from utility import test_data
 from utility import get_observation_from_dataset
 from utility import transform_processed_observation_into_raw

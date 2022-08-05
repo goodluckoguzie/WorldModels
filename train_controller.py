@@ -1,25 +1,4 @@
 import torch
-import torch.nn as nn
-import torch; torch.manual_seed(0)
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.utils
-import torch.distributions
-import numpy as np
-import numpy 
-import torch
-import torch.nn as nn
-import time
-import os, time, datetime
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-import argparse
-import torch
-import torch.utils.data
-from torch import nn, optim
-from torch.nn import functional as F
-from torchvision import datasets, transforms
-
 import torch; torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
@@ -52,22 +31,21 @@ from gym import spaces
 import cv2
 import numpy as np
 import math
-import sOcnavenv
-#from Socnavenv import SocNavEnv
-from sOcnavenv import SocNavEnv
+from ENVIRONMENT import sOcnavenv
+from ENVIRONMENT.sOcnavenv import SocNavEnv
+#from sOcnavenv import SocNavEnv
 #from draw_socnavenv import SocNavEnv
 from tqdm import tqdm
-from rnn import Rnn, RNN,LSTM
+from RNN.RNN import Rnn, RNN,LSTM
 
 
-
-from utility import test_data
-from utility import get_observation_from_dataset
-from utility import transform_processed_observation_into_raw
+from UTILITY import utility 
+from UTILITY.utility import test_data
+from UTILITY.utility import get_observation_from_dataset
+from UTILITY.utility import transform_processed_observation_into_raw
 import time
 from tqdm import tqdm
 import cma
-import utility
 env = SocNavEnv()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -79,7 +57,7 @@ reward = 1
 #rnn = Rnn(latents, actions,reward, hiddens).to(device)
 #rnn = LSTM(latents, actions, hiddens).to(device)
 rnn = RNN(latents, actions, hiddens).to(device)
-rnn.load_state_dict(torch.load("./model/MDN_RNN_.pt"))
+rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_.pt"))
 rnn.eval()
 
 
@@ -136,6 +114,7 @@ def evaluate_control_model(rnn, controller, device):
             #reward_ = torch.zeros(1, 1).to(device)
             #hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
             for t in range(time_steps):
+                env.render()
                 #print(t)
                 obs = torch.from_numpy(obs).float()
                 rnn_input = torch.cat([obs.to(device), action.to(device)], dim=-1)
@@ -214,7 +193,7 @@ def train_controller(controller,rnn,  mode='real'):
             print("Saving new best with value {}...".format(cur_best))
             load_parameters(best_params, controller)
             if mode == 'real':
-                torch.save(controller.state_dict(), './model/controller.pt')
+                torch.save(controller.state_dict(), './MODEL/controller.pt')
             elif mode == 'dream':
                 torch.save(controller.state_dict(), 'controller_dream.pt')
 

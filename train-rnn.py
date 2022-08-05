@@ -1,7 +1,7 @@
 import numpy 
 import torch
 import torch.nn as nn
-from RNN import RNN
+from RNN.RNN import RNN
 import time
 import os, time, datetime
 import matplotlib.pyplot as plt
@@ -71,7 +71,7 @@ for epoch in range(1, epochs + 1):
         if not os.path.exists('model'):
             os.makedirs('model')
     
-        torch.save(rnn.state_dict(), './model/MDN_RNN_normal.pt')
+        torch.save(rnn.state_dict(), './MODEL/MDN_RNN_normal.pt')
         best_loss = train_loss
  
     epoch_.append(epoch)

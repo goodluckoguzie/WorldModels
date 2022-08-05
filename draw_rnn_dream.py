@@ -6,11 +6,12 @@ import os, time, sys,gym,cv2
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
-import socnavenv
-from socnavenv import SocNavEnv
+from ENVIRONMENT import socnavenv
+from ENVIRONMENT.socnavenv import SocNavEnv
 from tqdm import tqdm
 from utility import transform_processed_observation_into_raw
-import utility
+from UTILITY import utility
+from UTILITY.utility import transform_processed_observation_into_raw
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -55,7 +56,7 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_s
 
 rnn = RNN(latents, actions, hiddens).to(device)
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
-rnn.load_state_dict(torch.load("./model/MDN_RNN_slide.pt"))
+rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_slide.pt"))
 
 train_window = 10 # 
 

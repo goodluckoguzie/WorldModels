@@ -7,11 +7,11 @@ import random
 import gym
 import cv2
 import numpy as np
-import socnavenv
-from socnavenv import SocNavEnv
+from ENVIRONMENT import socnavenv
+from ENVIRONMENT.socnavenv import SocNavEnv
 from tqdm import tqdm
-import utility
-from utility import transform_processed_observation_into_raw
+from UTILITY import utility
+from UTILITY.utility import transform_processed_observation_into_raw
 from RNN import RNN
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -51,7 +51,7 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_s
 
 rnn = RNN(latents, actions, hiddens).to(device)
 
-rnn.load_state_dict(torch.load("./model/MDN_RNN_normal.pt"))
+rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_normal.pt"))
 
 
 

@@ -12,18 +12,17 @@ from gym import spaces
 import cv2
 import numpy as np
 import math
-import socnavenv
-from socnavenv import SocNavEnv
+from ENVIRONMENT import socnavenv
+from ENVIRONMENT.socnavenv import SocNavEnv
 #from draw_socnavenv import SocNavEnv
 from tqdm import tqdm
 
-from utility import test_data
-from utility import get_observation_from_dataset
-from utility import transform_processed_observation_into_raw
+from UTILITY.utility import test_data
+from UTILITY.utility import get_observation_from_dataset
+from UTILITY.utility import transform_processed_observation_into_raw
 import time
 from tqdm import tqdm
 
-import utility
 from VAE import Autoencoder, VariationalAutoencoder
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

@@ -21,7 +21,7 @@ import numpy as np
 from os import listdir
 import argparse
 import matplotlib.pyplot as plt
-import utility
+from UTILITY import utility
 
 parser = argparse.ArgumentParser("epochs asigning")
 parser.add_argument('--epochs', type=int, help="epochs")
@@ -150,46 +150,3 @@ for epoch in range(args.epochs):
 
     
 
-"""
-
-#Extract the Test_dataset 
-with np.load('Test_dataset.npz') as data:
-    a = data['observations.npy']
-x = np.array(a)
-for i in range(1):#len(1)):#(x)):
-    Test_dataset.append(x[i]) 
-Test_dataset = np.array(Test_dataset)
-# test data
-Test_data = Test_dataset
-
-data = Variable(torch.from_numpy(Test_data), requires_grad=False)
-model.eval()
-zs = model.get_z(data).data.numpy()
-np.savez('zs',zs=np.array(zs))
-
-
-#data = Variable(torch.from_numpy(x), requires_grad=False)
-#model.train()
-#zs = model.get_z(data).data.numpy()
-#print(zs.shape)
-#s = model.decode(torch.from_numpy(zs))
-#print(s.shape)
-    ind = np.arange(x.shape[0])
-    for i in range(batches_per_epoch):
-        data = torch.from_numpy(x[np.random.choice(ind, size=batch_size)])
-        data = Variable(data, requires_grad=False)
-        optimizer.zero_grad()
-        recon_batch, mu, logvar = model(data)
-        loss = model.loss(recon_batch, data, mu, logvar)
-        loss.backward()
-        #train_loss += loss.data[0]
-        optimizer.step()
-        if (i % log_interval == 0) and (epoch % 5 ==0):
-            #Print progress
-            print('Train Epoch: {} [{}/{}]\tLoss: {:.6f}'.format(
-                epoch, i * batch_size, batch_size*batches_per_epoch,
-                #loss.data[0] / len(data)))
-                loss.data / len(data)))
-
-    print('====> Epoch: {} done!'.format(epoch))
-"""
