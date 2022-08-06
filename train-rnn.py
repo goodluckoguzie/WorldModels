@@ -16,13 +16,13 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 latents = 31
 actions = 2
 hiddens = 256
-epochs = 20
-sub_epochs = 20
+epochs = 5000
+sub_epochs = 5000
 train_window = 10 
 batch_size = 64
-timestep = 200
+timestep = 100
 
-dataset = torch.load('./datas/saved1_rollout_rnn.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+dataset = torch.load('./data/saved_rollout_rnn.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 
 
 def trains(mode='normal'):
@@ -201,6 +201,7 @@ def trains(mode='normal'):
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
         l1 = nn.L1Loss()
+        reward = 1
         rnn = Rnn(latents, actions,reward, hiddens).to(device)
         optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
