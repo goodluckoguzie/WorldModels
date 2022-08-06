@@ -20,9 +20,9 @@ epochs = 20
 sub_epochs = 20
 train_window = 10 
 batch_size = 64
-timestep = 200
+timestep = 100
 
-dataset = torch.load('./datas/saved1_rollout_rnn.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+dataset = torch.load('./data/saved_rollout_rnn.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 
 
 def trains(mode='normal'):
@@ -51,6 +51,7 @@ def trains(mode='normal'):
         best_loss = float("inf")
         epoch_ = []
         epoch_train_loss = []
+
 
         rnn.train()
         for epoch in range(1, epochs + 1):
@@ -155,8 +156,8 @@ def trains(mode='normal'):
                     train_loss = train_loss/ len(train_dataloader)
 
                     if train_loss <= best_loss:
-                        if not os.path.exists('model'):
-                            os.makedirs('model')
+                        if not os.path.exists('MODEL'):
+                            os.makedirs('MODEL')
                         torch.save(rnn.state_dict(), './MODEL/MDN_RNN_window.pt')
                         best_loss = train_loss
                 
@@ -201,6 +202,7 @@ def trains(mode='normal'):
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
         l1 = nn.L1Loss()
+        reward = 1
         rnn = Rnn(latents, actions,reward, hiddens).to(device)
         optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
@@ -244,9 +246,9 @@ def trains(mode='normal'):
                     train_loss = train_loss/ len(train_dataloader)
 
                     if train_loss <= best_loss:
-                        if not os.path.exists('model'):
-                            os.makedirs('model')
-                        torch.save(rnn.state_dict(), './model/MDN_RNN_reward.pt')
+                        if not os.path.exists('MODEL'):
+                            os.makedirs('MODEL')
+                        torch.save(rnn.state_dict(), './MODEL/MDN_RNN_reward.pt')
                         best_loss = train_loss
                 
                     epoch_.append(sub_epochs)
