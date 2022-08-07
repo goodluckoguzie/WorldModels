@@ -19,13 +19,13 @@ parser.add_argument('--mode', type=str, required=True,help="normal,window,reward
 args = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-test_dataset = torch.load('./data/saved1_rollout_rnn.pt')
+dataset = torch.load('./data/saved_rollout_rnn.pt')
 
 latents = 31
 actions = 2
 hiddens = 256
-batch_size = 64
-timestep = 200
+batch_size = 1
+timestep = 100
 train_window = 10 # our sliding window value
 
 def trains(mode='normal'):
@@ -43,7 +43,7 @@ def trains(mode='normal'):
             #reward = data['reward_sequence']
             return  (action, obs)
 
-    test_dataset = MDN_Dataset(test_dataset)
+    test_dataset = MDN_Dataset(dataset)
 
 
     
@@ -147,10 +147,10 @@ def trains(mode='normal'):
                 return (action, obs)
 
 
-        test_dataset = MDN_Dataset(test_dataset)
+        test_dataset = MDN_Dataset(dataset)
         train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
         rnn = RNN(latents, actions, hiddens).to(device)
-        rnn.load_state_dict(torch.load("./model/MDN_RNN_window.pt"))
+        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
 
         rnn.eval()
         for batch_idx, (action, obs) in enumerate(train_dataloader):
@@ -270,13 +270,13 @@ def trains(mode='normal'):
                 reward = data['reward_sequence']
                 return (action, obs,reward)
 
-        test_dataset = MDN_Dataset(test_dataset)
+        test_dataset = MDN_Dataset(dataset)
 
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
         rnn = Rnn(latents, actions,reward, hiddens).to(device)
-        rnn.load_state_dict(torch.load("./model/MDN_RNN_reward.pt"))
-
+        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_reward.pt"))
+        reward = 1
         rnn.eval()
         for batch_idx, (action, obs,reward) in enumerate(test_dataloader):# get a batch of timesteps seperated by episodes
             print("batch_idx")
@@ -376,11 +376,11 @@ def trains(mode='normal'):
                 #reward = data['reward_sequence']
                 return (action, obs)
 
-        test_dataset = MDN_Dataset(test_dataset)
+        test_dataset = MDN_Dataset(dataset)
         train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
         rnn = RNN(latents, actions, hiddens).to(device)
-        rnn.load_state_dict(torch.load("./model/MDN_RNN_window.pt"))
+        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
 
         rnn.eval()
         for batch_idx, (action, obs) in enumerate(train_dataloader):
