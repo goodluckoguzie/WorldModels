@@ -162,7 +162,7 @@ def code_and_decode(model, data):
     data = Variable(data, requires_grad=False).to(device)
     model.eval()
     with torch.no_grad():
-        zs = model.get_z(data)#.data.numpy()
+        zs= model.get_z(data)#.data.numpy()
         output = model.decode(zs ).cpu()
 
     return output 

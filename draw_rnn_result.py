@@ -51,12 +51,12 @@ def trains(mode='normal'):
 
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
         rnn = RNN(latents, actions, hiddens).to(device)
-        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_normal.pt"))
+        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_normal1.pt"))
 
         rnn.eval()
         for batch_idx, (action, obs) in enumerate(test_dataloader):
             current_timestep = obs[:, :-1, :].to("cuda:0") # remove the last timestep
-            action = action[:, :-1, :]  # remove the last action and timestep
+            action = action[:, :-1, :].to("cuda:0")  # remove the last action and timestep
             nxt_timestep = obs[:, 1:, :].to("cuda:0")  #remove the first timestep and include the last timestep
 
             states = torch.cat([current_timestep, action], dim=-1)
@@ -68,6 +68,8 @@ def trains(mode='normal'):
             steps = predicted_nxt_timestep.shape[0]
 
             for step in range(steps):
+                current_timestep = current_timestep[0, step, :]
+                current_timestep = current_timestep.cpu().detach().numpy()
             
                 nxt_timestep = nxt_timestep[0, step, :]
                 nxt_timestep = nxt_timestep.cpu().detach().numpy()
@@ -273,10 +275,10 @@ def trains(mode='normal'):
         test_dataset = MDN_Dataset(dataset)
 
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
-        rnn = Rnn(latents, actions,reward, hiddens).to(device)
-        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_reward.pt"))
         reward = 1
+        rnn = Rnn(latents, actions,reward, hiddens).to(device)
+        rnn.load_state_dict(torch.load("./model/MDN_RNN_reward.pt"))
+  
         rnn.eval()
         for batch_idx, (action, obs,reward) in enumerate(test_dataloader):# get a batch of timesteps seperated by episodes
             print("batch_idx")
@@ -291,7 +293,7 @@ def trains(mode='normal'):
                 current_timestep = current_timestep.to("cuda:0")  
                 nxt_timestep = nxt_timestep.to("cuda:0")
                 reward = reward.type(torch.cuda.FloatTensor)
-                states = torch.cat([input, action,reward], dim=-1)
+                states = torch.cat([current_timestep, action,reward], dim=-1)
 
                 predicted_nxt_timestep, _, _ = rnn(states)
                 nxt_timestep = nxt_timestep
@@ -299,7 +301,9 @@ def trains(mode='normal'):
 
                 steps = predicted_nxt_timestep.shape[0]
                 for step in range(steps):
-                
+                    current_timestep = current_timestep[0, train_window-1, :]
+                    current_timestep = current_timestep.cpu().detach().numpy()
+                                   
                     nxt_timestep = nxt_timestep[0, step, :]
                     nxt_timestep = nxt_timestep.cpu().detach().numpy()
 

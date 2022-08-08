@@ -16,21 +16,21 @@ from ENVIRONMENT import socnavenv
 from ENVIRONMENT.socnavenv import SocNavEnv
 #from draw_socnavenv import SocNavEnv
 from tqdm import tqdm
-
+import  UTILITY.utility as utility
 from UTILITY.utility import test_data
 from UTILITY.utility import get_observation_from_dataset
 from UTILITY.utility import transform_processed_observation_into_raw
 import time
 from tqdm import tqdm
 
-from VAE import Autoencoder, VariationalAutoencoder
+from VAE.vae import VariationalAutoencoder
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 z_dim = 31
 input_size = 31
 
 # test_dataset = test_data(batch_size=256)
-with np.load('./data/Train_dataset.npz') as data:
+with np.load('./vae_dataset/Train_dataset.npz') as data:
     train_data = data['observations.npy']
 test_dataset = train_data[:20000,:]
 
@@ -45,8 +45,7 @@ cv2.resizeWindow("output", int(socnavenv.RESOLUTION_VIEW*0.5), int(socnavenv.RES
 model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 # model = VAE(input_size=input_size, z_dim=z_dim, hidden_dim=200).to(device)
 # fill your architecture with the trained weights
-model.load_state_dict(torch.load("./saved_model/TVAE_model.pt"))
-#model.load_state_dict(torch.load("./saved_model/AE_model.pt"))
+model.load_state_dict(torch.load("./model/train_vae_model.pt"))
 model.eval()
 
 np.random.shuffle(test_dataset)
@@ -56,7 +55,8 @@ def code_and_decode(model, data):
     data = torch.from_numpy(data)
     data = Variable(data, requires_grad=False).to(device)
     with torch.no_grad():
-        output = model(data).cpu()
+        output,_,_  = model(data)
+        output = output.cpu()
     return output 
 
 for i in range(len(test_dataset)):

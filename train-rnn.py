@@ -17,7 +17,7 @@ latents = 31
 actions = 2
 hiddens = 256
 epochs = 50
-sub_epochs = 50
+sub_epochs = 5
 train_window = 10 
 batch_size = 64
 timestep = 100
@@ -204,7 +204,7 @@ def trains(mode='normal'):
         reward = 1
         rnn = Rnn(latents, actions,reward, hiddens).to(device)
         optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
-
+        rewrd = 1
         best_loss = float("inf")
         epoch_ = []
         epoch_train_loss = []
@@ -247,7 +247,7 @@ def trains(mode='normal'):
                     if train_loss <= best_loss:
                         if not os.path.exists('model'):
                             os.makedirs('model')
-                        torch.save(rnn.state_dict(), './model/MDN_RNN_reward.pt')
+                        torch.save(rnn.state_dict(), './MODEL/MDN_RNN_reward.pt')
                         best_loss = train_loss
                 
                     epoch_.append(sub_epochs)
