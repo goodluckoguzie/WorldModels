@@ -67,6 +67,8 @@ for i in range(len(test_dataset)):
     robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(input_sample)
     image = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "input", dont_draw=True)
     cv2.imshow("input", image)
+    current_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    current_grey1 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     input_sample2 = np.reshape(input_sample, (1,input_sample.shape[0]))
     print('I', input_sample2)
@@ -89,9 +91,18 @@ for i in range(len(test_dataset)):
     
 
     robot_obs_o, goal_obs_o, humans_obs_o = transform_processed_observation_into_raw(output_sample)
-    image = SocNavEnv.render_obs(robot_obs_o, goal_obs_o, humans_obs_o, "output", dont_draw=True)
+    image1 = SocNavEnv.render_obs(robot_obs_o, goal_obs_o, humans_obs_o, "output", dont_draw=True)
     cv2.imshow("output", image)
+    next_predicted_grey = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
     
+
+
+
+    merged = cv2.merge([current_grey, current_grey, next_predicted_grey])
+    # print(merged.shape, merged.dtype)
+    #merged = np.dstack((current_grey, next_grey, next_predicted_grey))
+    print(merged.shape, merged.dtype)
+    cv2.imshow("Merged", merged)
     # robot_obs_o, goal_obs_o, humans_obs_o = transform_output_into_observation(output)
     # env.render_obs(robot_obs_o, goal_obs_o, humans_obs_o, "output")
 
