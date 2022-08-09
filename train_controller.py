@@ -49,14 +49,30 @@ import cma
 env = SocNavEnv()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
+action_rnn = 2
 latents = 31
-actions = 2
 hiddens = 256
 reward = 1
+advance_split = 5
+rotation_split = 5
+
+advance_grid, rotation_grid = np.meshgrid(
+    np.linspace(-1, 1, advance_split),
+    np.linspace(-1, 1, rotation_split))
+
+action_list = np.hstack((
+    advance_grid.reshape(( advance_split*rotation_split, 1)),
+    rotation_grid.reshape((advance_split*rotation_split, 1))))
+number_of_actions = action_list.shape[0]
+
+
+
+
+
+
 #rnn = Rnn(latents, actions,reward, hiddens).to(device)
 #rnn = LSTM(latents, actions, hiddens).to(device)
-rnn = RNN(latents, actions, hiddens).to(device)
+rnn = RNN(latents, action_rnn, hiddens).to(device)
 rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_.pt"))
 rnn.eval()
 
@@ -88,14 +104,14 @@ class Controller(nn.Module):
         self.fc = nn.Linear(latents + hiddens, actions)
 
     def forward(self, inputs):
-        return self.fc(inputs)
+        return F.softmax(self.fc(inputs).squeeze(0).squeeze(0).detach().to('cpu'), dim=0).numpy()
 
-controller = Controller(latents, hiddens, actions).to(device)
+controller = Controller(latents, hiddens, number_of_actions).to(device)
 
 
 def evaluate_control_model(rnn, controller, device):
    
-    total_episodes = 10
+    total_episodes = 1000
     time_steps = 50
     s = 0
     cumulative = 0
@@ -105,16 +121,18 @@ def evaluate_control_model(rnn, controller, device):
         while s < total_episodes:
             obs = env.reset()
             
+            
             prev_action = None
-            #img = custom_env_render(obs, True)
-            action = torch.zeros(1, actions).to(device)
+            action = torch.zeros(1, action_rnn).to(device)
             hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
             action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
             action = torch.from_numpy(action).float()
+            #print(action)
+
             #reward_ = torch.zeros(1, 1).to(device)
             #hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
             for t in range(time_steps):
-                env.render()
+                #env.render()
                 #print(t)
                 obs = torch.from_numpy(obs).float()
                 rnn_input = torch.cat([obs.to(device), action.to(device)], dim=-1)
@@ -130,17 +148,20 @@ def evaluate_control_model(rnn, controller, device):
    
                 c_in = torch.cat([obs.to("cuda:0").unsqueeze(0) , hidden], dim=-1)
 
-                controller.to(device)
-                action = controller(c_in)
-                action = action.squeeze(0)
-                action = action.detach().to('cpu')
-                #action = action.to("cuda:0")
-                prob = F.softmax(action.squeeze(0)/0.7, dim=0).numpy()
+                # controller.to(device)  # Check if this line is necessary
+                action_distribution = controller(c_in)
+                max_action = np.argmax(action_distribution)
+                action = action_list[max_action]
+                obs = obs.cpu().numpy()
+                #action = torch.from_numpy(action)
+                
+
                 #obs, reward, done, info = env.step(action)
-                obs, reward, done, info = env.step(prob)
-                prev_action = action
+                obs, reward, done, info = env.step(action)
+                action = torch.from_numpy(action).to(device).float()
+                #prev_action = action
                 #print(reward)
-                reward = torch.Tensor([[reward * (1-int(done))]])
+                #reward = torch.Tensor([[reward * (1-int(done))]])
                 #reward = torch.where(reward > 0 , 1, 0)
                 #action = action.unsqueeze(0).to(device)
                 cumulative += reward
@@ -155,11 +176,10 @@ def evaluate_control_model(rnn, controller, device):
 
 
 
-
 def train_controller(controller,rnn,  mode='real'):
     parameters = controller.parameters()
     es = cma.CMAEvolutionStrategy(flatten_parameters(parameters), 0.1,
-                                  {'popsize': 32})
+                                  {'popsize': 15})
 
     start_time = time.time()
     epoch = 0
@@ -205,4 +225,3 @@ def train_controller(controller,rnn,  mode='real'):
     es.result_pretty()
 
 print(train_controller(controller,rnn, 'real'))
-

@@ -26,7 +26,7 @@ from tqdm import tqdm
 from VAE.vae import VariationalAutoencoder
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-z_dim = 31
+z_dim = 28#31
 input_size = 31
 
 # test_dataset = test_data(batch_size=256)
@@ -67,34 +67,36 @@ for i in range(len(test_dataset)):
     robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(input_sample)
     image = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "input", dont_draw=True)
     cv2.imshow("input", image)
+
+    # print(image.shape)
     current_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    current_grey1 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # current_grey1 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     input_sample2 = np.reshape(input_sample, (1,input_sample.shape[0]))
-    print('I', input_sample2)
-    print('X', utility.denormalised(utility.normalised(input_sample2)))
+    # print('I', input_sample2)
+    # print('X', utility.denormalised(utility.normalised(input_sample2)))
     normalised_input = utility.normalised(input_sample2)
-    print('ni', normalised_input)
+    # print('ni', normalised_input)
     normalised_output = code_and_decode(model, normalised_input)
-    print('no', normalised_output)
-    print("jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj")
-    print(normalised_output)
-    print(normalised_output.shape)
+    # print('no', normalised_output)
+    # print("jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj")
+    # print(normalised_output)
+    # print(normalised_output.shape)
     output_sample = utility.denormalised(normalised_output)
-    print('O', output_sample)
-    print('Odddddddddddddddddddddddddddddddddddddddd', output_sample.shape)
+    # print('O', output_sample)
+    # print('Odddddddddddddddddddddddddddddddddddddddd', output_sample.shape)
     #output_sample = np.array(output_sample)
     output_sample = output_sample.flatten()
-    print(output_sample)
-    print(output_sample.shape)
-    print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+    # print(output_sample)
+    # print(output_sample.shape)
+    # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
     
 
     robot_obs_o, goal_obs_o, humans_obs_o = transform_processed_observation_into_raw(output_sample)
     image1 = SocNavEnv.render_obs(robot_obs_o, goal_obs_o, humans_obs_o, "output", dont_draw=True)
-    cv2.imshow("output", image)
+    cv2.imshow("output", image1)
     next_predicted_grey = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
-    
+    print(image1.shape)
 
 
 
