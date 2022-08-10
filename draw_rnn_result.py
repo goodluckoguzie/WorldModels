@@ -51,7 +51,7 @@ def trains(mode='normal'):
 
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
         rnn = RNN(latents, actions, hiddens).to(device)
-        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_normal1.pt"))
+        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
 
         rnn.eval()
         for batch_idx, (action, obs) in enumerate(test_dataloader):

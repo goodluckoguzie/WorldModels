@@ -26,7 +26,7 @@ from tqdm import tqdm
 from VAE.vae import VariationalAutoencoder
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-z_dim = 28#31
+z_dim = 31
 input_size = 31
 
 # test_dataset = test_data(batch_size=256)
@@ -45,7 +45,7 @@ cv2.resizeWindow("output", int(socnavenv.RESOLUTION_VIEW*0.5), int(socnavenv.RES
 model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 # model = VAE(input_size=input_size, z_dim=z_dim, hidden_dim=200).to(device)
 # fill your architecture with the trained weights
-model.load_state_dict(torch.load("./model/train_vae_model.pt"))
+model.load_state_dict(torch.load("./model/train_vae_model1.pt"))
 model.eval()
 
 np.random.shuffle(test_dataset)

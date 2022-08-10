@@ -45,7 +45,7 @@ if not os.path.exists(DIR_NAME):
 epochs = args.epochs
 batch_size = 2048
 input_size = 31
-z_dim = 28#31
+z_dim = 31
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 Val_dataset = []

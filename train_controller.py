@@ -73,7 +73,7 @@ number_of_actions = action_list.shape[0]
 #rnn = Rnn(latents, actions,reward, hiddens).to(device)
 #rnn = LSTM(latents, actions, hiddens).to(device)
 rnn = RNN(latents, action_rnn, hiddens).to(device)
-rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_.pt"))
+rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
 rnn.eval()
 
 
@@ -111,7 +111,7 @@ controller = Controller(latents, hiddens, number_of_actions).to(device)
 
 def evaluate_control_model(rnn, controller, device):
    
-    total_episodes = 1000
+    total_episodes = 100
     time_steps = 50
     s = 0
     cumulative = 0
@@ -179,7 +179,7 @@ def evaluate_control_model(rnn, controller, device):
 def train_controller(controller,rnn,  mode='real'):
     parameters = controller.parameters()
     es = cma.CMAEvolutionStrategy(flatten_parameters(parameters), 0.1,
-                                  {'popsize': 15})
+                                  {'popsize': 10})
 
     start_time = time.time()
     epoch = 0
@@ -213,7 +213,7 @@ def train_controller(controller,rnn,  mode='real'):
             print("Saving new best with value {}...".format(cur_best))
             load_parameters(best_params, controller)
             if mode == 'real':
-                torch.save(controller.state_dict(), './MODEL/controller.pt')
+                torch.save(controller.state_dict(), './MODEL/controller1.pt')
             elif mode == 'dream':
                 torch.save(controller.state_dict(), 'controller_dream.pt')
 
