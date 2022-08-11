@@ -28,7 +28,7 @@ World Models consists of three main components: Vision (**V**), Model (**M**), a
 
 ## Training
 
-Training and testing our world model consists in 7 steps: 1) Generating the train and test data for VAE and RNN, 2)Generating the train and test data for RNN, 3) Training the VAE to learn a compressed representation of that data, 4) Training the RNN on sequences of the RNN train data, and 4) Testing the Trained VAE 5) Testing the Trained RNN, 6) Training the Controller, and 7) Testing the Controller.
+Training and testing our world model consists in 7 steps: 1) Generating the train and test data for VAE, 2)Generating the train and test data for RNN, 3) Training the VAE to learn a compressed representation of that data, 4) Training the RNN on sequences of the RNN train data, 5) Testing the Trained VAE, 6) Testing the Trained RNN, 7) Training the Controller, and 8) Testing the Controller.
 
 ### 1. Random Rollouts
 1) Generating VAE data. Data in this case is sequences of images from the environment. To gather images from 2000 rollouts, run the command 
@@ -56,14 +56,14 @@ python3 04_train_rnn.py --epochs 1000 --mode window
 ```
 
 
-5) Test our VAE. To test on our data, you can run the command.
+5) Test our VAE. To test on our data, you can run the command below.
 
 ```sh
 python3 05_draw_vae_result.py 
 ```
 
 
-6) Test our RNN. To test on our data, you can run the command.The mode can either be window, reward, dream or normal
+6) Test our RNN. To test on our data, you can run the command below.The mode can either be window, reward, dream or normal
 
 ```sh
 python3 06_draw_rnn_result.py --mode window
