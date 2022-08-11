@@ -81,4 +81,4 @@ python3 07_train_controller.py --epochs 100
 
 ## License
 
-The original research for World Models was conducted by Ha & Schmidhuber, but this code is entirely written by myself (Adeel Mufti). I am releasing it under the [MIT](https://opensource.org/licenses/MIT) license.
+The original research for World Models was conducted by Ha & Schmidhuber.
