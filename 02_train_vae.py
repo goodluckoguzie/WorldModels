@@ -39,7 +39,7 @@ if not os.path.exists(vae_dir):
 
 # leanring parameters
 epochs = args.epochs
-batch_size = 2048
+batch_size = 64
 input_size = 31
 z_dim = 31
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,27 +48,58 @@ Val_dataset = []
 Train_dataset = []
 Test_dataset = []
 
+
+
+dataset = torch.load('./data/saved_rollout_train.pt')
+
+class VAE_Dataset(torch.utils.data.Dataset):
+    def __init__(self, obs_data):
+        self.obs_data = obs_data
+        
+    def __len__(self):
+        return len(obs_data)
+
+    def __getitem__(self, idx):
+        data = obs_data[idx]
+        return data
+
+
+def flating_obs_data(data):
+    imgs = []
+    for episode_data in data.values():
+        imgs = imgs + episode_data['obs_sequence']
+    print('obs_sequence: {}'.format(len(imgs)))
+    imgs = torch.stack(imgs, dim=0)
+    print('obs_dataset.size :', imgs.size())
+    return imgs
+
+
+obs_data = flating_obs_data(dataset)
+train_data = VAE_Dataset(obs_data)
+#rng.shuffle(train_data)
+
 # Extract the train dataset 
-with np.load('./data/vae_train_data.npz') as data:
-    train_data = data['observations.npy']
-rng.shuffle(train_data)
+#with np.load('./data/vae_train_data.npz') as data:
+#    train_data = data['observations.npy']
+#rng.shuffle(train_data)
+
 # Filter some samples to improve speed while debugging
 if args.max_samples > 0:
     train_data = train_data[:args.max_samples,:]
 
-train_data = utility.normalised(train_data)
-print(np.max(train_data))
-print(np.min(train_data))
+#train_data = utility.normalised(train_data)
+##print(np.max(train_data))
+#print(np.min(train_data))
 
 
 print(f'max_samples: {args.max_samples}')
-print(f'dataset shape: {train_data.shape}')
+#print(f'dataset shape: {train_data.shape}')
 
 
 #Extract the validation dataset 
-with np.load('./data/vae_train_data.npz') as data:
-    val_data = data['observations.npy']
-val_data = utility.normalised(val_data)
+#with np.load('./data/vae_train_data.npz') as data:
+#    val_data = data['observations.npy']
+val_data = train_data#utility.normalised(val_data)
 
 #Extract the Test_dataset 
 #with np.load('./vae_dataset/Test_dataset.npz') as data:
@@ -160,5 +191,7 @@ for epoch in range(args.epochs):
 #plt.ylabel('Loss')
 #plt.legend()
 #plt.show()
+
+    
 
     

@@ -79,7 +79,7 @@ class Test_Rollout():
             self.data_dic[s] = {"obs_sequence":obs_sequence, "action_sequence":action_sequence, 
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
-        #torch.save(self.data_dic, self.dir_name  + "saved_rollout.pt")
+        torch.save(self.data_dic, self.dir_name  + "saved_rollout_test.pt")
        
         
         end_time = time.time()-start_time
@@ -169,7 +169,7 @@ class Train_Rollout():
             self.data_dic[s] = {"obs_sequence":obs_sequence, "action_sequence":action_sequence, 
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
-        #torch.save(self.data_dic, self.dir_name  + "saved_rollout.pt")
+        torch.save(self.data_dic, self.dir_name  + "saved_rollout_train.pt")
        
         
         end_time = time.time()-start_time

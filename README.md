@@ -30,43 +30,38 @@ World Models consists of three main components: Vision (**V**), Model (**M**), a
 
 Training and testing our world model consists in 7 steps: 1) Generating the train and test data for VAE, 2)Generating the train and test data for RNN, 3) Training the VAE to learn a compressed representation of that data, 4) Training the RNN on sequences of the RNN train data, 5) Testing the Trained VAE, 6) Testing the Trained RNN, 7) Training the Controller, and 8) Testing the Controller.
 
-### Random Rollouts for VAE
-1) Generating VAE data. Data in this case is sequences of images from the environment. To gather images from 2000 rollouts, run the command 
+### Random Rollouts for VAE and RNN
+1) Generating data for both VAE and RNN data. Data in this case is sequences of images from the environment. To gather images from 2000 rollouts, run the command 
 
 ```sh
-python3 01_generate_vae_data.py  --rollouts 2000 --testrollouts 100
+python3 01_generate_data.py  --rollouts 2000 --testrollouts 100
 ```
-### Random Rollouts for RNN
-2) Generating RNN data. Data in this case is sequences of images from the environment. To gather images from 2000 episodes, run the command 
 
-```sh
-python3 02_generate_rnn_data.py  --episodes 2000 --testepisodes 100
-```
 ### Vision (V)
 3) Training the VAE. To train on our data, you can run the command
 
 ```sh
-python3 03_train_vae.py --epochs 1000 --max_samples 2000
+python3 02_train_vae.py --epochs 1000 --max_samples 2000
 ```
 ### Model (M)
 4) Training the RNN. To train on our data, you can run the command.The mode can either be window, reward, dream or normal
 
 ```sh
-python3 04_train_rnn.py --epochs 1000 --mode window
+python3 03_train_rnn.py --epochs 1000 --mode window
 ```
 
 
 5) Test our VAE. To test on our data, you can run the command below.
 
 ```sh
-python3 05_draw_vae_result.py 
+python3 04_draw_vae_result.py 
 ```
 
 
 6) Test our RNN. To test on our data, you can run the command below.The mode can either be window, reward, dream or normal
 
 ```sh
-python3 06_draw_rnn_result.py --mode window
+python3 05_draw_rnn_result.py --mode window
 ```
 
 ### Controller (C)
@@ -74,7 +69,7 @@ python3 06_draw_rnn_result.py --mode window
 3) Training the Controller.You can run the command
 
 ```sh
-python3 07_train_controller.py --epochs 100
+python3 06_train_controller.py --epochs 100
 ```
 
 
