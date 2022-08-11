@@ -1,7 +1,7 @@
 # World-Models
 
-# World Models Implementation In Chainer
-This is a  complete implementation, in Socnavenv , of the World Models framework described by David Ha and Jürgen Schmidhuber: https://arxiv.org/abs/1803.10122
+# World Models Implementation In Socnavenv
+This is a complete implementation, in Socnavenv , of the World Models framework described by David Ha and Jürgen Schmidhuber: https://arxiv.org/abs/1803.10122
 
 
 
