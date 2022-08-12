@@ -44,11 +44,6 @@ from tqdm import tqdm
 import cma
 
 
-parser = argparse.ArgumentParser("total epochs asigning")
-parser.add_argument('--epochs', type=int,
-                    help="Number of epochs.")
-
-args = parser.parse_args()      
 
 env = SocNavEnv()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -71,7 +66,7 @@ number_of_actions = action_list.shape[0]
 
 
 total_episodes = 100
-total_episodes = args.epochs
+
 
 
 #rnn = Rnn(latents, actions,reward, hiddens).to(device)
@@ -111,6 +106,7 @@ class Controller(nn.Module):
         return F.softmax(self.fc(inputs).squeeze(0).squeeze(0).detach().to('cpu'), dim=0).numpy()
 
 controller = Controller(latents, hiddens, number_of_actions).to(device)
+controller.load_state_dict(torch.load('./MODEL/controller.pt'))
 
 
 def evaluate_control_model(rnn, controller, device):
@@ -132,8 +128,11 @@ def evaluate_control_model(rnn, controller, device):
             action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
             action = torch.from_numpy(action).float()
 
+            #action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
+            
+
             for t in range(time_steps):
-                #env.render()
+                env.render()
                 obs = torch.from_numpy(obs).float()
                 rnn_input = torch.cat([obs.to(device), action.to(device)], dim=-1)
                 rnn_input= rnn_input.unsqueeze(0).to(device)
@@ -164,53 +163,4 @@ def evaluate_control_model(rnn, controller, device):
         return float(cumulative_)
 
 
-
-def train_controller(controller,rnn,  mode='real'):
-    parameters = controller.parameters()
-    es = cma.CMAEvolutionStrategy(flatten_parameters(parameters), 0.1,
-                                  {'popsize': 28})
-
-    start_time = time.time()
-    epoch = 0
-    best = 0.0
-    cur_best = None
-    epochs = 100
-
-
-    while not es.stop():
-        print('epoch : {}'.format(epoch))
-        solutions = es.ask()
-        reward_list = []
-        for s_idx, s in enumerate(solutions):
-            load_parameters(s, controller)
-            if mode == 'real':
-                reward = evaluate_control_model(rnn, controller, device)
-            elif mode == 'dream':
-                reward = evaluate_control_model(rnn, controller, device)
-
-            reward_list.append(reward)
-        es.tell(solutions, reward_list)
-        es.disp()
-
-
-        cur_best = max(reward_list)
-        best_index = np.argmax(reward_list)
-        best_params = solutions[best_index]
-        print('current best reward : {}'.format(cur_best))
-        if not best or cur_best >= best:
-            best = cur_best
-            print("Saving new best with value {}...".format(cur_best))
-            load_parameters(best_params, controller)
-            if mode == 'real':
-                torch.save(controller.state_dict(), './MODEL/controller1.pt')
-            elif mode == 'dream':
-                torch.save(controller.state_dict(), 'controller_dream.pt')
-
-        epoch += 1
-        if epoch > epochs:
-            break
-
-
-    es.result_pretty()
-
-print(train_controller(controller,rnn, 'real'))
+print(evaluate_control_model(rnn, controller, device))

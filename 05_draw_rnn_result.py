@@ -25,7 +25,7 @@ latents = 31
 actions = 2
 hiddens = 256
 batch_size = 1
-timestep = 50
+timestep = 200
 train_window = 10 # our sliding window value
 
 def trains(mode='normal'):

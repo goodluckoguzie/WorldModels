@@ -21,7 +21,7 @@ epochs = args.epochs
 sub_epochs = 5
 train_window = 10 
 batch_size = 64
-timestep = 50
+timestep = 200
 
 dataset = torch.load('./data/saved_rollout_rnn_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 

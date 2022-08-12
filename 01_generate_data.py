@@ -13,7 +13,7 @@ import os.path
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 import matplotlib.pyplot as plt
 import argparse
-time_steps = 50
+time_steps = 200
 
 
 
