@@ -260,6 +260,5 @@ def trains(mode='normal'):
 
                     print('MAIN EPOCH : {} '.format(epoch)) 
 
-
      
 trains(args.mode)

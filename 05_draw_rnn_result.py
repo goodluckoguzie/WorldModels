@@ -17,7 +17,6 @@ import argparse
 parser = argparse.ArgumentParser("mode asigning")
 parser.add_argument('--mode', type=str, required=True,help="normal,window,reward")
 args = parser.parse_args()
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dataset = torch.load('./data/saved_rollout_rnn_test.pt')
 

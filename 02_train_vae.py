@@ -30,7 +30,6 @@ parser.add_argument('--max_samples', type=int, help="max_samples", nargs='?', co
 args = parser.parse_args()
 
 from VAE.vae import VariationalAutoencoder
-
 # check vae dir exists, if not, create it
 vae_dir = 'MODEL'
 if not os.path.exists(vae_dir):

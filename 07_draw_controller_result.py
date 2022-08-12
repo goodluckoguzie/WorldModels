@@ -109,6 +109,7 @@ controller = Controller(latents, hiddens, number_of_actions).to(device)
 controller.load_state_dict(torch.load('./MODEL/controller.pt'))
 
 
+
 def evaluate_control_model(rnn, controller, device):
    
   

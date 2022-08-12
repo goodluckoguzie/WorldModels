@@ -121,7 +121,6 @@ class Controller(nn.Module):
 controller = Controller(latents, hiddens, number_of_actions).to(device)
 controller.load_state_dict(torch.load('./MODEL/controller1.pt'))
 
-
 def evaluate_control_model(rnn, controller, device):
    
   

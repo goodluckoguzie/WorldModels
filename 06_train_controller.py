@@ -74,7 +74,6 @@ total_episodes = 100
 total_episodes = args.epochs
 
 
-#rnn = Rnn(latents, actions,reward, hiddens).to(device)
 #rnn = LSTM(latents, actions, hiddens).to(device)
 rnn = RNN(latents, action_rnn, hiddens).to(device)
 rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))

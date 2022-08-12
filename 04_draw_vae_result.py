@@ -82,13 +82,10 @@ model.eval()
 
 #np.random.shuffle(test_dataset)
 
-
 def code_and_decode(model, data):
     #data = torch.from_numpy(data)
     data = Variable(data, requires_grad=False).to(device)
     with torch.no_grad():
-        print(data.shape)
-        print("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
         output,_,_  = model(data)
         output = output.cpu()
     return output 
