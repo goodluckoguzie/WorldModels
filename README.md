@@ -3,7 +3,6 @@
 This is a complete implementation, in Socnavenv , of the World Models framework described by David Ha and Jürgen Schmidhuber: https://arxiv.org/abs/1803.10122
 
 
-
 ## World Models Summary
 
 Here is a quick summary of Ha & Schmidhuber's World Models framework. The framework aims to train an agent that can perform well in virtual gaming environments. Ha & Schmidhuber's experiments were done in the [CarRacing-v0](https://gym.openai.com/envs/CarRacing-v0/) (from [OpenAI gym](https://gym.openai.com/)), and [ViZDoom: Take Cover](https://github.com/mwydmuch/ViZDoom/tree/master/scenarios#take-cover) environments.In our case we are reproducing this in [socnavenv](https://github.com/robocomp/gsoc22-socnavenv) environment.
