@@ -36,7 +36,7 @@ input_size = 31
 
 
 
-test_dataset = torch.load('./data/saved_rollout_train.pt')
+test_dataset = torch.load('./data/saved_rollout_test.pt')
 
 class VAE_Dataset(torch.utils.data.Dataset):
     def __init__(self, obs_data):
