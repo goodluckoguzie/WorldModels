@@ -45,7 +45,6 @@ def trains(mode='normal'):
     test_dataset = MDN_Dataset(dataset)
 
 
-    
     if mode == 'normal':
 
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)

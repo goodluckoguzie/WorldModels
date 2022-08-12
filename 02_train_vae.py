@@ -3,7 +3,6 @@ import torch
 from torch import maximum, minimum, nn
 from torch.autograd import Variable
 
-import torch
 import torchvision
 import torch.optim as optim
 import argparse

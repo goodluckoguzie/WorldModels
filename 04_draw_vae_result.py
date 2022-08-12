@@ -64,8 +64,6 @@ obs_data = flating_obs_data(test_dataset)
 test_dataset = VAE_Dataset(obs_data)
 
 
-
-
 cv2.namedWindow("input", cv2.WINDOW_NORMAL) 
 cv2.resizeWindow("input", int(socnavenv.RESOLUTION_VIEW*0.5), int(socnavenv.RESOLUTION_VIEW*0.5))
 cv2.namedWindow("output", cv2.WINDOW_NORMAL) 

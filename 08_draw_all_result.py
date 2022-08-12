@@ -123,7 +123,7 @@ controller.load_state_dict(torch.load('./MODEL/controller1.pt'))
 
 def evaluate_control_model(rnn, controller, device):
    
-  
+
     time_steps = 50
     s = 0
     cumulative = 0
