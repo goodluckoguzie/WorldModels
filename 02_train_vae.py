@@ -1,27 +1,19 @@
 import sys
 import torch
-from torch import maximum, minimum, nn
-from torch.autograd import Variable
-
 import torchvision
 import torch.optim as optim
 import argparse
-import matplotlib
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
-import os
-from tqdm import tqdm
 from torch.utils.data import DataLoader
-from torchvision.utils import save_image
-matplotlib.style.use('ggplot')
 import numpy as np
-from os import listdir
 import argparse
 import matplotlib.pyplot as plt
 from UTILITY import utility
-
+import os, time, datetime
 rng = np.random.default_rng()
+from UTILITY.early_stopping_for_vae import  EarlyStopping
 
 parser = argparse.ArgumentParser("epochs asigning")
 parser.add_argument('--epochs', type=int, help="epochs")
@@ -44,12 +36,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 Val_dataset = []
 Train_dataset = []
-Test_dataset = []
 
-
-
-dataset = torch.load('./data/saved_rollout_train.pt')
-
+train_dataset = torch.load('./data/saved_vae_rollout_train.pt')
+val_dataset = torch.load('./data/saved_vae_rollout_validation.pt')
 
 
 class VAE_Dataset(torch.utils.data.Dataset):
@@ -74,51 +63,28 @@ def flating_obs_data(data):
     print('obs_dataset.size :', imgs.size())
     return imgs
 
-
-obs_data = flating_obs_data(dataset)
+obs_data = flating_obs_data(train_dataset)
 obs_data = utility.normalised(obs_data)
+train_obs_data = VAE_Dataset(obs_data)
+
+val_obs_data = flating_obs_data(val_dataset)
+# val_obs_data = utility.normalised(val_obs_data)
+val_obs_data = VAE_Dataset(obs_data)
+
+# train_obs_data = VAE_Dataset( utility.normalised(flating_obs_data(train_dataset)))
+# val_obs_data = VAE_Dataset(utility.normalised(flating_obs_data(val_dataset)))
 
 
-train_data = VAE_Dataset(obs_data)
-
-#rng.shuffle(train_data)
-
-# Extract the train dataset 
-#with np.load('./data/vae_train_data.npz') as data:
-#    train_data = data['observations.npy']
-#rng.shuffle(train_data)
-
-# Filter some samples to improve speed while debugging
 if args.max_samples > 0:
-    train_data = train_data[:args.max_samples,:]
-
-#train_data = utility.normalised(train_data)
-##print(np.max(train_data))
-#print(np.min(train_data))
-
+    train_obs_data = train_obs_data[:args.max_samples,:]
+    val_obs_data = val_obs_data[:args.max_samples,:]
 
 print(f'max_samples: {args.max_samples}')
-#print(f'dataset shape: {train_data.shape}')
 
-
-#Extract the validation dataset 
-#with np.load('./data/vae_train_data.npz') as data:
-#    val_data = data['observations.npy']
-val_data = train_data#utility.normalised(val_data)
-
-#Extract the Test_dataset 
-#with np.load('./vae_dataset/Test_dataset.npz') as data:
-#    test_data = data['observations.npy']
-#test_data = utility.normalised(test_data)
-
-# for i in range(31):
-#     print(i, np.min(train_data[:, i]), np.max(train_data[:, i]))
-# sys.exit(0)
 
 # training and validation data loaders
-train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-val_loader   = DataLoader(val_data,   batch_size=batch_size, shuffle=False)
-#test_loader  = DataLoader(test_data,  batch_size=batch_size, shuffle=False)
+train_loader = DataLoader(train_obs_data, batch_size=batch_size, shuffle=True)
+val_loader   = DataLoader(val_obs_data,   batch_size=batch_size, shuffle=False)
 
 
 # model = Autoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
@@ -126,67 +92,115 @@ model= VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dim
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
 
-
-def validate(model, dataloader):
-    model.eval()
-    running_loss = 0.0
-
-    bs = 0
-    with torch.no_grad():
-        for data in dataloader:
-            data = data.to(device)
-            data = data.view(data.size(0), -1)
-            # recon_batch, mu, logvar = model(data)
-            # loss = model.loss(recon_batch, data, mu, logvar)
-            bs += len(data)
-            x_hat,_,_ = model(data)
-            loss = ((data - x_hat)**2).sum()
-            running_loss += loss.item()
-        print("Validation Loss: {:.5f}   (per output: {:.5f})".format(running_loss/bs, running_loss/bs/input_size))
-
-    val_loss = running_loss/len(dataloader)
-    return val_loss
-
-
-
-
-train_loss = []
-val_loss = []
-for epoch in range(args.epochs):
-    print(f"Epoch {epoch+1} of {epochs}")
+def train_model(model, batch_size, patience, n_epochs):
     
-    model.train()
-    running_loss = 0.0
-    bs = 0
-    for data in tqdm(train_loader):#, total=int(len(train_data)/dataloader.batch_size)):
-    # for data in train_loader:#, total=int(len(train_data)/dataloader.batch_size)):
-        data = data.to(device)
-        data = data.view(-1, input_size)
-        optimizer.zero_grad()
+    # to track the training loss as the model trains
+    train_losses = []
+    # to track the validation loss as the model trains
+    valid_losses = []
+    # to track the average training loss per epoch as the model trains
+    avg_train_losses = []
+    # to track the average validation loss per epoch as the model trains
+    avg_valid_losses = [] 
+    
+    # initialize the early_stopping object
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
+    
+    for epoch in range(1, n_epochs + 1):
 
-        # recon_batch, mu, logvar = model(data)
-        # loss = model.loss(recon_batch, data, mu, logvar)
+        ###################
+        # train the model #
+        ###################
+        model.train() # prep model for training
+        #for data in tqdm(train_loader):
+        for batch, data in enumerate(train_loader, 1):
+            data = data.to(device)
+            #torch.from_numpy(data)
+            data = data.view(-1, input_size)
+            # clear the gradients of all optimized variables
+            optimizer.zero_grad()
+            # forward pass: compute predicted outputs by passing inputs to the model
+            output,_,_  = model(data)
+            # calculate the loss
+            loss = ((data - output)**2).sum()
+            # backward pass: compute gradient of the loss with respect to model parameters
+            loss.backward()
+            # perform a single optimization step (parameter update)
+            optimizer.step()
+            # record training loss
+            train_losses.append(loss.item())
 
-        x_hat,_,_  = model(data)
-        loss = ((data - x_hat)**2).sum()
-        bs += len(data)
+        ######################    
+        # validate the model #
+        ######################with torch.no_grad():
+        model.eval() # prep model for evaluation
+        for data in val_loader:
+            # forward pass: compute predicted outputs by passing inputs to the model
+            data = data.to(device)
+            #torch.from_numpy(data)
+            data = data.view(data.size(0), -1)
+            output,_,_ = model(data)
+            # calculate the loss
+            loss = ((data - output)**2).sum()
+            # record validation loss
+            valid_losses.append(loss.item())
+        # print training/validation statistics 
+        # calculate average loss over an epoch
+        train_loss = np.average(train_losses)
+        valid_loss = np.average(valid_losses)
+        avg_train_losses.append(train_loss)
+        avg_valid_losses.append(valid_loss)
+        
+        epoch_len = len(str(n_epochs))
+        
+        print_msg = (f'[{epoch:>{epoch_len}}/{n_epochs:>{epoch_len}}] ' +
+                     f'train_loss: {train_loss:.5f} ' +
+                     f'valid_loss: {valid_loss:.5f}')
+        
+        print(print_msg)
+        
+        # clear lists to track next epoch
+        train_losses = []
+        valid_losses = []
+        
+        # early_stopping needs the validation loss to check if it has decresed, 
+        # and if it has, it will make a checkpoint of the current model
+        early_stopping(valid_loss, model)
+        
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+        
+    # load the last checkpoint with the best model
+    model.load_state_dict(torch.load('./MODEL/vae_model.pt'))
 
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item()
+    return  model, avg_train_losses, avg_valid_losses
 
-    # bs = len(train_loader)
-    print("Epoch[{}/{}] Loss: {:.5f}   (per output: {:.5f} )".format(epoch+1, epochs, running_loss/bs, running_loss/bs/input_size))
 
-    #print('====> Epoch: {} done!'.format(epoch))
-    train_epoch_loss = running_loss/len(train_loader)
-    val_epoch_loss = validate(model, val_loader)
-    train_loss.append(train_epoch_loss)
-    val_loss.append(val_epoch_loss)
-    print(f"Train Loss: {train_epoch_loss:.4f}")
-    print(f"Val Loss: {val_epoch_loss:.4f}")
+# early stopping patience; how long to wait after last time validation loss improved.
+patience = 30
 
-    torch.save(model.state_dict(), './MODEL/vae_model.pt')
+model, train_loss, valid_loss = train_model(model, batch_size, patience, epochs)
+
+# visualize the loss as the network trained
+fig = plt.figure(figsize=(10,8))
+plt.plot(range(1,len(train_loss)+1),train_loss, label='Training Loss')
+plt.plot(range(1,len(valid_loss)+1),valid_loss,label='Validation Loss')
+
+# find position of lowest validation loss
+minposs = valid_loss.index(min(valid_loss))+1 
+plt.axvline(minposs, linestyle='--', color='r',label='Early Stopping Checkpoint')
+
+plt.xlabel('epochs')
+plt.ylabel('loss')
+plt.ylim(0, 0.5) # consistent scale
+plt.xlim(0, len(train_loss)+1) # consistent scale
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+fig.savefig('loss_plot.png', bbox_inches='tight')
+
 
 #epochs = range(1,35)
 #plt.plot(epochs, train_epoch_loss, 'g', label='Training loss')
