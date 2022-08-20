@@ -16,9 +16,9 @@ import argparse
 time_steps = 200
 
 
-parser = argparse.ArgumentParser("number episodes asigning")
-parser.add_argument('--episodes', type=int,
-                    help="Number of episodes.")
+parser = argparse.ArgumentParser("number rollouts asigning")
+parser.add_argument('--rollouts', type=int,
+                    help="Number of rollouts.")
 args = parser.parse_args()
 rollout_dir = 'data/'
 if not os.path.exists(rollout_dir):

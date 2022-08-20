@@ -11,15 +11,9 @@ import random
 import os.path
 import matplotlib.pyplot as plt
 import argparse
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 time_steps = 200
-
-from VAE.vae import VariationalAutoencoder
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-z_dim = 31
-input_size = 31
-actions = 2
 
 parser = argparse.ArgumentParser("total_episodes asigning")
 parser.add_argument('--episodes', type=int,
@@ -28,10 +22,6 @@ parser.add_argument('--episodes', type=int,
 #parser.add_argument('--testepisodes', type=int,
                     #help="Number of episodes.") 
 args = parser.parse_args()
-
-model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-model.load_state_dict(torch.load("./MODEL/vae_model.pt"))
-model.eval()
 
 
 rollout_dir = 'data/'
@@ -103,15 +93,18 @@ class Rollout():
         for episode_idx, episode_data in enumerate(self.data_dic.values()):
 
             obs_sequence = episode_data['obs_sequence']
+            # print(obs_sequence.shape)
 
             action_sequence = episode_data['action_sequence']
             reward_sequence = episode_data['reward_sequence']
             done_sequence = episode_data['done_sequence']
 
             obs_sequence = torch.stack(obs_sequence, dim=0).squeeze(1)
+
             obs_sequence = self.pad_tensor(obs_sequence, pad=time_steps).cpu().detach().numpy()
+            obs_sequence = utility.normalised(obs_sequence) #normilised our dataset 
             obs_sequence = torch.from_numpy(obs_sequence) 
-  
+
             
             done = [int(d) for d in done_sequence]
             done = torch.tensor(done).unsqueeze(-1)
@@ -136,6 +129,7 @@ class Rollout():
                 torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_test.pt')
             elif self.mode  == 'val':
                 torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_validation.pt')
+  
 
    
         

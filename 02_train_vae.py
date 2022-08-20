@@ -26,6 +26,7 @@ vae_dir = 'MODEL'
 if not os.path.exists(vae_dir):
     os.makedirs(vae_dir)
 
+rng = np.random.default_rng()
 
 # leanring parameters
 epochs = args.epochs
@@ -40,6 +41,8 @@ Train_dataset = []
 train_dataset = torch.load('./data/saved_vae_rollout_train.pt')
 val_dataset = torch.load('./data/saved_vae_rollout_validation.pt')
 
+rng.shuffle(train_dataset)
+rng.shuffle(val_dataset)
 
 class VAE_Dataset(torch.utils.data.Dataset):
     def __init__(self, obs_data):
@@ -178,7 +181,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 30
+patience = 80
 
 model, train_loss, valid_loss = train_model(model, batch_size, patience, epochs)
 
