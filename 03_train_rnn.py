@@ -21,9 +21,13 @@ epochs = args.epochs
 sub_epochs = 5
 train_window = 10 
 batch_size = 64
-timestep = 200
+timestep = 100
 
+<<<<<<< HEAD:03_train_rnn.py
 dataset = torch.load('./data/saved_rollout_rnn_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+=======
+dataset = torch.load('./data/saved_rollout_rnn.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:train-rnn.py
 
 
 def trains(mode='normal'):
@@ -51,6 +55,7 @@ def trains(mode='normal'):
         start=time.time()
         best_loss = float("inf")
         epoch_train_loss = []
+
 
         rnn.train()
         for epoch in range(1, epochs + 1):
@@ -155,8 +160,8 @@ def trains(mode='normal'):
                     train_loss = train_loss/ len(train_dataloader)
 
                     if train_loss <= best_loss:
-                        if not os.path.exists('model'):
-                            os.makedirs('model')
+                        if not os.path.exists('MODEL'):
+                            os.makedirs('MODEL')
                         torch.save(rnn.state_dict(), './MODEL/MDN_RNN_window.pt')
                         best_loss = train_loss
                 
@@ -245,8 +250,13 @@ def trains(mode='normal'):
                     train_loss = train_loss/ len(train_dataloader)
 
                     if train_loss <= best_loss:
+<<<<<<< HEAD:03_train_rnn.py
                         if not os.path.exists('model'):
                             os.makedirs('model')
+=======
+                        if not os.path.exists('MODEL'):
+                            os.makedirs('MODEL')
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:train-rnn.py
                         torch.save(rnn.state_dict(), './MODEL/MDN_RNN_reward.pt')
                         best_loss = train_loss
                 
