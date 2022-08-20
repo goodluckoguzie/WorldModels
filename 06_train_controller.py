@@ -131,7 +131,7 @@ def evaluate_control_model(rnn, controller, device):
             action = torch.from_numpy(action).float()
 
             for t in range(time_steps):
-                #env.render()
+                env.render()
                 obs = torch.from_numpy(obs).float()
                 rnn_input = torch.cat([obs.to(device), action.to(device)], dim=-1)
                 rnn_input= rnn_input.unsqueeze(0).to(device)
@@ -140,6 +140,7 @@ def evaluate_control_model(rnn, controller, device):
                 c_in = torch.cat([obs.to("cuda:0").unsqueeze(0) , hidden], dim=-1)
                 # controller.to(device)  # Check if this line is necessary
                 action_distribution = controller(c_in)
+                print(action_distribution)
                 
                 max_action = np.argmax(action_distribution)
                 action = action_list[max_action]

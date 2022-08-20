@@ -36,7 +36,7 @@ input_size = 31
 
 
 
-test_dataset = torch.load('./data/saved_rollout_test.pt')
+test_dataset = torch.load('./data/saved_vae_rollout_test.pt')
 
 class VAE_Dataset(torch.utils.data.Dataset):
     def __init__(self, obs_data):
@@ -61,6 +61,8 @@ def flating_obs_data(data):
 
 
 obs_data = flating_obs_data(test_dataset)
+#obs_data = utility.normalised(obs_data)
+#obs_data = torch.from_numpy(obs_data)
 test_dataset = VAE_Dataset(obs_data)
 
 
@@ -81,11 +83,12 @@ model.eval()
 #np.random.shuffle(test_dataset)
 
 def code_and_decode(model, data):
-    #data = torch.from_numpy(data)
+    data = torch.from_numpy(data)
     data = Variable(data, requires_grad=False).to(device)
     with torch.no_grad():
         output,_,_  = model(data)
         output = output.cpu()
+        
     return output 
 
 for i in range(len(test_dataset)):
@@ -93,6 +96,9 @@ for i in range(len(test_dataset)):
     input_sample = test_dataset[i]
 
 
+    output_sample = test_dataset[i]
+
+#output_sample = utility.denormalised(input_sample)
     robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(input_sample)
     image = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "input", dont_draw=True)
     cv2.imshow("input", image)
@@ -101,19 +107,21 @@ for i in range(len(test_dataset)):
     current_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # current_grey1 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    input_sample2 = np.reshape(input_sample, (1,input_sample.shape[0]))
+    input_sample2 = np.reshape(output_sample, (1,output_sample.shape[0]))
+    
+    #input_sample2 = np.reshape(input_sample, (1,input_sample.shape[0]))
     # print('I', input_sample2)
     # print('X', utility.denormalised(utility.normalised(input_sample2)))
     
-    #normalised_input = utility.normalised(input_sample2)
+    normalised_input = utility.normalised(input_sample2)
 
     # print('ni', normalised_input)
-    output_sample = code_and_decode(model, input_sample2)
+    output_sample = code_and_decode(model, normalised_input)
     # print('no', normalised_output)
     # print("jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj")
     # print(normalised_output)
     # print(normalised_output.shape)
-    #output_sample = utility.denormalised(normalised_output)
+    output_sample = utility.denormalised(output_sample)
     # print('O', output_sample)
     # print('Odddddddddddddddddddddddddddddddddddddddd', output_sample.shape)
     #output_sample = np.array(output_sample)

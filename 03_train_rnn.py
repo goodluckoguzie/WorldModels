@@ -50,7 +50,6 @@ def trains(mode='normal'):
         optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
         start=time.time()
         best_loss = float("inf")
-        epoch_ = []
         epoch_train_loss = []
 
         rnn.train()
@@ -120,7 +119,7 @@ def trains(mode='normal'):
         optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
         best_loss = float("inf")
-        epoch_ = []
+
         epoch_train_loss = []
 
         rnn.train()
@@ -161,7 +160,7 @@ def trains(mode='normal'):
                         torch.save(rnn.state_dict(), './MODEL/MDN_RNN_window.pt')
                         best_loss = train_loss
                 
-                    epoch_.append(sub_epochs)
+                    #epoch_.append(sub_epochs)
                     epoch_train_loss.append(train_loss)
 
                     print('sub_epochs : {} Average_loss : {}'.format(i, train_loss)) 

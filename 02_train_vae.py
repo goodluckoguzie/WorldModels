@@ -50,6 +50,8 @@ Test_dataset = []
 
 dataset = torch.load('./data/saved_rollout_train.pt')
 
+
+
 class VAE_Dataset(torch.utils.data.Dataset):
     def __init__(self, obs_data):
         self.obs_data = obs_data
@@ -65,6 +67,7 @@ class VAE_Dataset(torch.utils.data.Dataset):
 def flating_obs_data(data):
     imgs = []
     for episode_data in data.values():
+        
         imgs = imgs + episode_data['obs_sequence']
     print('obs_sequence: {}'.format(len(imgs)))
     imgs = torch.stack(imgs, dim=0)
@@ -73,7 +76,11 @@ def flating_obs_data(data):
 
 
 obs_data = flating_obs_data(dataset)
+obs_data = utility.normalised(obs_data)
+
+
 train_data = VAE_Dataset(obs_data)
+
 #rng.shuffle(train_data)
 
 # Extract the train dataset 
@@ -189,7 +196,3 @@ for epoch in range(args.epochs):
 #plt.ylabel('Loss')
 #plt.legend()
 #plt.show()
-
-    
-
-    

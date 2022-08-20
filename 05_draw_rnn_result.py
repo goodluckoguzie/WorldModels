@@ -49,7 +49,7 @@ def trains(mode='normal'):
 
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
         rnn = RNN(latents, actions, hiddens).to(device)
-        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
+        rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_normal.pt"))
 
         rnn.eval()
         for batch_idx, (action, obs) in enumerate(test_dataloader):
@@ -93,17 +93,17 @@ def trains(mode='normal'):
                 robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(current_timestep)
                 image0 = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "current timestep", dont_draw=True)
                 current_grey = cv2.cvtColor(image0, cv2.COLOR_BGR2GRAY)
-                # cv2.imshow("next timestep", image1)
+                cv2.imshow("next timestep", image0)
     
                 robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(nxt_timestep)
                 image1 = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "next timestep", dont_draw=True)
                 next_grey = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
-                # cv2.imshow("next timestep", image1)
+                cv2.imshow("next timestep", image1)
     
                 robot_obs_o, goal_obs_o, humans_obs_o = transform_processed_observation_into_raw(predicted_nxt_timestep)
                 image2 = SocNavEnv.render_obs(robot_obs_o, goal_obs_o, humans_obs_o, "predicted next timestep", dont_draw=True)
                 next_predicted_grey = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
-                # cv2.imshow("predicted next timestep", image2)
+                cv2.imshow("predicted next timestep", image2)
 
                 merged = cv2.merge([current_grey, next_grey, next_predicted_grey])
                 # print(merged.shape, merged.dtype)
@@ -215,17 +215,17 @@ def trains(mode='normal'):
                     robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(current_timestep)
                     image0 = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "current timestep", dont_draw=True)
                     current_grey = cv2.cvtColor(image0, cv2.COLOR_BGR2GRAY)
-                    # cv2.imshow("next timestep", image1)
+                    cv2.imshow("next timestep", image0)
         
                     robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(nxt_timestep)
                     image1 = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "next timestep", dont_draw=True)
                     next_grey = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
-                    # cv2.imshow("next timestep", image1)
+                    cv2.imshow("next timestep", image1)
         
                     robot_obs_o, goal_obs_o, humans_obs_o = transform_processed_observation_into_raw(predicted_nxt_timestep)
                     image2 = SocNavEnv.render_obs(robot_obs_o, goal_obs_o, humans_obs_o, "predicted next timestep", dont_draw=True)
                     next_predicted_grey = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
-                    # cv2.imshow("predicted next timestep", image2)
+                    cv2.imshow("predicted next timestep", image2)
 
                     merged = cv2.merge([current_grey, next_grey, next_predicted_grey])
                     # print(merged.shape, merged.dtype)
