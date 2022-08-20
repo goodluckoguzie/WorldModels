@@ -24,7 +24,11 @@ batch_size = 64
 timestep = 100
 
 <<<<<<< HEAD:03_train_rnn.py
+<<<<<<< HEAD:03_train_rnn.py
 dataset = torch.load('./data/saved_rollout_rnn_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+=======
+dataset = torch.load('./data/saved_rollout_rnn.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:train-rnn.py
 =======
 dataset = torch.load('./data/saved_rollout_rnn.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 >>>>>>> 961cd27486b647939751a918fdd74015a287b083:train-rnn.py
@@ -251,8 +255,13 @@ def trains(mode='normal'):
 
                     if train_loss <= best_loss:
 <<<<<<< HEAD:03_train_rnn.py
+<<<<<<< HEAD:03_train_rnn.py
                         if not os.path.exists('model'):
                             os.makedirs('model')
+=======
+                        if not os.path.exists('MODEL'):
+                            os.makedirs('MODEL')
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:train-rnn.py
 =======
                         if not os.path.exists('MODEL'):
                             os.makedirs('MODEL')

@@ -20,7 +20,11 @@ parser.add_argument('--mode', type=str, required=True,help="normal,window,reward
 args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 <<<<<<< HEAD:05_draw_rnn_result.py
+<<<<<<< HEAD:05_draw_rnn_result.py
 dataset = torch.load('./data/saved_rollout_rnn_test.pt')
+=======
+dataset = torch.load('./data/saved_rollout_rnn.pt')
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
 =======
 dataset = torch.load('./data/saved_rollout_rnn.pt')
 >>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
@@ -37,13 +41,19 @@ def trains(mode='normal'):
     if mode == 'normal':
 
 <<<<<<< HEAD:05_draw_rnn_result.py
+<<<<<<< HEAD:05_draw_rnn_result.py
     test_dataset = MDN_Dataset(dataset)
 =======
+=======
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
         class MDN_Dataset(torch.utils.data.Dataset):
             def __init__(self, MDN_data):
                 self.MDN_data = MDN_data
             def __len__(self):
                 return len(self.MDN_data)
+<<<<<<< HEAD:05_draw_rnn_result.py
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
+=======
 >>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
 
             def __getitem__(self, idx):
@@ -54,7 +64,11 @@ def trains(mode='normal'):
                 return  (action, obs)
 
 <<<<<<< HEAD:05_draw_rnn_result.py
+<<<<<<< HEAD:05_draw_rnn_result.py
     if mode == 'normal':
+=======
+        test_dataset = MDN_Dataset(dataset)
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
 =======
         test_dataset = MDN_Dataset(dataset)
 >>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
@@ -81,7 +95,11 @@ def trains(mode='normal'):
                 current_timestep = current_timestep[0, step, :]
                 current_timestep = current_timestep.cpu().detach().numpy()
 <<<<<<< HEAD:05_draw_rnn_result.py
+<<<<<<< HEAD:05_draw_rnn_result.py
             
+=======
+
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
 =======
 
 >>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
@@ -288,6 +306,7 @@ def trains(mode='normal'):
 
         test_dataset = MDN_Dataset(dataset)
 <<<<<<< HEAD:05_draw_rnn_result.py
+<<<<<<< HEAD:05_draw_rnn_result.py
 
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
         reward = 1
@@ -298,6 +317,11 @@ def trains(mode='normal'):
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
         reward = 1
         rnn = Rnn(latents, actions,reward, hiddens).to(device)
+=======
+        test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+        reward = 1
+        rnn = Rnn(latents, actions,reward, hiddens).to(device)
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
         rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_reward.pt"))
 
 >>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
@@ -328,7 +352,11 @@ def trains(mode='normal'):
                     current_timestep = current_timestep[0, train_window-1, :]
                     current_timestep = current_timestep.cpu().detach().numpy()
 <<<<<<< HEAD:05_draw_rnn_result.py
+<<<<<<< HEAD:05_draw_rnn_result.py
                                    
+=======
+                                    
+>>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
 =======
                                     
 >>>>>>> 961cd27486b647939751a918fdd74015a287b083:draw_rnn_result.py
