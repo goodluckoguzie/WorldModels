@@ -108,13 +108,7 @@ for i in range(len(test_dataset)):
     # current_grey1 = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     input_sample2 = np.reshape(output_sample, (1,output_sample.shape[0]))
-    
-    #input_sample2 = np.reshape(input_sample, (1,input_sample.shape[0]))
-    # print('I', input_sample2)
-    # print('X', utility.denormalised(utility.normalised(input_sample2)))
-    
     normalised_input = utility.normalised(input_sample2)
-
     # print('ni', normalised_input)
     output_sample = code_and_decode(model, normalised_input)
     # print('no', normalised_output)
