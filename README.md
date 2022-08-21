@@ -21,7 +21,7 @@ World Models consists of three main components: Vision (**V**), Model (**M**), a
 python3 01_generate_vae_dataset.py  ----rollouts 2000 
 ```
 ### Train Our VAE Model
-2) Training the VAE. To train on our data for 1000 episode run the command below
+2) To train on our model for 1000 episode run the command below
 ```sh
 python3 02_train_vae.py --epochs 1000 
 ```
@@ -40,11 +40,18 @@ python3 03_test_vae.py
 ```sh
 python3 04_generate_rnn_dataset.py --epochs 1000 -
 ```
+### Train Our RNN
+5) To train on our model for 1000 episode run the command below 
 
+```sh
+python3 05_train_rnn.py --epochs 1000
+```
+### Test Our RNN
+6) After training our RNN model. To test on our model, run the command below
 
-
-
-
+```sh
+python3 06_test_rnn.py 
+```
 ## License
 
 The original research for World Models was conducted by Ha & Schmidhuber.
