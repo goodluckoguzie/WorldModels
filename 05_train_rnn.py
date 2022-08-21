@@ -1,14 +1,15 @@
 import numpy 
 import torch
 import torch.nn as nn
-from RNN.RNN import RNN,Rnn
+from RNN.RNN import LSTM,RNN
 import time
 import os, time, datetime
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.rnnestopping import  EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping
+from UTILITY import utility
 
 parser = argparse.ArgumentParser("mode asigning")
 parser.add_argument('--epochs', type=int, help="epochs")
@@ -20,13 +21,14 @@ latents = 31
 actions = 2
 hiddens = 256
 epochs = args.epochs
-sub_epochs = 5
 train_window = 10 
 batch_size = 64
 timestep = 200
+num_layers = 5
 
-train_dataset = torch.load('./data/saved_rollout_rnn_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
-val_dataset = torch.load('./data/saved_rollout_rnn_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+val_dataset = torch.load('./data/saved_rnn_rollout_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+
 
 
 
@@ -40,18 +42,22 @@ class MDN_Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         data = self.MDN_data[idx]
         obs = data['obs_sequence']
+        obs = utility.normalised(obs)# normalise our observation data
         action = data['action_sequence']
+
         #reward = data['reward_sequence']
         return (action, obs)
 
 train_dataset = MDN_Dataset(train_dataset)
-train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)#load our training dataset 
 
 val_dataset = MDN_Dataset(val_dataset)
-val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#load our validation dataset 
 
 l1 = nn.L1Loss()
-rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = RNN(latents, actions, hiddens).to(device)
+
+rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
 def create_inout_sequences(input_data,action_data, tw):
@@ -67,11 +73,11 @@ def create_inout_sequences(input_data,action_data, tw):
 
 def train_model(model, batch_size, patience, n_epochs):
     
-    # to track the training loss as the model trains
+    # track our training loss as the model trains
     train_losses = []
-    # to track the validation loss as the model trains
+    # track our validation loss as the model trains
     valid_losses = []
-    # to track the average training loss per epoch as the model trains
+    # track our average training loss per epoch as the model trains
     avg_train_losses = []
     # to track the average validation loss per epoch as the model trains
     avg_valid_losses = [] 
@@ -85,7 +91,7 @@ def train_model(model, batch_size, patience, n_epochs):
         ###################
         # train the model #
         ###################
-        model.train() # prep model for evaluation
+        model.train() #activate model for training
         for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
             # print("batch_idx")
             # print(batch_idx)
@@ -93,15 +99,18 @@ def train_model(model, batch_size, patience, n_epochs):
             train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
             w = 0                                                                    # next shift the sliding window a step ahead now our label is the 12th timestep
             for current_timestep, nxt_timestep,action,_ in train_inout_seq:
-
+                
+                
                 # we have 200 timesteps in an episode . 
-                action = action.to("cuda:0")
-                current_timestep = current_timestep.to("cuda:0")
+                action = action.to(device)
+                current_timestep = current_timestep.to(device)
                 optimizer.zero_grad()  
-                nxt_timestep = nxt_timestep.to("cuda:0") 
+                nxt_timestep = nxt_timestep.to(device)
                 states = torch.cat([current_timestep, action], dim=-1) 
                 # forward pass: compute predicted outputs by passing inputs to the model
-                predicted_nxt_timestep, _, _ = rnn(states)
+                predicted_nxt_timestep, _= rnn(states)
+                # predicted_nxt_timestep, _,_ = rnn(states)
+
                 predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                 # calculate the loss
                 loss_rnn = l1(predicted_nxt_timestep, nxt_timestep)
@@ -112,7 +121,7 @@ def train_model(model, batch_size, patience, n_epochs):
         ######################    
         # validate the model #
         ######################
-        model.eval() # prep model for evaluation
+        model.eval() # activate our model for evaluation
         for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
             # print("batch_idx")
             # print(batch_idx)
@@ -122,12 +131,14 @@ def train_model(model, batch_size, patience, n_epochs):
             for current_timestep, nxt_timestep,action,_ in train_inout_seq:
 
                 # we have 200 timesteps in an episode . 
-                action = action.to("cuda:0")
-                current_timestep = current_timestep.to("cuda:0")  
-                nxt_timestep = nxt_timestep.to("cuda:0") 
+                action = action.to(device)
+                current_timestep = current_timestep.to(device) 
+                nxt_timestep = nxt_timestep.to(device)
                 states = torch.cat([current_timestep, action], dim=-1) 
                 # forward pass: compute predicted outputs by passing inputs to the model
-                predicted_nxt_timestep, _, _ = rnn(states)
+                predicted_nxt_timestep, _ = rnn(states)
+                # predicted_nxt_timestep, _,_ = rnn(states)
+
                 predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                 # calculate the loss
                 val_loss_rnn = l1(predicted_nxt_timestep, nxt_timestep)
@@ -152,8 +163,8 @@ def train_model(model, batch_size, patience, n_epochs):
         print(print_msg)
         
         # clear lists to track next epoch
-        # train_losses = []
-        # valid_losses = []
+        train_losses = []
+        valid_losses = []
         
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
@@ -172,7 +183,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 20
+patience = 250
 
 model, train_loss, valid_loss = train_model(rnn, batch_size, patience, epochs)
 

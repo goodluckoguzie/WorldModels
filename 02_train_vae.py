@@ -26,7 +26,6 @@ vae_dir = 'MODEL'
 if not os.path.exists(vae_dir):
     os.makedirs(vae_dir)
 
-rng = np.random.default_rng()
 
 # leanring parameters
 epochs = args.epochs
@@ -41,8 +40,6 @@ Train_dataset = []
 train_dataset = torch.load('./data/saved_vae_rollout_train.pt')
 val_dataset = torch.load('./data/saved_vae_rollout_validation.pt')
 
-rng.shuffle(train_dataset)
-rng.shuffle(val_dataset)
 
 class VAE_Dataset(torch.utils.data.Dataset):
     def __init__(self, obs_data):
@@ -71,7 +68,7 @@ obs_data = utility.normalised(obs_data)
 train_obs_data = VAE_Dataset(obs_data)
 
 val_obs_data = flating_obs_data(val_dataset)
-# val_obs_data = utility.normalised(val_obs_data)
+val_obs_data = utility.normalised(val_obs_data)
 val_obs_data = VAE_Dataset(obs_data)
 
 # train_obs_data = VAE_Dataset( utility.normalised(flating_obs_data(train_dataset)))
@@ -125,6 +122,7 @@ def train_model(model, batch_size, patience, n_epochs):
             # forward pass: compute predicted outputs by passing inputs to the model
             output,_,_  = model(data)
             # calculate the loss
+            # loss = ((data - output)**2).mean()
             loss = ((data - output)**2).sum()
             # backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -145,6 +143,7 @@ def train_model(model, batch_size, patience, n_epochs):
             output,_,_ = model(data)
             # calculate the loss
             loss = ((data - output)**2).sum()
+            # loss = ((data - output)**2).mean()
             # record validation loss
             valid_losses.append(loss.item())
         # print training/validation statistics 
@@ -181,7 +180,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 80
+patience = 250
 
 model, train_loss, valid_loss = train_model(model, batch_size, patience, epochs)
 

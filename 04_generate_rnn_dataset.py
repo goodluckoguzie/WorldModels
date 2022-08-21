@@ -102,7 +102,7 @@ class Rollout():
             obs_sequence = torch.stack(obs_sequence, dim=0).squeeze(1)
 
             obs_sequence = self.pad_tensor(obs_sequence, pad=time_steps).cpu().detach().numpy()
-            obs_sequence = utility.normalised(obs_sequence) #normilised our dataset 
+            # obs_sequence = utility.normalised(obs_sequence) #normilised our dataset 
             obs_sequence = torch.from_numpy(obs_sequence) 
 
             

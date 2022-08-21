@@ -12,15 +12,15 @@ from ENVIRONMENT.socnavenv import SocNavEnv
 from tqdm import tqdm
 from UTILITY import utility
 from UTILITY.utility import transform_processed_observation_into_raw
-from RNN.RNN import RNN,Rnn
+from RNN.RNN import LSTM,RNN
 from torch.autograd import Variable
 
 import argparse
 parser = argparse.ArgumentParser("mode asigning")
 args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-dataset = torch.load('./data/saved_vae_rollout_test.pt')
-
+dataset = torch.load('./data/saved_rnn_rollout_test.pt')
+num_layers = 5
 latents = 31
 actions = 2
 hiddens = 256
@@ -28,23 +28,20 @@ batch_size = 1
 timestep = 200
 train_window = 10 # our sliding window value
 
-def trains(mode='normal'):
+class MDN_Dataset(torch.utils.data.Dataset):
+    def __init__(self, MDN_data):
+        self.MDN_data = MDN_data
+    def __len__(self):
+        return len(self.MDN_data)
 
-    class MDN_Dataset(torch.utils.data.Dataset):
-        def __init__(self, MDN_data):
-            self.MDN_data = MDN_data
-        def __len__(self):
-            return len(self.MDN_data)
+    def __getitem__(self, idx):
+        data = self.MDN_data[idx]
+        obs = data['obs_sequence']
+        obs = utility.normalised(obs)
+        action = data['action_sequence']
 
-        def __getitem__(self, idx):
-            data = self.MDN_data[idx]
-            obs = data['obs_sequence']
-            action = data['action_sequence']
-            #reward = data['reward_sequence']
-            return  (action, obs)
-
-    test_dataset = MDN_Dataset(dataset)
-
+        #reward = data['reward_sequence']
+        return (action, obs)
 
 
 def create_inout_sequences(input_data,action_data, tw):
@@ -58,23 +55,12 @@ def create_inout_sequences(input_data,action_data, tw):
         inout_seq.append((train_seq ,train_label,action_seq,action_label))
     return inout_seq
 
-class MDN_Dataset(torch.utils.data.Dataset):
-    def __init__(self, MDN_data):
-        self.MDN_data = MDN_data
-    def __len__(self):
-        return len(self.MDN_data)
-
-    def __getitem__(self, idx):
-        data = self.MDN_data[idx]
-        obs = data['obs_sequence']
-        action = data['action_sequence']
-        #reward = data['reward_sequence']
-        return (action, obs)
 
 
 test_dataset = MDN_Dataset(dataset)
 train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-rnn = RNN(latents, actions, hiddens).to(device)
+rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+#rnn = RNN(latents, actions, hiddens).to(device)
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 
@@ -84,7 +70,7 @@ def code_and_decode(model, data):
     data = torch.from_numpy(data)
     data = Variable(data, requires_grad=False).to(device)
     with torch.no_grad():
-        output,_,_  = model(data)
+        output,_ = model(data)
         output = output.cpu()
         
     return output 
@@ -93,18 +79,18 @@ def code_and_decode(model, data):
 rnn.eval()
 for batch_idx, (action, obs) in enumerate(train_dataloader):
 
-    print(batch_idx)
-    print(obs.shape)
+    # print(batch_idx)
+    # print(obs.shape)
 
     train_inout_seq = create_inout_sequences(obs, action, train_window) #get the action data in batches along with the expected true value
     for current_timestep, nxt_timestep,action,_ in train_inout_seq:
 
-        action = action.to("cuda:0")  
-        current_timestep = current_timestep.to("cuda:0")  
-        nxt_timestep = nxt_timestep.to("cuda:0")  
+        action = action.to(device) 
+        current_timestep = current_timestep.to(device) 
+        nxt_timestep = nxt_timestep.to(device) 
         states = torch.cat([current_timestep, action], dim=-1)
 
-        predicted_nxt_timestep, _, _ = rnn(states)
+        predicted_nxt_timestep, _ = rnn(states)
         current_timestep = current_timestep
         nxt_timestep = nxt_timestep
         predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :]
@@ -135,13 +121,16 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
                 continue
             else:
                 print('Array has non-zero items too')
+            current_timestep = np.atleast_2d(current_timestep)
+            current_timestep = utility.denormalised(current_timestep)
+            current_timestep = current_timestep.flatten()
 
             nxt_timestep = np.atleast_2d(nxt_timestep)
-            #input_sample = utility.denormalised(input_sample)
+            nxt_timestep = utility.denormalised(nxt_timestep)
             nxt_timestep = nxt_timestep.flatten()
 
             predicted_nxt_timestep = np.atleast_2d(predicted_nxt_timestep)
-            #utility.denormalised(output_sample)
+            predicted_nxt_timestep = utility.denormalised(predicted_nxt_timestep)
             predicted_nxt_timestep = predicted_nxt_timestep.flatten()
 
             print("output_sample")
@@ -153,7 +142,7 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
             robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(current_timestep)
             image0 = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "current timestep", dont_draw=True)
             current_grey = cv2.cvtColor(image0, cv2.COLOR_BGR2GRAY)
-            cv2.imshow("next timestep", image0)
+            cv2.imshow("current_timestep", image0)
 
             robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(nxt_timestep)
             image1 = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "next timestep", dont_draw=True)
