@@ -16,7 +16,7 @@ rng = np.random.default_rng()
 from UTILITY.early_stopping_for_vae import  EarlyStopping
 
 parser = argparse.ArgumentParser("epochs asigning")
-parser.add_argument('--epochs', type=int, help="epochs")
+parser.add_argument('--epochs', type=int, help="epochs", default=10000)
 parser.add_argument('--max_samples', type=int, help="max_samples", nargs='?', const=0, default=0)
 args = parser.parse_args()
 
@@ -131,21 +131,24 @@ def train_model(model, batch_size, patience, n_epochs):
             # record training loss
             train_losses.append(loss.item())
 
-        ######################    
-        # validate the model #
-        ######################with torch.no_grad():
-        model.eval() # prep model for evaluation
-        for data in val_loader:
-            # forward pass: compute predicted outputs by passing inputs to the model
-            data = data.to(device)
-            #torch.from_numpy(data)
-            data = data.view(data.size(0), -1)
-            output,_,_ = model(data)
-            # calculate the loss
-            loss = ((data - output)**2).sum()
-            # loss = ((data - output)**2).mean()
-            # record validation loss
-            valid_losses.append(loss.item())
+        if epoch % 5 == 0:
+            ######################    
+            # validate the model #
+            ######################with torch.no_grad():
+            model.eval() # prep model for evaluation
+            for data in val_loader:
+                # forward pass: compute predicted outputs by passing inputs to the model
+                data = data.to(device)
+                #torch.from_numpy(data)
+                data = data.view(data.size(0), -1)
+                output,_,_ = model(data)
+                # calculate the loss
+                loss = ((data - output)**2).sum()
+                # loss = ((data - output)**2).mean()
+                # record validation loss
+                valid_losses.append(loss.item())
+
+
         # print training/validation statistics 
         # calculate average loss over an epoch
         train_loss = np.average(train_losses)
@@ -167,7 +170,8 @@ def train_model(model, batch_size, patience, n_epochs):
         
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+        if epoch % 5 == 0:
+            early_stopping(valid_loss, model)
         
         if early_stopping.early_stop:
             print("Early stopping")
