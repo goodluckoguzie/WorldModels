@@ -14,19 +14,22 @@ from UTILITY import utility
 from UTILITY.utility import transform_processed_observation_into_raw
 from RNN.RNN import LSTM,RNN
 from torch.autograd import Variable
+from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 
 import argparse
 parser = argparse.ArgumentParser("mode asigning")
 args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-dataset = torch.load('./data/saved_rnn_rollout_test.pt')
-num_layers = 5
+# dataset = torch.load('./data/saved_rnn_rollout_test.pt')
+test_data = torch.load('./data/saved_vae_rollout_test.pt')
+
+num_layers = 2
 latents = 31
 actions = 2
 hiddens = 256
 batch_size = 1
 timestep = 200
-train_window = 10 # our sliding window value
+train_window = 1#0 # our sliding window value
 
 class MDN_Dataset(torch.utils.data.Dataset):
     def __init__(self, MDN_data):
@@ -56,11 +59,12 @@ def create_inout_sequences(input_data,action_data, tw):
     return inout_seq
 
 
+dataset = fit_dataset_to_rnn(test_data)
 
 test_dataset = MDN_Dataset(dataset)
 train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-#rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = RNN(latents, actions, hiddens).to(device)
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 
@@ -88,9 +92,12 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
         action = action.to(device) 
         current_timestep = current_timestep.to(device) 
         nxt_timestep = nxt_timestep.to(device) 
+
         states = torch.cat([current_timestep, action], dim=-1)
 
-        predicted_nxt_timestep, _ = rnn(states)
+        # predicted_nxt_timestep, _ = rnn(states)
+        predicted_nxt_timestep, _,_ = rnn(states)
+
         current_timestep = current_timestep
         nxt_timestep = nxt_timestep
         predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :]
@@ -114,13 +121,7 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
             print("input_sample")
             print(current_timestep)
             print("")
-            # Check if all elements in array are zero. this help us to remove the padded timestep
-            result = np.all((nxt_timestep == 0))
-            if result:
-                print('Array contains only 0')
-                continue
-            else:
-                print('Array has non-zero items too')
+
             current_timestep = np.atleast_2d(current_timestep)
             current_timestep = utility.denormalised(current_timestep)
             current_timestep = current_timestep.flatten()
@@ -138,7 +139,13 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
             print("input_sample")
             print(current_timestep)
             print("")
-
+            # Check if all elements in array are zero. this help us to remove the padded timestep
+            result = np.all((current_timestep == 0))
+            if result:
+                print('Array contains only 0')
+                continue
+            else:
+                print('Array has non-zero items too')
             robot_obs, goal_obs, humans_obs = transform_processed_observation_into_raw(current_timestep)
             image0 = SocNavEnv.render_obs(robot_obs, goal_obs, humans_obs, "current timestep", dont_draw=True)
             current_grey = cv2.cvtColor(image0, cv2.COLOR_BGR2GRAY)

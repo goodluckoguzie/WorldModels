@@ -1,25 +1,14 @@
-import re
-import torch
 import torch; torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils
 import torch.distributions
 import numpy as np
-import numpy 
-import torch
-import torch.nn as nn
 import time
 import os, time, datetime
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import argparse
-import torch
 import torch.utils.data
-from torch import nn, optim
-from torchvision import datasets, transforms
-import torch
-from torch import nn
 from torch.autograd import Variable
 import numpy
 from os import listdir
@@ -76,7 +65,7 @@ number_of_actions = action_list.shape[0]
 
 
 num_layers = 2
-# # rnn = MDN_RNN(latents, actions, hiddens, gaussians).to(device)
+# rnn = MDN_RNN(latents, actions, hiddens, gaussians).to(device)
 rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 # # rnn = RNN(latents, actions, hiddens).to(device)
 

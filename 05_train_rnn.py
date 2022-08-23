@@ -10,6 +10,7 @@ import argparse
 import numpy as np
 from UTILITY.early_stopping_for_rnn import  EarlyStopping
 from UTILITY import utility
+from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 
 parser = argparse.ArgumentParser("mode asigning")
 parser.add_argument('--epochs', type=int, help="epochs")
@@ -21,14 +22,20 @@ latents = 31
 actions = 2
 hiddens = 256
 epochs = args.epochs
-train_window = 10 
+train_window = 1#0 
 batch_size = 64
 timestep = 200
-num_layers = 5
+num_layers = 2
 
 train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 val_dataset = torch.load('./data/saved_rnn_rollout_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 
+
+
+# train_data = torch.load('./data/saved_vae_rollout_train.pt')
+# val_data = torch.load('./data/saved_vae_rollout_validation.pt')
+# train_dat = fit_dataset_to_rnn(train_dataset)
+# val_dat = fit_dataset_to_rnn(val_dataset)
 
 
 
@@ -56,8 +63,9 @@ val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size,
 
 l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
-
 rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn.load_state_dict(torch.load("./MODEL/model.pt"))
+
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
 def create_inout_sequences(input_data,action_data, tw):
@@ -84,8 +92,8 @@ def train_model(model, batch_size, patience, n_epochs):
     
     # initialize the early_stopping object
     early_stopping = EarlyStopping(patience=patience, verbose=True)
-    eval_losses = []
-    losses_rnn = []
+    # eval_losses = []
+    # losses_rnn = []
     for epoch in range(1, n_epochs + 1):
 
         ###################
@@ -183,7 +191,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 250
+patience = 110
 
 model, train_loss, valid_loss = train_model(rnn, batch_size, patience, epochs)
 
