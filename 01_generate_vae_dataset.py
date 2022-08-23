@@ -19,6 +19,7 @@ time_steps = 200
 parser = argparse.ArgumentParser("number episodes asigning")
 parser.add_argument('--episodes', type=int,
                     help="Number of episodes.")
+
 args = parser.parse_args()
 rollout_dir = 'data/'
 if not os.path.exists(rollout_dir):
@@ -27,11 +28,12 @@ if not os.path.exists(rollout_dir):
 total_episodes = args.episodes
 
 class Rollout():
-    def __init__(self, data_dic, dir_name,mode='train'):
+    def __init__(self, data_dic, dir_name,mode, num_episodes_to_record):
         super().__init__()
         self.data_dic = data_dic
         self.dir_name = dir_name
         self.mode = mode
+        self.num_episodes_to_record = num_episodes_to_record
         
     def make_rollout(self):
         if not os.path.exists(self.dir_name):
@@ -40,7 +42,7 @@ class Rollout():
         env = SocNavEnv()
         s = 0
         start_time = time.time()
-        while s < total_episodes:
+        while s < self.num_episodes_to_record:
             obs_sequence = []
             action_sequence = []
             reward_sequence= []
@@ -63,7 +65,7 @@ class Rollout():
                 t+=1
                 if done:
         
-                    print("Episode [{}/{}] finished after {} timesteps".format(s + 1,total_episodes, t), flush=True)
+                    print("Episode [{}/{}] finished after {} timesteps".format(s + 1, self.num_episodes_to_record, t), flush=True)
                     obs = env.reset()
                     break
             self.data_dic[s] = {"obs_sequence":obs_sequence, "action_sequence":action_sequence, 
@@ -134,20 +136,20 @@ class Rollout():
 
 rollout_dic = {}
 rollout_dir = 'data/'
-train_dataset = Rollout(rollout_dic, rollout_dir,'train')
+train_dataset = Rollout(rollout_dic, rollout_dir,'train', int(total_episodes))
 train_dataset.make_rollout()
 # train_dataset.fit_dataset_to_rnn()
 
 rollout_dic = {}
 rollout_dir = 'data/'
-val_dataset = Rollout(rollout_dic, rollout_dir,'test')
+val_dataset = Rollout(rollout_dic, rollout_dir,'test', int(total_episodes*0.1))
 val_dataset.make_rollout()
 # val_dataset.fit_dataset_to_rnn()
 
 
 rollout_dic = {}
 rollout_dir = 'data/'
-test_dataset = Rollout(rollout_dic, rollout_dir,'val')
+test_dataset = Rollout(rollout_dic, rollout_dir,'val', int(total_episodes*0.1))
 test_dataset.make_rollout()
 # test_dataset.fit_dataset_to_rnn()
 
