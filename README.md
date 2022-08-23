@@ -52,6 +52,19 @@ python3 05_train_rnn.py --epochs 1000
 ```sh
 python3 06_test_rnn.py 
 ```
+### Train Our Controller 
+7) To train on our controller model, run the command below 
+
+```sh
+python3 07_train_contoller.py --episodes 1000
+```
+
+### Test Our Controller 
+8) To test on our controller model, run the command below 
+
+```sh
+python3 08_test_controller.py --episodes 1000
+```
 ## License
 
 The original research for World Models was conducted by Ha & Schmidhuber.

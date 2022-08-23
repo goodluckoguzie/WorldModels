@@ -123,32 +123,33 @@ class Rollout():
             episode_data['done_sequence'] = done_sequence
             episode_data['reward_sequence'] = reward_sequence
 
-            if self.mode == 'train':
-                torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_train.pt') 
-            elif self.mode  == 'test':
-                torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_test.pt')
-            elif self.mode  == 'val':
-                torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_validation.pt')
+            # if self.mode == 'train':
+            #     torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_train.pt') 
+            # elif self.mode  == 'test':
+            #     torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_test.pt')
+            # elif self.mode  == 'val':
+            #     torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_validation.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_rnn_rollout_test.pt')
   
 
    
         
        
 
-#Generate train dataset for our rnn mode
-rollout_dic = {}
-rollout_dir = 'data/'
-train_dataset = Rollout(rollout_dic, rollout_dir,'train')
-train_dataset.make_rollout()
-train_dataset.fit_dataset_to_rnn()
+# #Generate train dataset for our rnn mode
+# rollout_dic = {}
+# rollout_dir = 'data/'
+# train_dataset = Rollout(rollout_dic, rollout_dir,'train')
+# train_dataset.make_rollout()
+# train_dataset.fit_dataset_to_rnn()
 
-#Generate test dataset for our rnn mode
+# #Generate test dataset for our rnn mode
 
-rollout_dic = {}
-rollout_dir = 'data/'
-val_dataset = Rollout(rollout_dic, rollout_dir,'test')
-val_dataset.make_rollout()
-val_dataset.fit_dataset_to_rnn()
+# rollout_dic = {}
+# rollout_dir = 'data/'
+# val_dataset = Rollout(rollout_dic, rollout_dir,'test')
+# val_dataset.make_rollout()
+# val_dataset.fit_dataset_to_rnn()
 
 #Generate validation dataset for our rnn mode
 rollout_dic = {}

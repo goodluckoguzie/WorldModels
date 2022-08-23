@@ -180,7 +180,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 250
+patience = 2000
 
 model, train_loss, valid_loss = train_model(model, batch_size, patience, epochs)
 

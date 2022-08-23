@@ -16,9 +16,9 @@ import argparse
 time_steps = 200
 
 
-parser = argparse.ArgumentParser("number rollouts asigning")
-parser.add_argument('--rollouts', type=int,
-                    help="Number of rollouts.")
+parser = argparse.ArgumentParser("number episodes asigning")
+parser.add_argument('--episodes', type=int,
+                    help="Number of episodes.")
 args = parser.parse_args()
 rollout_dir = 'data/'
 if not os.path.exists(rollout_dir):
@@ -70,11 +70,11 @@ class Rollout():
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
         if self.mode == 'train':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_train.pt') 
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_train1.pt') 
         elif self.mode  == 'test':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_test.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_test1.pt')
         elif self.mode  == 'val':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_validation.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_validation1.pt')
        
        
         
