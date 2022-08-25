@@ -72,11 +72,11 @@ class Rollout():
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
         if self.mode == 'train':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_train1.pt') 
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_train.pt') 
         elif self.mode  == 'test':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_test1.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_test.pt')
         elif self.mode  == 'val':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_validation1.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_validation.pt')
        
        
         
