@@ -29,7 +29,7 @@ if not os.path.exists(vae_dir):
 
 # leanring parameters
 epochs = args.epochs
-batch_size = 64
+batch_size = 1024
 input_size = 31
 z_dim = 31
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -88,7 +88,7 @@ val_loader   = DataLoader(val_obs_data,   batch_size=batch_size, shuffle=False)
 
 
 # model = Autoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-model= VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
+model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
 
@@ -151,16 +151,16 @@ def train_model(model, batch_size, patience, n_epochs):
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.sum(train_losses)/len(train_obs_data)
-        valid_loss = np.sum(valid_losses)/len(val_obs_data)
+        train_loss = np.sum(train_losses)
+        valid_loss = np.sum(valid_losses)/len(val_obs_data)*len(train_obs_data)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         
         epoch_len = len(str(n_epochs))
         
         print_msg = (f'[{epoch:>{epoch_len}}/{n_epochs:>{epoch_len}}] ' +
-                     f'train_loss: {train_loss:.5f} ' +
-                     f'valid_loss: {valid_loss:.5f}')
+                     f'train_loss: {train_loss:.8f} ' +
+                     f'valid_loss: {valid_loss:.8f}')
         
         print(print_msg)
         
