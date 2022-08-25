@@ -31,7 +31,7 @@ class RNN(nn.Module):
 
 
 class LSTM(nn.Module):
-    num_layers = 4
+
 
     def __init__(self, n_latents, n_actions, n_hiddens,num_layers):
         super(LSTM, self).__init__()
@@ -56,10 +56,10 @@ class LSTM(nn.Module):
         
         h_out = h_out.view(-1, self.n_hiddens)
         
-        out = self.fc(h_out)
+        #out = self.fc(h_out)
         y = self.fc(h)
         
-        return y , out
+        return y , h_out
 
 
 

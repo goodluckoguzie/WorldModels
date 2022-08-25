@@ -12,21 +12,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 time_steps = 200
 
 
-train_dataset = torch.load('./data/saved_vae_rollout_train.pt')
-val_dataset = torch.load('./data/saved_vae_rollout_validation.pt')
-
-
-
 def pad_tensor( tensor, pad):
     pad_size = pad - tensor.size(0)
     return torch.cat([tensor.to(device), torch.zeros([pad_size, tensor.size(1)]).to(device)], dim=0)
 
-print(len(train_dataset))
 
 def fit_dataset_to_rnn(dataset):
     
     for episode_idx, episode_data in enumerate(dataset.values()):
-        print(episode_idx)
+        # print(episode_idx)
 
 
         obs_sequence = episode_data['obs_sequence']
@@ -59,7 +53,8 @@ def fit_dataset_to_rnn(dataset):
         episode_data['action_sequence'] = action_sequence
         episode_data['done_sequence'] = done_sequence
         episode_data['reward_sequence'] = reward_sequence
-    return episode_data
+    print("done padding the datset ")
+    return dataset
 
 
 

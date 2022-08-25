@@ -27,15 +27,15 @@ batch_size = 64
 timestep = 200
 num_layers = 2
 
-train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
-val_dataset = torch.load('./data/saved_rnn_rollout_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+# train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+# val_dataset = torch.load('./data/saved_rnn_rollout_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 
 
 
-# train_data = torch.load('./data/saved_vae_rollout_train.pt')
-# val_data = torch.load('./data/saved_vae_rollout_validation.pt')
-# train_dat = fit_dataset_to_rnn(train_dataset)
-# val_dat = fit_dataset_to_rnn(val_dataset)
+train_data = torch.load('./data/saved_vae_rollout_train.pt')
+val_data = torch.load('./data/saved_vae_rollout_validation.pt')
+train_dat = fit_dataset_to_rnn(train_data)
+val_dat = fit_dataset_to_rnn(val_data)
 
 
 
@@ -55,16 +55,15 @@ class MDN_Dataset(torch.utils.data.Dataset):
         #reward = data['reward_sequence']
         return (action, obs)
 
-train_dataset = MDN_Dataset(train_dataset)
+train_dataset = MDN_Dataset(train_dat)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)#load our training dataset 
 
-val_dataset = MDN_Dataset(val_dataset)
+val_dataset = MDN_Dataset(val_dat)
 val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#load our validation dataset 
 
 l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
 rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
@@ -157,8 +156,8 @@ def train_model(model, batch_size, patience, n_epochs):
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.average(train_losses)
-        valid_loss = np.average(valid_losses)
+        train_loss = np.sum(train_losses)/len(train_dataset)
+        valid_loss = np.sum(valid_losses)/len(train_dataset)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         
@@ -176,12 +175,12 @@ def train_model(model, batch_size, patience, n_epochs):
         
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+        if epoch % 5 == 0:
+            early_stopping(valid_loss, model)
         
         if early_stopping.early_stop:
             print("Early stopping")
             break
-        
     # load the last checkpoint with the best model
     model.load_state_dict(torch.load('./MODEL/model.pt'))
 
@@ -191,7 +190,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 110
+patience = 100
 
 model, train_loss, valid_loss = train_model(rnn, batch_size, patience, epochs)
 
