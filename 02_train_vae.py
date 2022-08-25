@@ -131,7 +131,7 @@ def train_model(model, batch_size, patience, n_epochs):
             # record training loss
             train_losses.append(loss.item())
 
-        if epoch % 5 == 0:
+        if epoch % 1 == 0:
             ######################    
             # validate the model #
             ######################with torch.no_grad():
@@ -140,7 +140,7 @@ def train_model(model, batch_size, patience, n_epochs):
                 # forward pass: compute predicted outputs by passing inputs to the model
                 data = data.to(device)
                 #torch.from_numpy(data)
-                data = data.view(data.size(0), -1)
+                data = data.view(-1, input_size)
                 output,_,_ = model(data)
                 # calculate the loss
                 loss = ((data - output)**2).sum()
@@ -151,8 +151,8 @@ def train_model(model, batch_size, patience, n_epochs):
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.average(train_losses)
-        valid_loss = np.average(valid_losses)
+        train_loss = np.sum(train_losses)/len(train_obs_data)
+        valid_loss = np.sum(valid_losses)/len(val_obs_data)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         
