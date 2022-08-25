@@ -157,8 +157,8 @@ def train_model(model, batch_size, patience, n_epochs):
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.average(train_losses)
-        valid_loss = np.average(valid_losses)
+        train_loss = np.sum(train_losses)/len(train_dataset)
+        valid_loss = np.sum(valid_losses)/len(train_dataset)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         
@@ -176,12 +176,12 @@ def train_model(model, batch_size, patience, n_epochs):
         
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+        if epoch % 5 == 0:
+            early_stopping(valid_loss, model)
         
         if early_stopping.early_stop:
             print("Early stopping")
             break
-        
     # load the last checkpoint with the best model
     model.load_state_dict(torch.load('./MODEL/model.pt'))
 
@@ -191,7 +191,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
 
 # early stopping patience; how long to wait after last time validation loss improved.
-patience = 110
+patience = 100
 
 model, train_loss, valid_loss = train_model(rnn, batch_size, patience, epochs)
 
