@@ -27,15 +27,15 @@ batch_size = 64
 timestep = 200
 num_layers = 2
 
-train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
-val_dataset = torch.load('./data/saved_rnn_rollout_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+# train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+# val_dataset = torch.load('./data/saved_rnn_rollout_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
 
 
 
-# train_data = torch.load('./data/saved_vae_rollout_train.pt')
-# val_data = torch.load('./data/saved_vae_rollout_validation.pt')
-# train_dat = fit_dataset_to_rnn(train_dataset)
-# val_dat = fit_dataset_to_rnn(val_dataset)
+train_data = torch.load('./data/saved_vae_rollout_train.pt')
+val_data = torch.load('./data/saved_vae_rollout_validation.pt')
+train_dat = fit_dataset_to_rnn(train_data)
+val_dat = fit_dataset_to_rnn(val_data)
 
 
 
@@ -55,10 +55,10 @@ class MDN_Dataset(torch.utils.data.Dataset):
         #reward = data['reward_sequence']
         return (action, obs)
 
-train_dataset = MDN_Dataset(train_dataset)
+train_dataset = MDN_Dataset(train_dat)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)#load our training dataset 
 
-val_dataset = MDN_Dataset(val_dataset)
+val_dataset = MDN_Dataset(val_dat)
 val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#load our validation dataset 
 
 l1 = nn.L1Loss()
