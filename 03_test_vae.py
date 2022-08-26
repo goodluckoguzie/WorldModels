@@ -26,7 +26,7 @@ from tqdm import tqdm
 from VAE.vae import VariationalAutoencoder
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-z_dim = 31
+z_dim = 62
 input_size = 31
 
 # test_dataset = test_data(batch_size=256)

@@ -29,9 +29,9 @@ if not os.path.exists(vae_dir):
 
 # leanring parameters
 epochs = args.epochs
-batch_size = 1024
+batch_size = 10240
 input_size = 31
-z_dim = 31
+z_dim = 62
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 Val_dataset = []
@@ -89,7 +89,7 @@ val_loader   = DataLoader(val_obs_data,   batch_size=batch_size, shuffle=False)
 
 # model = Autoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 
 def train_model(model, batch_size, patience, n_epochs):
