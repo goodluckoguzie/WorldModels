@@ -66,8 +66,8 @@ number_of_actions = action_list.shape[0]
 
 num_layers = 2
 # rnn = MDN_RNN(latents, actions, hiddens, gaussians).to(device)
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# # rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = RNN(latents, actions, hiddens).to(device)
 
 def flatten_parameters(params):
     return torch.cat([p.detach().view(-1) for p in params], dim=0).to('cpu').numpy()
@@ -114,7 +114,7 @@ def evaluate_control_model(vae, rnn, controller, device):
     cumulative = 0
     cumulative_ = 0
     # mdrnn = MDRNNCell(latents, actions, hiddens, gaussians).to(device)
-    rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+    # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
     # rnn = RNN(latents, actions, hiddens).to(device)
     rnn.load_state_dict(torch.load("./MODEL/model.pt"))
     rnn = rnn.float()
@@ -141,22 +141,32 @@ def evaluate_control_model(vae, rnn, controller, device):
             sigma = log_var.exp()
             eps = torch.randn_like(sigma)
             z = eps.mul(sigma).add_(mu)
+            
             unsqueezed_action = action.unsqueeze(0)
             unsqueezed_z = z.unsqueeze(0)
             # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
             # rnn_input = torch.cat((z, action, reward_), -1).float()
             # out_full, hidden = mdrnn(rnn_input, hidden)
             rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-            _, hidden = rnn(rnn_input)
-            # _,hidden,_ = rnn(rnn_input)            
+            # _, hidden = rnn(rnn_input)
+            _,hidden,_ = rnn(rnn_input)            
             c_in = torch.cat((z, hidden[0].unsqueeze(0)),-1)
             controller.to(device)
             action_distribution = controller(c_in)
+            print("wwwwwwwwwwwwwwww",action_distribution)
             #print(action_distribution)
             #action = action.detach().to('cpu')
-            
-            max_action = np.argmax(action_distribution)            
+            print("--------------------------------------------------------")
+            max_action = np.argmax(action_distribution)  
+            print("max_action",max_action)
+
+            print("--------------------------------------------------------")
+          
             action = action_list[max_action]
+            print("action",action)
+
+            print("--------------------------------------------------------")
+
             obs, reward, done, _ = env.step(action)
             action = torch.from_numpy(action)
             reward = torch.Tensor([[reward * (1-int(done))]])

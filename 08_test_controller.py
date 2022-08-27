@@ -34,7 +34,7 @@ import math
 from ENVIRONMENT import sOcnavenv
 from ENVIRONMENT.sOcnavenv import SocNavEnv
 from tqdm import tqdm
-from RNN.RNN import LSTM
+from RNN.RNN import LSTM,RNN
 from UTILITY import utility 
 from UTILITY.utility import test_data
 from UTILITY.utility import get_observation_from_dataset
@@ -83,8 +83,8 @@ number_of_actions = action_list.shape[0]
 total_episodes = 100
 
 
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = RNN(latents, actions, hiddens).to(device)
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 rnn = rnn.float()
 # #rnn = Rnn(latents, actions,reward, hiddens).to(device)
@@ -160,7 +160,7 @@ def evaluate_control_model(rnn, controller, device):
                 # rnn_input = torch.cat((z, action, reward_), -1).float()
                 # out_full, hidden = mdrnn(rnn_input, hidden)
                 rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-                _, hidden = rnn(rnn_input)
+                _, hidden,_ = rnn(rnn_input)
                 # _,hidden,_ = rnn(rnn_input)            
                 c_in = torch.cat((z, hidden[0].unsqueeze(0)),-1)
                 controller.to(device)
