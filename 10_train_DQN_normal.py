@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import base64, io
-from UTILITY import utility
 
 import numpy as np
 from collections import deque, namedtuple
@@ -17,25 +16,6 @@ from IPython.display import HTML
 from IPython import display 
 import glob
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-from RNN.RNN import LSTM,RNN
-
-from VAE.vae import VariationalAutoencoder
-z_dim = 31
-input_size = 31
-vae = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-vae.load_state_dict(torch.load("./MODEL/vae_model.pt"))
-vae.eval()
-vae.float()
-latents = 31
-actions = 2
-hiddens = 256
-gaussians = 5
-epochs = 10
-actions = 2
-num_layers = 2
-
 
 advance_split = 5
 rotation_split = 5
@@ -49,25 +29,8 @@ action_list = np.hstack((
     rotation_grid.reshape((advance_split*rotation_split, 1))))
 number_of_actions = action_list.shape[0]
 
-
-# rnn = MDN_RNN(latents, actions, hiddens, gaussians).to(device)
-# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# # rnn = RNN(latents, actions, hiddens).to(device)
-rnn = RNN(latents, actions, hiddens).to(device)
-# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# rnn = RNN(latents, actions, hiddens).to(device)
-rnn.load_state_dict(torch.load("./MODEL/model.pt"))
-rnn = rnn.float()
-# rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
-rnn.eval()
-
 from ENVIRONMENT.sOcnavenv import SocNavEnv 
 env = SocNavEnv()
-
-# from ENVIRONMENT.sOcnavenv import DiscreteSocNavEnv 
-# env = DiscreteSocNavEnv()
-# env = gym.make('LunarLander-v2')SocNavEnv()
-env.seed(0)
 print('State shape: ', env.observation_space.shape)
 print('Number of actions: ', env.action_space)
 
@@ -153,9 +116,13 @@ class Agent():
         ======
             state (array_like): current state
             eps (float): epsilon, for epsilon-greedy action selection
+            print
         """
+        # print("state.shape",state)
+        # print("state.shape",state.shape)
+
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
- 
+
         self.qnetwork_local.eval()
         with torch.no_grad():
             action_values = self.qnetwork_local(state)
@@ -163,18 +130,9 @@ class Agent():
 
         # Epsilon-greedy action selection
         if random.random() > eps:
-
-
-            max_action = np.argmax(action_values.cpu().data.numpy())
-            # action = action_list[max_action]
-            # return np.argmax(action_values.cpu().data.numpy())
-            return max_action#action
+            return np.argmax(action_values.cpu().data.numpy())
         else:
-            max_action = random.choice(np.arange(self.action_size))
-            # return random.choice(np.arange(self.action_size))
-            # max_action = np.argmax(action_values.cpu().data.numpy())
-            # action = action_list[max_action]
-            return max_action#action
+            return random.choice(np.arange(self.action_size))
 
     def learn(self, experiences, gamma):
         """Update value parameters using given batch of experience tuples.
@@ -262,7 +220,7 @@ class ReplayBuffer:
 
 
 
-def dqn(n_episodes=30_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
+def dqn(n_episodes=20_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
     """Deep Q-Learning.
     
     Params
@@ -275,93 +233,31 @@ def dqn(n_episodes=30_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
     """
     scores = []                        # list containing scores from each episode
     scores_window = deque(maxlen=100)  # last 100 scores
-    episode = eps_start                    # initialize epsilon
+    eps = eps_start                    # initialize epsilon
     for i_episode in range(1, n_episodes+1):
         state = env.reset()
-        # import random
-        action = random.randint(0,24)
-        Discrete_to_continous_action = action_list[action]
-        Discrete_to_continous_action = torch.from_numpy(Discrete_to_continous_action).to(device)
-        # action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
-    
         score = 0
         for t in range(max_t):
-            env.render()
-            state = torch.from_numpy(state)
-            state = np.atleast_2d(state)
-            state= utility.normalised(state)
-            _, mu, log_var = vae(state.unsqueeze(0).to(device))
-            sigma = log_var.exp()
-            eps = torch.randn_like(sigma)
-            z = eps.mul(sigma).add_(mu).squeeze(0)
-            z = z.cpu().detach().numpy()
-   
-            
-            # print("dddddddddddddddddddddd",z)
 
-            # action = agent.act(state, episode)
-            # action = agent.act(z, episode)
-
-            z = torch.from_numpy(z.squeeze(0)).to(device)
-
-
-
-            rnn_input = torch.cat([z, Discrete_to_continous_action], dim=-1).float()
-
-            _, hidden,_ = rnn(rnn_input.unsqueeze(0))
-
-            Concatenated_current_state = torch.cat((z.to(device), hidden[0]),-1).cpu().detach().numpy()
-
-            action = agent.act(Concatenated_current_state, episode)
-            
-            Discrete_to_contin_action = action_list[action]
-            Discrete_to_continous_action = torch.from_numpy(Discrete_to_contin_action).to(device)
-
-
-            # action = agent.act(state, episode)
-            next_state, reward, done, _ = env.step(Discrete_to_continous_action.cpu())
-            next_state_ = next_state
-
-            next_state_ = torch.from_numpy(next_state_)
-            next_state_ = np.atleast_2d(next_state_)
-            next_state_ = utility.normalised(next_state_)
-            _, mu, log_var = vae(next_state_.unsqueeze(0).to(device))
-            sigma = log_var.exp()
-            eps = torch.randn_like(sigma)
-            next_state_ = eps.mul(sigma).add_(mu).squeeze(0)
-            next_state_ = next_state_.cpu().detach().numpy()
-
-            next_state_ = torch.from_numpy(next_state_.squeeze(0)).to(device)
-            
-            Concatenated_next_state_ = torch.cat((next_state_.to(device), hidden[0]),-1).cpu().detach().numpy()
-            # print("dddddddddddddddddddddd",z)
-
-            # action = agent.act(state, episode)
-            # action = agent.act(z, episode)
-
-     
-
-            agent.step(Concatenated_current_state, action, reward, Concatenated_next_state_, done)
-            # print("state",state)
-            # print("action",action)
-            # print("reward",reward)
-            # print("next_dddd",next_state)
-
+            action = agent.act(state, eps)
+            action_ = action_list[action]
+            next_state, reward, done, _ = env.step(action_)
+            agent.step(state, action, reward, next_state, done)
             state = next_state
             score += reward
             if done:
                 break 
         scores_window.append(score)       # save most recent score
         scores.append(score)              # save most recent score
-        episode = max(eps_end, eps_decay*episode) # decrease epsilon
+        eps = max(eps_end, eps_decay*eps) # decrease epsilon
         print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
         if i_episode % 100 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
         if np.mean(scores_window)>=200.0:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_dqn.pth')
+            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_norm.pth')
             break
     return scores
 
-agent = Agent(state_size=287, action_size=25, seed=0)
+agent = Agent(state_size=31, action_size=25, seed=0)
 scores = dqn()
