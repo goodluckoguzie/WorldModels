@@ -153,19 +153,11 @@ def evaluate_control_model(vae, rnn, controller, device):
             c_in = torch.cat((z, hidden[0].unsqueeze(0)),-1)
             controller.to(device)
             action_distribution = controller(c_in)
-            print("wwwwwwwwwwwwwwww",action_distribution)
             #print(action_distribution)
             #action = action.detach().to('cpu')
-            print("--------------------------------------------------------")
             max_action = np.argmax(action_distribution)  
-            print("max_action",max_action)
 
-            print("--------------------------------------------------------")
-          
             action = action_list[max_action]
-            print("action",action)
-
-            print("--------------------------------------------------------")
 
             obs, reward, done, _ = env.step(action)
             action = torch.from_numpy(action)

@@ -220,7 +220,7 @@ class ReplayBuffer:
 
 
 
-def dqn(n_episodes=20_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
+def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
     """Deep Q-Learning.
     
     Params

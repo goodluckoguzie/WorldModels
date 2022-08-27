@@ -262,7 +262,7 @@ class ReplayBuffer:
 
 
 
-def dqn(n_episodes=30_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
+def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
     """Deep Q-Learning.
     
     Params
@@ -286,16 +286,19 @@ def dqn(n_episodes=30_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
     
         score = 0
         for t in range(max_t):
-            env.render()
-            state = torch.from_numpy(state)
+            #env.render()
             state = np.atleast_2d(state)
-            state= utility.normalised(state)
+            state = utility.normalised(state)
+
+            state = torch.from_numpy(state)
+
             _, mu, log_var = vae(state.unsqueeze(0).to(device))
             sigma = log_var.exp()
             eps = torch.randn_like(sigma)
             z = eps.mul(sigma).add_(mu).squeeze(0)
             z = z.cpu().detach().numpy()
-   
+            z = np.atleast_2d(z)
+            # z = utility.normalised(z)
             
             # print("dddddddddddddddddddddd",z)
 
@@ -322,15 +325,17 @@ def dqn(n_episodes=30_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
             next_state, reward, done, _ = env.step(Discrete_to_continous_action.cpu())
             next_state_ = next_state
 
-            next_state_ = torch.from_numpy(next_state_)
             next_state_ = np.atleast_2d(next_state_)
             next_state_ = utility.normalised(next_state_)
+            next_state_ = torch.from_numpy(next_state_)
+
             _, mu, log_var = vae(next_state_.unsqueeze(0).to(device))
             sigma = log_var.exp()
             eps = torch.randn_like(sigma)
             next_state_ = eps.mul(sigma).add_(mu).squeeze(0)
             next_state_ = next_state_.cpu().detach().numpy()
-
+            next_state_ = np.atleast_2d(next_state_)
+            # next_state_ = utility.normalised(next_state_)
             next_state_ = torch.from_numpy(next_state_.squeeze(0)).to(device)
             
             Concatenated_next_state_ = torch.cat((next_state_.to(device), hidden[0]),-1).cpu().detach().numpy()
@@ -359,7 +364,7 @@ def dqn(n_episodes=30_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
         if np.mean(scores_window)>=200.0:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_dqn.pth')
+            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_.pth')
             break
     return scores
 
