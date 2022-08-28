@@ -122,8 +122,8 @@ def train_model(model, batch_size, patience, n_epochs):
             # forward pass: compute predicted outputs by passing inputs to the model
             output,_,_  = model(data)
             # calculate the loss
-            # loss = ((data - output)**2).mean()
-            loss = ((data - output)**2).sum()
+            loss = ((data - output)**2).mean()
+            # loss = ((data - output)**2).sum()
             # backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
             # perform a single optimization step (parameter update)
@@ -143,8 +143,8 @@ def train_model(model, batch_size, patience, n_epochs):
                 data = data.view(-1, input_size)
                 output,_,_ = model(data)
                 # calculate the loss
-                loss = ((data - output)**2).sum()
-                # loss = ((data - output)**2).mean()
+                # loss = ((data - output)**2).sum()
+                loss = ((data - output)**2).mean()
                 # record validation loss
                 valid_losses.append(loss.item())
 
