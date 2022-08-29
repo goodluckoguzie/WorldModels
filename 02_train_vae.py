@@ -64,11 +64,11 @@ def flating_obs_data(data):
     return imgs
 
 obs_data = flating_obs_data(train_dataset)
-# obs_data = utility.normalised(obs_data)
+obs_data = utility.normalised(obs_data)
 train_obs_data = VAE_Dataset(obs_data)
 
 val_obs_data = flating_obs_data(val_dataset)
-# val_obs_data = utility.normalised(val_obs_data)
+val_obs_data = utility.normalised(val_obs_data)
 val_obs_data = VAE_Dataset(obs_data)
 
 # train_obs_data = VAE_Dataset( utility.normalised(flating_obs_data(train_dataset)))
