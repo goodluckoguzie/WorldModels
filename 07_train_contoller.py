@@ -21,8 +21,8 @@ from gym import spaces
 import cv2
 import numpy as np
 import math
-from ENVIRONMENT import sOcnavenv
-from ENVIRONMENT.sOcnavenv import SocNavEnv
+from ENVIRONMENT import Socnavenv
+from ENVIRONMENT.Socnavenv import SocNavEnv
 from tqdm import tqdm
 from UTILITY import utility 
 

@@ -7,14 +7,13 @@ import os, time, datetime
 from os.path import join
 import time
 import numpy as np
-from ENVIRONMENT.socnavenv import SocNavEnv
+from ENVIRONMENT.Socnavenv import SocNavEnv
 import random
 import os.path
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 import matplotlib.pyplot as plt
 import argparse
 time_steps = 200
-
 
 parser = argparse.ArgumentParser("number episodes asigning")
 parser.add_argument('--episodes', type=int,
@@ -44,6 +43,7 @@ class Rollout():
         start_time = time.time()
         while s < self.num_episodes_to_record:
             obs_sequence = []
+            nxt_obs_sequence = []
             action_sequence = []
             reward_sequence= []
             done_sequence = []
@@ -51,24 +51,26 @@ class Rollout():
             
             prev_action = None
             for t in range(time_steps):
-                #env.render()
+                env.render()
                 action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
-                obs, reward, done, _ = env.step(action)
+                nxt_obs, reward, done, _ = env.step(action)
                 prev_action = action 
                 action = torch.from_numpy(action).float()
                 obs = torch.from_numpy(obs).float()
                 obs_sequence.append(obs)
+                nxt_obs_sequence.append(nxt_obs)
                 action_sequence.append(action)
                 reward_sequence.append(reward)
                 done_sequence.append(done)
-        
+                obs = nxt_obs  
+
                 t+=1
                 if done:
         
                     print("Episode [{}/{}] finished after {} timesteps".format(s + 1, self.num_episodes_to_record, t), flush=True)
                     obs = env.reset()
                     break
-            self.data_dic[s] = {"obs_sequence":obs_sequence, "action_sequence":action_sequence, 
+            self.data_dic[s] = {"obs_sequence":obs_sequence,"nxt_obs_sequence":nxt_obs_sequence, "action_sequence":action_sequence, 
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
         if self.mode == 'train':
@@ -80,9 +82,9 @@ class Rollout():
        
        
         
-    #     end_time = time.time()-start_time
-    #     times = str(datetime.timedelta(seconds=end_time)).split(".")
-    #     print('Finished in {0}'.format(times[0]))
+    # #     end_time = time.time()-start_time
+    # #     times = str(datetime.timedelta(seconds=end_time)).split(".")
+    # #     print('Finished in {0}'.format(times[0]))
         
     # def pad_tensor(self, tensor, pad):
     #     pad_size = pad - tensor.size(0)

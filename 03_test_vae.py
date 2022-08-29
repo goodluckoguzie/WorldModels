@@ -12,8 +12,8 @@ from gym import spaces
 import cv2
 import numpy as np
 import math
-from ENVIRONMENT import socnavenv
-from ENVIRONMENT.socnavenv import SocNavEnv
+from ENVIRONMENT import Socnavenv_output
+from ENVIRONMENT.Socnavenv_output import SocNavEnv
 #from draw_socnavenv import SocNavEnv
 from tqdm import tqdm
 import  UTILITY.utility as utility

@@ -7,8 +7,8 @@ import random
 import gym
 import cv2
 import numpy as np
-from ENVIRONMENT import socnavenv
-from ENVIRONMENT.socnavenv import SocNavEnv
+from ENVIRONMENT import Socnavenv_output
+from ENVIRONMENT.Socnavenv_output import SocNavEnv
 from tqdm import tqdm
 from UTILITY import utility
 from UTILITY.utility import transform_processed_observation_into_raw

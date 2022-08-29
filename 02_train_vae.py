@@ -64,11 +64,11 @@ def flating_obs_data(data):
     return imgs
 
 obs_data = flating_obs_data(train_dataset)
-obs_data = utility.normalised(obs_data)
+# obs_data = utility.normalised(obs_data)
 train_obs_data = VAE_Dataset(obs_data)
 
 val_obs_data = flating_obs_data(val_dataset)
-val_obs_data = utility.normalised(val_obs_data)
+# val_obs_data = utility.normalised(val_obs_data)
 val_obs_data = VAE_Dataset(obs_data)
 
 # train_obs_data = VAE_Dataset( utility.normalised(flating_obs_data(train_dataset)))
@@ -89,6 +89,7 @@ val_loader   = DataLoader(val_obs_data,   batch_size=batch_size, shuffle=False)
 
 # model = Autoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
+model.load_state_dict(torch.load('./MODEL/vae_model.pt'))
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import os, time, datetime
 import time
 import numpy as np
-from ENVIRONMENT.socnavenv import SocNavEnv
+from ENVIRONMENT.Socnavenv import SocNavEnv
 from UTILITY import utility
 import random
 import os.path

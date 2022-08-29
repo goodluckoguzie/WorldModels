@@ -29,7 +29,7 @@ action_list = np.hstack((
     rotation_grid.reshape((advance_split*rotation_split, 1))))
 number_of_actions = action_list.shape[0]
 
-from ENVIRONMENT.sOcnavenv import SocNavEnv 
+from ENVIRONMENT.Socnavenv import SocNavEnv 
 env = SocNavEnv()
 print('State shape: ', env.observation_space.shape)
 print('Number of actions: ', env.action_space)
