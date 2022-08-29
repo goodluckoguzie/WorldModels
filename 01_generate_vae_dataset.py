@@ -51,7 +51,7 @@ class Rollout():
             
             prev_action = None
             for t in range(time_steps):
-                env.render()
+                # env.render()
                 action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
                 nxt_obs, reward, done, _ = env.step(action)
                 prev_action = action 
