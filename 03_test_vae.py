@@ -67,9 +67,9 @@ test_dataset = VAE_Dataset(obs_data)
 
 
 cv2.namedWindow("input", cv2.WINDOW_NORMAL) 
-cv2.resizeWindow("input", int(socnavenv.RESOLUTION_VIEW*0.5), int(socnavenv.RESOLUTION_VIEW*0.5))
+cv2.resizeWindow("input", int(Socnavenv_output.RESOLUTION_VIEW*0.5), int(Socnavenv_output.RESOLUTION_VIEW*0.5))
 cv2.namedWindow("output", cv2.WINDOW_NORMAL) 
-cv2.resizeWindow("output", int(socnavenv.RESOLUTION_VIEW*0.5), int(socnavenv.RESOLUTION_VIEW*0.5))
+cv2.resizeWindow("output", int(Socnavenv_output.RESOLUTION_VIEW*0.5), int(Socnavenv_output.RESOLUTION_VIEW*0.5))
 
 
 # load your model architecture/module
@@ -87,8 +87,7 @@ def code_and_decode(model, data):
     data = Variable(data, requires_grad=False).to(device)
     with torch.no_grad():
         output,_,_  = model(data)
-        output = output.cpu()
-        
+        output = output.cpu()        
     return output 
 
 for i in range(len(test_dataset)):
