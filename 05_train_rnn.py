@@ -23,7 +23,7 @@ actions = 2
 hiddens = 256
 epochs = args.epochs
 train_window = 1#0 
-batch_size = 64
+batch_size = 256
 timestep = 200
 num_layers = 2
 
