@@ -17,7 +17,7 @@ parser.add_argument('--epochs', type=int, help="epochs")
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-reward = 0
+n_reward = 1
 latents = 31
 actions = 2
 hiddens = 256
@@ -52,7 +52,7 @@ class MDN_Dataset(torch.utils.data.Dataset):
         obs = utility.normalised(obs)# normalise our observation data
         action = data['action_sequence']
         reward = data['reward_sequence']
-        return (action, obs,reward)
+        return (obs,action, reward)
 
 
 train_dataset = MDN_Dataset(train_dat)
@@ -64,7 +64,7 @@ val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size,
 l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
 # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-rnn = LSTM_reward(latents, actions,reward, hiddens,num_layers).to(device)
+rnn = LSTM_reward(latents, actions,n_reward, hiddens,num_layers).to(device)
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
 def create_inout_sequences(input_data,action_data, reward_data,tw):
@@ -114,7 +114,7 @@ def train_model(model, batch_size, patience, n_epochs):
             w = 0                                                                    # next shift the sliding window a step ahead now our label is the 12th timestep
             # for current_timestep, nxt_timestep,action,_ in train_inout_seq:
                 
-            for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:    
+            for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:   
                 # we have 200 timesteps in an episode . 
                 action = action.to(device)
                 current_timestep = current_timestep.to(device)
