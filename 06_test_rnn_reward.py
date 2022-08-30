@@ -12,7 +12,7 @@ from ENVIRONMENT.Socnavenv_output import SocNavEnv
 from tqdm import tqdm
 from UTILITY import utility
 from UTILITY.utility import transform_processed_observation_into_raw
-from RNN.RNN import LSTM,RNN
+from RNN.RNN import LSTM_reward,RNN
 from torch.autograd import Variable
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 
@@ -22,14 +22,14 @@ args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # dataset = torch.load('./data/saved_rnn_rollout_test.pt')
 test_data = torch.load('./data/saved_vae_rollout_test.pt')
-
+n_reward  = 1
 num_layers = 2
 latents = 31
 actions = 2
 hiddens = 256
 batch_size = 1
 timestep = 200
-train_window = 1#0 # our sliding window value
+train_window = 10 # our sliding window value
 
 class MDN_Dataset(torch.utils.data.Dataset):
     def __init__(self, MDN_data):
@@ -40,32 +40,35 @@ class MDN_Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         data = self.MDN_data[idx]
         obs = data['obs_sequence']
-        obs = utility.normalised(obs)
+        obs = utility.normalised(obs)# normalise our observation data
         action = data['action_sequence']
+        reward = data['reward_sequence']
+        return (obs,action, reward)
 
-        #reward = data['reward_sequence']
-        return (action, obs)
 
-
-def create_inout_sequences(input_data,action_data, tw):
+def create_inout_sequences(input_data,action_data, reward_data,tw):
     inout_seq = []
-    for i in range(timestep-tw):#the timestep is gotten from the extracted data
-        train_seq = input_data[:,i:i+tw,:] #get the 1 to 10 , label is the 11th - get 2 to 11 label 12th .....
+    for i in range(timestep-tw):#the timestep is gotten from the extracted data this must tally with that of extract_data_for_rnn.py
+        train_seq = input_data[:,i:i+tw,:]
         train_label = input_data[:,i+tw:i+tw+1,:]
 
         action_seq = action_data[:,i:i+tw,:]
         action_label = action_data[:,i+tw:i+tw+1,:]
-        inout_seq.append((train_seq ,train_label,action_seq,action_label))
+
+        reward_seq = reward_data[:,i:i+tw,:]
+        reward_label = reward_data[:,i+tw:i+tw+1,:]
+        inout_seq.append((train_seq ,train_label,action_seq,action_label,reward_seq,reward_label))   
+
     return inout_seq
 
 
 dataset = fit_dataset_to_rnn(test_data)
 
 test_dataset = MDN_Dataset(dataset)
-train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+rnn = LSTM_reward(latents, actions,n_reward, hiddens,num_layers).to(device)
 # rnn = RNN(latents, actions, hiddens).to(device)
-rnn.load_state_dict(torch.load("./MODEL/model_n.pt"))
+rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 
 
@@ -81,19 +84,22 @@ def code_and_decode(model, data):
 
     
 rnn.eval()
-for batch_idx, (action, obs) in enumerate(train_dataloader):
+for batch_idx, (obs,action, reward) in enumerate(test_dataloader):# get a batch of timesteps seperated by episodes
+
+# for batch_idx, (action, obs) in enumerate(train_dataloader):
 
     # print(batch_idx)
     # print(obs.shape)
 
-    train_inout_seq = create_inout_sequences(obs, action, train_window) #get the action data in batches along with the expected true value
-    for current_timestep, nxt_timestep,action,_ in train_inout_seq:
+    train_inout_seq = create_inout_sequences(obs, action,reward, train_window)#get the action data in batches along with the expected true value
+    for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:
 
         action = action.to(device) 
         current_timestep = current_timestep.to(device) 
-        nxt_timestep = nxt_timestep.to(device) 
+        nxt_timestep = nxt_timestep.to(device)
+        reward = reward.type(torch.cuda.FloatTensor)
 
-        states = torch.cat([current_timestep, action], dim=-1)
+        states = torch.cat([current_timestep, action,reward], dim=-1)
 
         predicted_nxt_timestep, _ = rnn(states)
         # predicted_nxt_timestep, _,_ = rnn(states)
