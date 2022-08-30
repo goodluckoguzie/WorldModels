@@ -51,7 +51,6 @@ class MDN_Dataset(torch.utils.data.Dataset):
         obs = data['obs_sequence']
         obs = utility.normalised(obs)# normalise our observation data
         action = data['action_sequence']
-
         #reward = data['reward_sequence']
         return (action, obs)
 

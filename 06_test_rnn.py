@@ -63,8 +63,8 @@ dataset = fit_dataset_to_rnn(test_data)
 
 test_dataset = MDN_Dataset(dataset)
 train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-rnn = RNN(latents, actions, hiddens).to(device)
+rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+# rnn = RNN(latents, actions, hiddens).to(device)
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 
@@ -95,8 +95,8 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
 
         states = torch.cat([current_timestep, action], dim=-1)
 
-        # predicted_nxt_timestep, _ = rnn(states)
-        predicted_nxt_timestep, _,_ = rnn(states)
+        predicted_nxt_timestep, _ = rnn(states)
+        # predicted_nxt_timestep, _,_ = rnn(states)
 
         current_timestep = current_timestep
         nxt_timestep = nxt_timestep
