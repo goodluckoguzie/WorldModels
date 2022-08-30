@@ -1,7 +1,7 @@
 import numpy 
 import torch
 import torch.nn as nn
-from RNN.RNN import LSTM,RNN
+from RNN.RNN import LSTM_reward,RNN
 import time
 import os, time, datetime
 import matplotlib.pyplot as plt
@@ -17,12 +17,12 @@ parser.add_argument('--epochs', type=int, help="epochs")
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+reward = 0
 latents = 31
 actions = 2
 hiddens = 256
 epochs = args.epochs
-train_window = 1#0 
+train_window = 10 
 batch_size = 64
 timestep = 200
 num_layers = 2
@@ -51,8 +51,9 @@ class MDN_Dataset(torch.utils.data.Dataset):
         obs = data['obs_sequence']
         obs = utility.normalised(obs)# normalise our observation data
         action = data['action_sequence']
-        #reward = data['reward_sequence']
-        return (action, obs)
+        reward = data['reward_sequence']
+        return (action, obs,reward)
+
 
 train_dataset = MDN_Dataset(train_dat)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)#load our training dataset 
@@ -62,11 +63,11 @@ val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size,
 
 l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = LSTM_reward(latents, actions,reward, hiddens,num_layers).to(device)
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
-def create_inout_sequences(input_data,action_data, tw):
+def create_inout_sequences(input_data,action_data, reward_data,tw):
     inout_seq = []
     for i in range(timestep-tw):#the timestep is gotten from the extracted data this must tally with that of extract_data_for_rnn.py
         train_seq = input_data[:,i:i+tw,:]
@@ -74,7 +75,11 @@ def create_inout_sequences(input_data,action_data, tw):
 
         action_seq = action_data[:,i:i+tw,:]
         action_label = action_data[:,i+tw:i+tw+1,:]
-        inout_seq.append((train_seq ,train_label,action_seq,action_label))
+
+        reward_seq = reward_data[:,i:i+tw,:]
+        reward_label = reward_data[:,i+tw:i+tw+1,:]
+        inout_seq.append((train_seq ,train_label,action_seq,action_label,reward_seq,reward_label))   
+
     return inout_seq
 
 def train_model(model, batch_size, patience, n_epochs):
@@ -98,21 +103,27 @@ def train_model(model, batch_size, patience, n_epochs):
         # train the model #
         ###################
         model.train() #activate model for training
-        for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
+        for batch_idx, (obs,action, reward) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
+
+        # for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
             # print("batch_idx")
             # print(batch_idx)
+            train_inout_seq = create_inout_sequences(obs, action,reward, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
 
-            train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
+            # train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
             w = 0                                                                    # next shift the sliding window a step ahead now our label is the 12th timestep
-            for current_timestep, nxt_timestep,action,_ in train_inout_seq:
+            # for current_timestep, nxt_timestep,action,_ in train_inout_seq:
                 
-                
+            for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:    
                 # we have 200 timesteps in an episode . 
                 action = action.to(device)
                 current_timestep = current_timestep.to(device)
                 optimizer.zero_grad()  
                 nxt_timestep = nxt_timestep.to(device)
-                states = torch.cat([current_timestep, action], dim=-1) 
+                reward = reward.type(torch.cuda.FloatTensor)
+                # states = torch.cat([current_timestep, action], dim=-1) 
+                states = torch.cat([current_timestep, action,reward], dim=-1)
+                
                 # forward pass: compute predicted outputs by passing inputs to the model
                 predicted_nxt_timestep, _= rnn(states)
                 # predicted_nxt_timestep, _,_ = rnn(states)
@@ -128,21 +139,30 @@ def train_model(model, batch_size, patience, n_epochs):
         # validate the model #
         ######################
         model.eval() # activate our model for evaluation
-        for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
+        for batch_idx, (obs,action, reward) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
+
+        # for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
             # print("batch_idx")
             # print(batch_idx)
 
-            train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
+            # train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
+            train_inout_seq = create_inout_sequences(obs, action,reward, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
+
             w = 0                                                                   # next shift the sliding window a step ahead now our label is the 12th timestep
-            for current_timestep, nxt_timestep,action,_ in train_inout_seq:
+            # for current_timestep, nxt_timestep,action,_ in train_inout_seq:
+            for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:    
 
                 # we have 200 timesteps in an episode . 
                 action = action.to(device)
-                current_timestep = current_timestep.to(device) 
+                current_timestep = current_timestep.to(device)
+                optimizer.zero_grad()  
                 nxt_timestep = nxt_timestep.to(device)
-                states = torch.cat([current_timestep, action], dim=-1) 
+                reward = reward.type(torch.cuda.FloatTensor)
+                # states = torch.cat([current_timestep, action], dim=-1) 
+                states = torch.cat([current_timestep, action,reward], dim=-1)
+                
                 # forward pass: compute predicted outputs by passing inputs to the model
-                predicted_nxt_timestep, _ = rnn(states)
+                predicted_nxt_timestep, _= rnn(states)
                 # predicted_nxt_timestep, _,_ = rnn(states)
 
                 predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
