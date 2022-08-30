@@ -22,7 +22,7 @@ latents = 31
 actions = 2
 hiddens = 256
 epochs = args.epochs
-train_window = 10 
+train_window = 1#0 
 batch_size = 64
 timestep = 200
 num_layers = 2
@@ -241,7 +241,6 @@ fig.savefig('loss_plot.png', bbox_inches='tight')
 #plt.ylabel('Loss')
 #plt.legend()
 #plt.show(
-
 
 
 
