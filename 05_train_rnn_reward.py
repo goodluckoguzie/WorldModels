@@ -179,7 +179,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.sum(train_losses)/len(train_dataset)/Epochs
+        train_loss = (np.sum(train_losses)/len(train_dataset))/Epochs
         valid_loss = np.sum(valid_losses)/len(train_dataset)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
