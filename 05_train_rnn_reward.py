@@ -65,6 +65,8 @@ l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
 # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 rnn = LSTM_reward(latents, actions,n_reward, hiddens,num_layers).to(device)
+# rnn.load_state_dict(torch.load("./MODEL/model.pt"))
+
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
 def create_inout_sequences(input_data,action_data, reward_data,tw):
@@ -113,27 +115,29 @@ def train_model(model, batch_size, patience, n_epochs):
             # train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
             w = 0                                                                    # next shift the sliding window a step ahead now our label is the 12th timestep
             # for current_timestep, nxt_timestep,action,_ in train_inout_seq:
-                
-            for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:   
-                # we have 200 timesteps in an episode . 
-                action = action.to(device)
-                current_timestep = current_timestep.to(device)
-                optimizer.zero_grad()  
-                nxt_timestep = nxt_timestep.to(device)
-                reward = reward.type(torch.cuda.FloatTensor)
-                # states = torch.cat([current_timestep, action], dim=-1) 
-                states = torch.cat([current_timestep, action,reward], dim=-1)
-                
-                # forward pass: compute predicted outputs by passing inputs to the model
-                predicted_nxt_timestep, _= rnn(states)
-                # predicted_nxt_timestep, _,_ = rnn(states)
+            Epochs = 10
+            for i in range(Epochs):# we train our model per window slides
 
-                predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
-                # calculate the loss
-                loss_rnn = l1(predicted_nxt_timestep, nxt_timestep)
-                loss_rnn.backward()
-                optimizer.step()
-                train_losses.append(loss_rnn.item())
+                for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:   
+                    # we have 200 timesteps in an episode . 
+                    action = action.to(device)
+                    current_timestep = current_timestep.to(device)
+                    optimizer.zero_grad()  
+                    nxt_timestep = nxt_timestep.to(device)
+                    reward = reward.type(torch.cuda.FloatTensor)
+                    # states = torch.cat([current_timestep, action], dim=-1) 
+                    states = torch.cat([current_timestep, action,reward], dim=-1)
+                    
+                    # forward pass: compute predicted outputs by passing inputs to the model
+                    predicted_nxt_timestep, _= rnn(states)
+                    # predicted_nxt_timestep, _,_ = rnn(states)
+
+                    predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
+                    # calculate the loss
+                    loss_rnn = l1(predicted_nxt_timestep, nxt_timestep)
+                    loss_rnn.backward()
+                    optimizer.step()
+                    train_losses.append(loss_rnn.item())
 
         ######################    
         # validate the model #
@@ -175,7 +179,7 @@ def train_model(model, batch_size, patience, n_epochs):
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.sum(train_losses)/len(train_dataset)
+        train_loss = np.sum(train_losses)/len(train_dataset)/Epochs
         valid_loss = np.sum(valid_losses)/len(train_dataset)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
@@ -201,7 +205,7 @@ def train_model(model, batch_size, patience, n_epochs):
             print("Early stopping")
             break
     # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('./MODEL/model.pt'))
+    model.load_state_dict(torch.load('./MODEL/model_n.pt'))
 
     return  model, avg_train_losses, avg_valid_losses
 

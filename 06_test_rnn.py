@@ -65,7 +65,7 @@ test_dataset = MDN_Dataset(dataset)
 train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 # rnn = RNN(latents, actions, hiddens).to(device)
-rnn.load_state_dict(torch.load("./MODEL/model_n.pt"))
+rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 
 
