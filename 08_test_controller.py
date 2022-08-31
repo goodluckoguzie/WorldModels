@@ -49,24 +49,22 @@ from VAE.vae import VariationalAutoencoder
 env = SocNavEnv()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-z_dim = 31
+z_dim = 62
 input_size = 31
 vae = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 vae.load_state_dict(torch.load("./MODEL/vae_model.pt"))
 vae.eval()
 vae.float()
-num_layers = 2
 
+
+num_layers = 2
 latents = 31
 actions = 2
 hiddens = 256
-gaussians = 5
 epochs = 10
 actions = 2
 action_rnn = 2
-latents = 31
-hiddens = 256
-reward = 1
+
 advance_split = 5
 rotation_split = 5
 
@@ -81,16 +79,10 @@ number_of_actions = action_list.shape[0]
 
 
 total_episodes = 100
-
-
-# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-rnn = RNN(latents, actions, hiddens).to(device)
+num_layers = 2
+rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 rnn = rnn.float()
-# #rnn = Rnn(latents, actions,reward, hiddens).to(device)
-# #rnn = LSTM(latents, actions, hiddens).to(device)
-# rnn = RNN(latents, action_rnn, hiddens).to(device)
-# rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
 rnn.eval()
 
 
@@ -130,7 +122,7 @@ controller.load_state_dict(torch.load('./MODEL/controller.pt'))
 def evaluate_control_model(rnn, controller, device):
    
   
-    time_steps = 50
+    time_steps = 200
     s = 0
     cumulative = 0
     cumulative_ = 0
@@ -143,30 +135,27 @@ def evaluate_control_model(rnn, controller, device):
             action = np.atleast_2d(action)
             action = torch.from_numpy(action).to(device)
         
-            reward_ = torch.zeros(1, 1).to(device)
             hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
+
             prev_action = None
             for t in range(time_steps): 
                 env.render()
                 obs = torch.from_numpy(obs)
-
-                _, mu, log_var = vae(obs.unsqueeze(0).to(device))
-                sigma = log_var.exp()
-                eps = torch.randn_like(sigma)
-                z = eps.mul(sigma).add_(mu)
+                obs = utility.normalised(obs.unsqueeze(0))
+                obs = torch.from_numpy(obs)
+                # sigma = log_var.exp()
+                # eps = torch.randn_like(sigma)
+                # z = eps.mul(sigma).add_(mu)
+                z,_,_  = vae(obs.unsqueeze(0).to(device))
                 unsqueezed_action = action.unsqueeze(0)
                 unsqueezed_z = z.unsqueeze(0)
-                # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
-                # rnn_input = torch.cat((z, action, reward_), -1).float()
-                # out_full, hidden = mdrnn(rnn_input, hidden)
+
                 rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-                _, hidden,_ = rnn(rnn_input)
+                _, hidden = rnn(rnn_input)
                 # _,hidden,_ = rnn(rnn_input)            
                 c_in = torch.cat((z, hidden[0].unsqueeze(0)),-1)
                 controller.to(device)
                 action_distribution = controller(c_in)
-                #print(action_distribution)
-                #action = action.detach().to('cpu')
                 
                 max_action = np.argmax(action_distribution)            
                 action = action_list[max_action]

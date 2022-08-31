@@ -37,18 +37,18 @@ from VAE.vae import VariationalAutoencoder
 time_steps = 200
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-z_dim = 31
+z_dim = 62
 input_size = 31
 vae = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 vae.load_state_dict(torch.load("./MODEL/vae_model.pt"))
 vae.eval()
 vae.float()
-
+num_layers = 2
 latents = 31
 actions = 2
 hiddens = 256
 gaussians = 5
-epochs = 10
+epochs = 1
 actions = 2
 
 advance_split = 5
@@ -67,7 +67,8 @@ number_of_actions = action_list.shape[0]
 num_layers = 2
 # rnn = MDN_RNN(latents, actions, hiddens, gaussians).to(device)
 # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = RNN(latents, actions, hiddens).to(device)
+rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 
 def flatten_parameters(params):
     return torch.cat([p.detach().view(-1) for p in params], dim=0).to('cpu').numpy()
@@ -125,6 +126,7 @@ def evaluate_control_model(vae, rnn, controller, device):
 
 
         obs = env.reset()
+        
         #action = torch.zeros(1, actions).to(device)
         action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
         action = np.atleast_2d(action)
@@ -136,11 +138,15 @@ def evaluate_control_model(vae, rnn, controller, device):
         for t in range(time_steps): 
             #env.render()
             obs = torch.from_numpy(obs)
+            obs = utility.normalised(obs.unsqueeze(0))
+            obs = torch.from_numpy(obs)
 
-            _, mu, log_var = vae(obs.unsqueeze(0).to(device))
-            sigma = log_var.exp()
-            eps = torch.randn_like(sigma)
-            z = eps.mul(sigma).add_(mu)
+
+            # _, mu, log_var = vae(obs.unsqueeze(0).to(device))
+            # sigma = log_var.exp()
+            # eps = torch.randn_like(sigma)
+            # z = eps.mul(sigma).add_(mu)
+            z,_,_  = vae(obs.unsqueeze(0).to(device))
             
             unsqueezed_action = action.unsqueeze(0)
             unsqueezed_z = z.unsqueeze(0)
@@ -148,8 +154,10 @@ def evaluate_control_model(vae, rnn, controller, device):
             # rnn_input = torch.cat((z, action, reward_), -1).float()
             # out_full, hidden = mdrnn(rnn_input, hidden)
             rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+            
             # _, hidden = rnn(rnn_input)
-            _,hidden,_ = rnn(rnn_input)            
+            _,hidden = rnn(rnn_input)   
+                     
             c_in = torch.cat((z, hidden[0].unsqueeze(0)),-1)
             controller.to(device)
             action_distribution = controller(c_in)

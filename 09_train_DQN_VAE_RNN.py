@@ -13,8 +13,6 @@ from collections import deque, namedtuple
 
 # For visualization
 from gym.wrappers.monitoring import video_recorder
-from IPython.display import HTML
-from IPython import display 
 import glob
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -22,7 +20,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 from RNN.RNN import LSTM,RNN
 
 from VAE.vae import VariationalAutoencoder
-z_dim = 31
+z_dim = 62
 input_size = 31
 vae = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 vae.load_state_dict(torch.load("./MODEL/vae_model.pt"))
@@ -50,12 +48,8 @@ action_list = np.hstack((
 number_of_actions = action_list.shape[0]
 
 
-# rnn = MDN_RNN(latents, actions, hiddens, gaussians).to(device)
-# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# # rnn = RNN(latents, actions, hiddens).to(device)
-rnn = RNN(latents, actions, hiddens).to(device)
-# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# rnn = RNN(latents, actions, hiddens).to(device)
+num_layers = 2
+rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 rnn = rnn.float()
 # rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
@@ -292,10 +286,12 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
 
             state = torch.from_numpy(state)
 
-            _, mu, log_var = vae(state.unsqueeze(0).to(device))
-            sigma = log_var.exp()
-            eps = torch.randn_like(sigma)
-            z = eps.mul(sigma).add_(mu).squeeze(0)
+            # _, mu, log_var = vae(state.unsqueeze(0).to(device))
+            # sigma = log_var.exp()
+            # eps = torch.randn_like(sigma)
+            # z = eps.mul(sigma).add_(mu).squeeze(0)
+            z,_,_  = vae(state.unsqueeze(0).to(device))
+
             z = z.cpu().detach().numpy()
             z = np.atleast_2d(z)
             # z = utility.normalised(z)
@@ -305,13 +301,13 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
             # action = agent.act(state, episode)
             # action = agent.act(z, episode)
 
+
             z = torch.from_numpy(z.squeeze(0)).to(device)
 
 
 
             rnn_input = torch.cat([z, Discrete_to_continous_action], dim=-1).float()
-
-            _, hidden,_ = rnn(rnn_input.unsqueeze(0))
+            _, hidden = rnn(rnn_input.unsqueeze(0).unsqueeze(0))
 
             Concatenated_current_state = torch.cat((z.to(device), hidden[0]),-1).cpu().detach().numpy()
 
@@ -329,13 +325,14 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
             next_state_ = utility.normalised(next_state_)
             next_state_ = torch.from_numpy(next_state_)
 
-            _, mu, log_var = vae(next_state_.unsqueeze(0).to(device))
-            sigma = log_var.exp()
-            eps = torch.randn_like(sigma)
-            next_state_ = eps.mul(sigma).add_(mu).squeeze(0)
+            next_state_,_,_  = vae(next_state_.unsqueeze(0).to(device))
+            # _, mu, log_var = vae(next_state_.unsqueeze(0).to(device))
+            # sigma = log_var.exp()
+            # eps = torch.randn_like(sigma)
+            # next_state_ = eps.mul(sigma).add_(mu).squeeze(0)
             next_state_ = next_state_.cpu().detach().numpy()
             next_state_ = np.atleast_2d(next_state_)
-            # next_state_ = utility.normalised(next_state_)
+            next_state_ = utility.normalised(next_state_)
             next_state_ = torch.from_numpy(next_state_.squeeze(0)).to(device)
             
             Concatenated_next_state_ = torch.cat((next_state_.to(device), hidden[0]),-1).cpu().detach().numpy()
