@@ -29,7 +29,7 @@ actions = 2
 hiddens = 256
 batch_size = 1
 timestep = 200
-train_window = 10 # our sliding window value
+train_window = 1#0 # our sliding window value
 
 class MDN_Dataset(torch.utils.data.Dataset):
     def __init__(self, MDN_data):
