@@ -59,10 +59,12 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_s
 
 val_dataset = MDN_Dataset(val_dat)
 val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#load our validation dataset 
-
-l1 = nn.L1Loss()
+l1 = nn.MSELoss()
+# l1 = nn.CrossEntropyLoss()
+# l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
 rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+# rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
