@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_Reward
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 
@@ -96,7 +96,7 @@ def train_model(model, batch_size, patience, n_epochs):
     avg_valid_losses = [] 
     
     # initialize the early_stopping object
-    early_stopping = EarlyStopping(patience=patience, verbose=True)
+    early_stopping = EarlyStopping_Reward(patience=patience, verbose=True)
     # eval_losses = []
     # losses_rnn = []
     for epoch in range(1, n_epochs + 1):
