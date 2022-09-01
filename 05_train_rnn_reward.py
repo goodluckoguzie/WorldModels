@@ -63,13 +63,11 @@ val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size,
 
 # mean_abs_percentage_error(preds, target)
 # l1 = nn.L1Loss()
-MSELoss = nn.MSELoss()
+l1 = nn.MSELoss()
 # from torchmetrics import MeanAbsolutePercentageError
 # l1 = MeanAbsolutePercentageError().to(device)
 # l1 = nn.CrossEntropyLoss()
-L1Loss = nn.L1Loss()
-
-l1 = (MSELoss + L1Loss)/2
+# l = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
 # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 rnn = LSTM_reward(latents, actions,n_reward, hiddens,num_layers).to(device)
