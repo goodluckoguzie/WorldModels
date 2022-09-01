@@ -60,6 +60,8 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_s
 val_dataset = MDN_Dataset(val_dat)
 val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#load our validation dataset 
 l1 = nn.MSELoss()
+# from torchmetrics import MeanAbsolutePercentageError
+# l1 = MeanAbsolutePercentageError().to(device)
 # l1 = nn.CrossEntropyLoss()
 # l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)

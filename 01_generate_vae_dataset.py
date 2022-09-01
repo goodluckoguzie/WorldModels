@@ -7,7 +7,7 @@ import os, time, datetime
 from os.path import join
 import time
 import numpy as np
-from ENVIRONMENT.Socnavenv_output import SocNavEnv
+from ENVIRONMENT.Socnavenv import SocNavEnv
 import random
 import os.path
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -48,21 +48,24 @@ class Rollout():
             reward_sequence= []
             done_sequence = []
             obs = env.reset()
+            prev_reward = 0
+            reward = 0
             
             prev_action = None
             for t in range(time_steps):
                 # env.render()
                 action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
-                nxt_obs, reward, done, _ = env.step(action)
+                nxt_obs, nxt_reward, done, _ = env.step(action)
                 prev_action = action 
                 action = torch.from_numpy(action).float()
                 obs = torch.from_numpy(obs).float()
                 obs_sequence.append(obs)
-                nxt_obs_sequence.append(nxt_obs)
+                # nxt_obs_sequence.append(nxt_obs)
                 action_sequence.append(action)
                 reward_sequence.append(reward)
                 done_sequence.append(done)
-                obs = nxt_obs  
+                obs = nxt_obs
+                reward = nxt_reward  
 
                 t+=1
                 if done:
@@ -70,7 +73,7 @@ class Rollout():
                     print("Episode [{}/{}] finished after {} timesteps".format(s + 1, self.num_episodes_to_record, t), flush=True)
                     obs = env.reset()
                     break
-            self.data_dic[s] = {"obs_sequence":obs_sequence,"nxt_obs_sequence":nxt_obs_sequence, "action_sequence":action_sequence, 
+            self.data_dic[s] = {"obs_sequence":obs_sequence, "action_sequence":action_sequence, 
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
         if self.mode == 'train':
