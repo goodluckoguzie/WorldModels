@@ -65,7 +65,7 @@ l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
 # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 rnn = LSTM_reward(latents, actions,n_reward, hiddens,num_layers).to(device)
-# rnn.load_state_dict(torch.load("./MODEL/model.pt"))
+rnn.load_state_dict(torch.load("./MODEL/model_n.pt"))
 
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
@@ -106,6 +106,7 @@ def train_model(model, batch_size, patience, n_epochs):
         ###################
         model.train() #activate model for training
         for batch_idx, (obs,action, reward) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
+            print("batch_idx", batch_idx)
 
         # for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
             # print("batch_idx")
@@ -115,7 +116,7 @@ def train_model(model, batch_size, patience, n_epochs):
             # train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
             w = 0                                                                    # next shift the sliding window a step ahead now our label is the 12th timestep
             # for current_timestep, nxt_timestep,action,_ in train_inout_seq:
-            Epochs = 3
+            Epochs = 2
             for i in range(Epochs):# we train our model per window slides
                 print("sub_Epoch",i)
 
