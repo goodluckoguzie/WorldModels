@@ -115,8 +115,9 @@ def train_model(model, batch_size, patience, n_epochs):
             # train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
             w = 0                                                                    # next shift the sliding window a step ahead now our label is the 12th timestep
             # for current_timestep, nxt_timestep,action,_ in train_inout_seq:
-            Epochs = 5
+            Epochs = 3
             for i in range(Epochs):# we train our model per window slides
+                print("sub_Epoch",i)
 
                 for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:   
                     # we have 200 timesteps in an episode . 
