@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser("mode asigning")
 args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # dataset = torch.load('./data/saved_rnn_rollout_test.pt')
-test_data = torch.load('./data/saved_vae_rollout_test.pt')
+test_data = torch.load('./data/saved_vae_rollout_train.pt')
 
 num_layers = 2
 latents = 31
