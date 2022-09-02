@@ -66,7 +66,7 @@ l1 = nn.MSELoss()
 # l1 = nn.L1Loss()
 # rnn = RNN(latents, actions, hiddens).to(device)
 rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# rnn.load_state_dict(torch.load("./MODEL/model.pt"))
+# rnn.load_state_dict(torch.load("./MODEL/model1.pt"))
 
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 

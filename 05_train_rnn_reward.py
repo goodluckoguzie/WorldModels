@@ -213,7 +213,7 @@ def train_model(model, batch_size, patience, n_epochs):
             print("Early stopping")
             break
     # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('./MODEL/model_n.pt'))
+    model.load_state_dict(torch.load('./MODEL/model_n1.pt'))
 
     return  model, avg_train_losses, avg_valid_losses
 
