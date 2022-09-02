@@ -40,7 +40,7 @@ class MDN_Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         data = self.MDN_data[idx]
         obs = data['obs_sequence']
-        obs = utility.normalised(obs)
+        # obs = utility.normalised(obs)
         action = data['action_sequence']
 
         #reward = data['reward_sequence']
@@ -123,15 +123,15 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
             print("")
 
             current_timestep = np.atleast_2d(current_timestep)
-            current_timestep = utility.denormalised(current_timestep)
+            # current_timestep = utility.denormalised(current_timestep)
             current_timestep = current_timestep.flatten()
 
             nxt_timestep = np.atleast_2d(nxt_timestep)
-            nxt_timestep = utility.denormalised(nxt_timestep)
+            # nxt_timestep = utility.denormalised(nxt_timestep)
             nxt_timestep = nxt_timestep.flatten()
 
             predicted_nxt_timestep = np.atleast_2d(predicted_nxt_timestep)
-            predicted_nxt_timestep = utility.denormalised(predicted_nxt_timestep)
+            # predicted_nxt_timestep = utility.denormalised(predicted_nxt_timestep)
             predicted_nxt_timestep = predicted_nxt_timestep.flatten()
 
             print("output_sample")

@@ -49,7 +49,7 @@ class MDN_Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         data = self.MDN_data[idx]
         obs = data['obs_sequence']
-        obs = utility.normalised(obs)# normalise our observation data
+        # obs = utility.normalised(obs)# normalise our observation data
         action = data['action_sequence']
         #reward = data['reward_sequence']
         return (action, obs)

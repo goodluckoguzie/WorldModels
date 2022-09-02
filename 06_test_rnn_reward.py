@@ -79,6 +79,7 @@ def code_and_decode(model, data):
     with torch.no_grad():
         output,_ = model(data)
         output = output.cpu()
+        print("ddddddddddddddddddddddddddddddddddddd",output)
         
     return output 
 
@@ -129,15 +130,15 @@ for batch_idx, (obs,action, reward) in enumerate(test_dataloader):# get a batch 
             print("")
 
             current_timestep = np.atleast_2d(current_timestep)
-            current_timestep = utility.denormalised(current_timestep)
+            # current_timestep = utility.denormalised(current_timestep)
             current_timestep = current_timestep.flatten()
 
             nxt_timestep = np.atleast_2d(nxt_timestep)
-            nxt_timestep = utility.denormalised(nxt_timestep)
+            # nxt_timestep = utility.denormalised(nxt_timestep)
             nxt_timestep = nxt_timestep.flatten()
 
             predicted_nxt_timestep = np.atleast_2d(predicted_nxt_timestep)
-            predicted_nxt_timestep = utility.denormalised(predicted_nxt_timestep)
+            # predicted_nxt_timestep = utility.denormalised(predicted_nxt_timestep)
             predicted_nxt_timestep = predicted_nxt_timestep.flatten()
 
             print("output_sample")
