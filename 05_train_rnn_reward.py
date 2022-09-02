@@ -23,7 +23,7 @@ actions = 2
 hiddens = 256
 epochs = args.epochs
 train_window = 10 
-batch_size = 1024
+batch_size = 2048
 timestep = 200
 num_layers = 2
 
@@ -112,7 +112,7 @@ def train_model(model, batch_size, patience, n_epochs):
         ###################
         model.train() #activate model for training
         for batch_idx, (obs,action, reward) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
-            print("batch_idx", batch_idx)
+            # print("batch_idx", batch_idx)
 
         # for batch_idx, (action, obs) in enumerate(train_dataloader):# get a batch of timesteps seperated by episodes
             # print("batch_idx")
@@ -124,7 +124,7 @@ def train_model(model, batch_size, patience, n_epochs):
             # for current_timestep, nxt_timestep,action,_ in train_inout_seq:
             Epochs = 2
             for i in range(Epochs):# we train our model per window slides
-                print("sub_Epoch",i)
+                # print("sub_Epoch",i)
 
                 for current_timestep, nxt_timestep,action,_,reward, nxt_reward in train_inout_seq:   
                     # we have 200 timesteps in an episode . 
