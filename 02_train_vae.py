@@ -66,11 +66,11 @@ def flating_obs_data(data):
 obs_data = flating_obs_data(train_dataset)
 import random
 random.shuffle(obs_data)
-obs_data = utility.normalised(obs_data)
+# obs_data = utility.normalised(obs_data)
 train_obs_data = VAE_Dataset(obs_data)
 
 val_obs_data = flating_obs_data(val_dataset)
-val_obs_data = utility.normalised(val_obs_data)
+# val_obs_data = utility.normalised(val_obs_data)
 val_obs_data = VAE_Dataset(obs_data)
 
 # train_obs_data = VAE_Dataset( utility.normalised(flating_obs_data(train_dataset)))
@@ -91,7 +91,7 @@ val_loader   = DataLoader(val_obs_data,   batch_size=batch_size, shuffle=False)
 
 # model = Autoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-model.load_state_dict(torch.load('./MODEL/vae_model.pt'))
+# model.load_state_dict(torch.load('./MODEL/vae_model1.pt'))
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 
@@ -181,7 +181,7 @@ def train_model(model, batch_size, patience, n_epochs):
             break
         
     # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('./MODEL/vae_model.pt'))
+    model.load_state_dict(torch.load('./MODEL/vae_model1.pt'))
 
     return  model, avg_train_losses, avg_valid_losses
 
