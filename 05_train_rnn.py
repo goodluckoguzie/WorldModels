@@ -64,8 +64,8 @@ l1 = nn.MSELoss()
 # l1 = MeanAbsolutePercentageError().to(device)
 # l1 = nn.CrossEntropyLoss()
 # l1 = nn.L1Loss()
-# rnn = RNN(latents, actions, hiddens).to(device)
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 # rnn.load_state_dict(torch.load("./MODEL/model1.pt"))
 
 optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
@@ -119,8 +119,8 @@ def train_model(model, batch_size, patience, n_epochs):
                 nxt_timestep = nxt_timestep.to(device)
                 states = torch.cat([current_timestep, action], dim=-1) 
                 # forward pass: compute predicted outputs by passing inputs to the model
-                predicted_nxt_timestep, _= rnn(states)
-                # predicted_nxt_timestep, _,_ = rnn(states)
+                # predicted_nxt_timestep, _= rnn(states)
+                predicted_nxt_timestep, _,_ = rnn(states)
 
                 predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                 # calculate the loss
@@ -147,8 +147,8 @@ def train_model(model, batch_size, patience, n_epochs):
                 nxt_timestep = nxt_timestep.to(device)
                 states = torch.cat([current_timestep, action], dim=-1) 
                 # forward pass: compute predicted outputs by passing inputs to the model
-                predicted_nxt_timestep, _ = rnn(states)
-                # predicted_nxt_timestep, _,_ = rnn(states)
+                # predicted_nxt_timestep, _ = rnn(states)
+                predicted_nxt_timestep, _,_ = rnn(states)
 
                 predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                 # calculate the loss
@@ -186,7 +186,7 @@ def train_model(model, batch_size, patience, n_epochs):
             print("Early stopping")
             break
     # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('./MODEL/model.pt'))
+    model.load_state_dict(torch.load('./MODEL/model_rnn.pt'))
 
     return  model, avg_train_losses, avg_valid_losses
 
