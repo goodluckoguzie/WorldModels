@@ -23,7 +23,7 @@ from VAE.vae import VariationalAutoencoder
 z_dim = 62
 input_size = 31
 vae = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-vae.load_state_dict(torch.load("./MODEL/vae_model.pt"))
+vae.load_state_dict(torch.load("./MODEL/vae_model1.pt"))
 vae.eval()
 vae.float()
 latents = 31
@@ -48,14 +48,16 @@ action_list = np.hstack((
 number_of_actions = action_list.shape[0]
 
 
-num_layers = 2
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+# num_layers = 2
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = RNN(latents, actions, hiddens).to(device)
+
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 rnn = rnn.float()
 # rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
 rnn.eval()
 
-from ENVIRONMENT.Socnavenv import SocNavEnv 
+from ENVIRONMENT.Socnavenv_output import SocNavEnv 
 env = SocNavEnv()
 
 # from ENVIRONMENT.sOcnavenv import DiscreteSocNavEnv 
@@ -272,17 +274,25 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
     episode = eps_start                    # initialize epsilon
     for i_episode in range(1, n_episodes+1):
         state = env.reset()
+        z,_,_  = vae(torch.from_numpy(state).unsqueeze(0).to(device))
         # import random
         action = random.randint(0,24)
-        Discrete_to_continous_action = action_list[action]
-        Discrete_to_continous_action = torch.from_numpy(Discrete_to_continous_action).to(device)
+        next_hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
+        Concatenated_current_state = torch.cat((z.to(device), next_hidden[0]),-1).cpu().detach().numpy()
+        action = agent.act(Concatenated_current_state, episode)
+
+        Discrete_to_contin_action = action_list[action]
+        Discrete_to_continous_action = torch.from_numpy(Discrete_to_contin_action).to(device)
+        state, reward, done, _ = env.step(Discrete_to_continous_action.cpu())
+
         # action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
-    
+
         score = 0
-        for t in range(max_t):
+        # for t in range(max_t):
+        while not done:
             #env.render()
             state = np.atleast_2d(state)
-            state = utility.normalised(state)
+            # state = utility.normalised(state)
 
             state = torch.from_numpy(state)
 
@@ -291,30 +301,28 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
             # eps = torch.randn_like(sigma)
             # z = eps.mul(sigma).add_(mu).squeeze(0)
             z,_,_  = vae(state.unsqueeze(0).to(device))
-
+            hidden = next_hidden
             z = z.cpu().detach().numpy()
             z = np.atleast_2d(z)
-            # z = utility.normalised(z)
-            
-            # print("dddddddddddddddddddddd",z)
-
-            # action = agent.act(state, episode)
-            # action = agent.act(z, episode)
-
 
             z = torch.from_numpy(z.squeeze(0)).to(device)
 
-
-
-            rnn_input = torch.cat([z, Discrete_to_continous_action], dim=-1).float()
-            _, hidden = rnn(rnn_input.unsqueeze(0).unsqueeze(0))
-
-            Concatenated_current_state = torch.cat((z.to(device), hidden[0]),-1).cpu().detach().numpy()
-
+            Concatenated_current_state = torch.cat((z.unsqueeze(0).to(device), hidden[0]),-1).cpu().detach().numpy()
             action = agent.act(Concatenated_current_state, episode)
-            
+
             Discrete_to_contin_action = action_list[action]
             Discrete_to_continous_action = torch.from_numpy(Discrete_to_contin_action).to(device)
+
+            rnn_input = torch.cat([z, Discrete_to_continous_action], dim=-1).float()
+            # _, hidden = rnn(rnn_input.unsqueeze(0).unsqueeze(0))
+            _, _, _, next_hidden = rnn.infer(rnn_input.unsqueeze(0), hidden)
+
+            # Concatenated_current_state = torch.cat((z.to(device), next_hidden[0]),-1).cpu().detach().numpy()
+
+            # action = agent.act(Concatenated_current_state, episode)
+            
+            # Discrete_to_contin_action = action_list[action]
+            # Discrete_to_continous_action = torch.from_numpy(Discrete_to_contin_action).to(device)
 
 
             # action = agent.act(state, episode)
@@ -335,7 +343,7 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
             next_state_ = utility.normalised(next_state_)
             next_state_ = torch.from_numpy(next_state_.squeeze(0)).to(device)
             
-            Concatenated_next_state_ = torch.cat((next_state_.to(device), hidden[0]),-1).cpu().detach().numpy()
+            Concatenated_next_state_ = torch.cat((next_state_.unsqueeze(0).to(device), hidden[0]),-1).cpu().detach().numpy()
             # print("dddddddddddddddddddddd",z)
 
             # action = agent.act(state, episode)
@@ -359,9 +367,11 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
         print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)), end="")
         if i_episode % 100 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
+
         if np.mean(scores_window)>=5.0:
+
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_.pth')
+            torch.save(agent.qnetwork_local.state_dict(), './MODEL/checkpoint_.pth')
             break
     return scores
 

@@ -18,10 +18,10 @@ class RNN(nn.Module):
     def forward(self, states):
         
         #h, _ = self.rnn(states)
-        h, (h_out, _)  = self.rnn(states)
-        h_out = h_out.view(-1, self.n_hiddens)
+        h,_  = self.rnn(states)
+        # h_out = h_out.view(-1, self.n_hiddens)
         y = self.fc(h)
-        return y, h_out, None
+        return y, None, None
     
     def infer(self, states, hidden):
         h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)

@@ -21,8 +21,8 @@ from gym import spaces
 import cv2
 import numpy as np
 import math
-from ENVIRONMENT import Socnavenv
-from ENVIRONMENT.Socnavenv import SocNavEnv
+# from ENVIRONMENT import Socnavenv
+from ENVIRONMENT.Socnavenv_output import SocNavEnv
 from tqdm import tqdm
 from UTILITY import utility 
 
@@ -40,7 +40,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 z_dim = 62
 input_size = 31
 vae = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-vae.load_state_dict(torch.load("./MODEL/vae_model.pt"))
+vae.load_state_dict(torch.load("./MODEL/vae_model1.pt"))
 vae.eval()
 vae.float()
 num_layers = 2
@@ -67,8 +67,8 @@ number_of_actions = action_list.shape[0]
 num_layers = 2
 # rnn = MDN_RNN(latents, actions, hiddens, gaussians).to(device)
 # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# rnn = RNN(latents, actions, hiddens).to(device)
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 
 def flatten_parameters(params):
     return torch.cat([p.detach().view(-1) for p in params], dim=0).to('cpu').numpy()
@@ -126,53 +126,66 @@ def evaluate_control_model(vae, rnn, controller, device):
 
 
         obs = env.reset()
-        
+        z,_,_  = vae(torch.from_numpy(obs).unsqueeze(0).to(device))
+        next_hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
+        c_in = torch.cat((z, next_hidden[0]),-1)
+        controller.to(device)
+        action_distribution = controller(c_in)
+        max_action = np.argmax(action_distribution)  
+        action = action_list[max_action]
         #action = torch.zeros(1, actions).to(device)
-        action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
-        action = np.atleast_2d(action)
-        action = torch.from_numpy(action).to(device)
-    
-        reward_ = torch.zeros(1, 1).to(device)
-        hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
-        prev_action = None
-        for t in range(time_steps): 
-            #env.render()
-            obs = torch.from_numpy(obs)
-            obs = utility.normalised(obs.unsqueeze(0))
-            obs = torch.from_numpy(obs)
+        # action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
+        # action = np.atleast_2d(action)
+        # action = torch.from_numpy(action).to(device)
+        nxt_obs, reward, done, _ = env.step(action)
+        # nxt_obs = torch.from_numpy(nxt_obs)
+        # reward_ = torch.zeros(1, 1).to(device)
+        # for t in range(time_steps): 
+        while not done:#True:
+            # print("ddddddddddddddddddddddddddddddddddddddddddddd",action)
 
+            # env.render()
+            
+            nxt_z,_,_  = vae(torch.from_numpy(nxt_obs).unsqueeze(0).to(device))
 
-            # _, mu, log_var = vae(obs.unsqueeze(0).to(device))
-            # sigma = log_var.exp()
-            # eps = torch.randn_like(sigma)
-            # z = eps.mul(sigma).add_(mu)
-            z,_,_  = vae(obs.unsqueeze(0).to(device))
-            
-            unsqueezed_action = action.unsqueeze(0)
-            unsqueezed_z = z.unsqueeze(0)
-            # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
-            # rnn_input = torch.cat((z, action, reward_), -1).float()
-            # out_full, hidden = mdrnn(rnn_input, hidden)
-            rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-            
-            # _, hidden = rnn(rnn_input)
-            _,hidden = rnn(rnn_input)   
-                     
-            c_in = torch.cat((z, hidden[0].unsqueeze(0)),-1)
-            controller.to(device)
+            # unsqueezed_action = action.unsqueeze(0)
+            unsqueezed_nxt_z= nxt_z.unsqueeze(0)
+            hidden = next_hidden
+            c_in = torch.cat((unsqueezed_nxt_z, hidden[0].unsqueeze(0)),-1)
             action_distribution = controller(c_in)
-            #print(action_distribution)
-            #action = action.detach().to('cpu')
             max_action = np.argmax(action_distribution)  
-
             action = action_list[max_action]
 
-            obs, reward, done, _ = env.step(action)
-            action = torch.from_numpy(action)
-            reward = torch.Tensor([[reward * (1-int(done))]])
+            # action = np.atleast_2d(action)
+            # action = torch.from_numpy(action).to(device)
+            nxt_obs, reward, done, _ = env.step(action)
+
+            nxt_z,_,_  = vae(torch.from_numpy(nxt_obs).unsqueeze(0).to(device))
+            action = np.atleast_2d(action)
+            action = torch.from_numpy(action).to(device)
+            rnn_input = torch.cat([nxt_z, action], dim=-1).float()
+            _, _, _, next_hidden = rnn.infer(rnn_input, hidden)
+
+
+            # _, hidden = rnn(rnn_input)
+            # _,hidden = rnn(rnn_input)   
+                     
+            # c_in = torch.cat((z, hidden[1].unsqueeze(0)),-1)
+            # controller.to(device)
+            # action_distribution = controller(c_in)
+            #print(action_distribution)
+            #action = action.detach().to('cpu')
+            # max_action = np.argmax(action_distribution)  
+
+            # action = action_list[max_action]
+
+            # obs, reward, done, _ = env.step(action)
+            # action = torch.from_numpy(action)
+            # reward = torch.Tensor([[reward * (1-int(done))]])
             #reward = torch.where(reward > 0 , 1, 0)
-            action = action.unsqueeze(0).to(device)
+            # action = action.unsqueeze(0).to(device)
             cumulative += reward
+            
             if done:
                 obs = env.reset()
                 break
@@ -181,7 +194,6 @@ def evaluate_control_model(vae, rnn, controller, device):
         s+=1
     cumulative_ = cumulative / s
     return float(cumulative_)
-
 
 
 
@@ -230,3 +242,4 @@ def train_controller(controller, vae, rnn,  mode='real'):
 
 
 train_controller(controller, vae, rnn)
+# evaluate_control_model(vae, rnn, controller, device)

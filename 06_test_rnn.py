@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser("mode asigning")
 args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # dataset = torch.load('./data/saved_rnn_rollout_test.pt')
-test_data = torch.load('./data/saved_vae_rollout_train.pt')
+test_data = torch.load('./data/saved_vae_rollout_test.pt')
 
 num_layers = 2
 latents = 31
@@ -29,7 +29,7 @@ actions = 2
 hiddens = 256
 batch_size = 1
 timestep = 200
-train_window = 10 # our sliding window value
+train_window = 1#0 # our sliding window value
 
 class MDN_Dataset(torch.utils.data.Dataset):
     def __init__(self, MDN_data):
@@ -63,8 +63,8 @@ dataset = fit_dataset_to_rnn(test_data)
 
 test_dataset = MDN_Dataset(dataset)
 train_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# rnn = RNN(latents, actions, hiddens).to(device)
+# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
+rnn = RNN(latents, actions, hiddens).to(device)
 rnn.load_state_dict(torch.load("./MODEL/model.pt"))
 
 
@@ -95,8 +95,8 @@ for batch_idx, (action, obs) in enumerate(train_dataloader):
 
         states = torch.cat([current_timestep, action], dim=-1)
 
-        predicted_nxt_timestep, _ = rnn(states)
-        # predicted_nxt_timestep, _,_ = rnn(states)
+        # predicted_nxt_timestep, hidden = rnn(states)
+        predicted_nxt_timestep, _,_ = rnn(states)
 
         current_timestep = current_timestep
         nxt_timestep = nxt_timestep
