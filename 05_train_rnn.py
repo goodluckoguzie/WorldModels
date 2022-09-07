@@ -22,7 +22,7 @@ latents = 31
 actions = 2
 hiddens = 256
 epochs = args.epochs
-train_window = 1#0 
+train_window = 10 
 batch_size = 2048
 timestep = 200
 num_layers = 2
@@ -186,7 +186,7 @@ def train_model(model, batch_size, patience, n_epochs):
             print("Early stopping")
             break
     # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('./MODEL/model_rnn.pt'))
+    model.load_state_dict(torch.load('./MODEL/model_rnn10.pt'))
 
     return  model, avg_train_losses, avg_valid_losses
 
