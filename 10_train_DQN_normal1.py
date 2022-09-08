@@ -148,6 +148,7 @@ class DQN():
 
 def main():
     ep_rewards = deque(maxlen=100)
+    best_test_reward = 0
     # ENV_NAME = "Taxi-v3"
     # env = gym.make(ENV_NAME)
     env = gym.make("CartPole-v0")
@@ -172,12 +173,18 @@ def main():
                 ep_rewards.append(ep_reward)
                 if i % 100 == 0:
                     print("episode: {}\treward: {}\tepsilon: {}".format(i, round(np.mean(ep_rewards), 3), round(agent.eps, 3)))
+                    if best_test_reward < ep_reward:
+                        print('New best test reward. Saving model')
+                        best_test_reward = ep_reward
+                        torch.save(agent.predict_net.state_dict(), 'dqn_net.pth')
                 break
 
             state = next_state
 
 if __name__ == '__main__':
+    
     main()
+    
 
 
 
