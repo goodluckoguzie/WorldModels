@@ -38,8 +38,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # from ENVIRONMENT.Socnavenv import SocNavEnv 
 # env = SocNavEnv()
 from ENVIRONMENT.Socnavenv import DiscreteSocNavEnv 
-
 env = DiscreteSocNavEnv()
+
 print('State shape: ', env.observation_space)
 print('Number of actions: ', env.action_space)
 
@@ -151,8 +151,10 @@ def main():
     best_test_reward = 0
     # ENV_NAME = "Taxi-v3"
     # env = gym.make(ENV_NAME)
-    env = gym.make("CartPole-v0")
+    # env = gym.make("CartPole-v0")
     # env = gym.make("MountainCar-v0")
+    # env = DiscreteSocNavEnv()
+
     # env = env.unwrapped
     agent = DQN(env, batch_size=128, memory_size=100000, target_update=100, gamma=0.95, learning_rate=1e-4, eps_min=0.05, eps_period=5000)
     total_episode = 10000
