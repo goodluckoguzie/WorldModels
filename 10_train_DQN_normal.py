@@ -12,26 +12,27 @@ from collections import deque, namedtuple
 
 # For visualization
 from gym.wrappers.monitoring import video_recorder
-from IPython.display import HTML
-from IPython import display 
 import glob
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-advance_split = 5
-rotation_split = 5
+# advance_split = 5
+# rotation_split = 5
 
-advance_grid, rotation_grid = np.meshgrid(
-    np.linspace(-1, 1, advance_split),
-    np.linspace(-1, 1, rotation_split))
+# advance_grid, rotation_grid = np.meshgrid(
+#     np.linspace(-1, 1, advance_split),
+#     np.linspace(-1, 1, rotation_split))
 
-action_list = np.hstack((
-    advance_grid.reshape(( advance_split*rotation_split, 1)),
-    rotation_grid.reshape((advance_split*rotation_split, 1))))
-number_of_actions = action_list.shape[0]
+# action_list = np.hstack((
+#     advance_grid.reshape(( advance_split*rotation_split, 1)),
+#     rotation_grid.reshape((advance_split*rotation_split, 1))))
+# number_of_actions = action_list.shape[0]
 
-from ENVIRONMENT.Socnavenv_output import SocNavEnv 
-env = SocNavEnv()
-print('State shape: ', env.observation_space.shape)
+# from ENVIRONMENT.Socnavenv import SocNavEnv 
+# env = SocNavEnv()
+from ENVIRONMENT.Socnavenv import DiscreteSocNavEnv 
+
+env = DiscreteSocNavEnv()
+print('State shape: ', env.observation_space)
 print('Number of actions: ', env.action_space)
 
 
@@ -231,7 +232,7 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
         eps_end (float): minimum value of epsilon
         eps_decay (float): multiplicative factor (per episode) for decreasing epsilon
     """
-    scores = []                        # list containing scores from each episode
+    scores = [0]                        # list containing scores from each episode
     scores_window = deque(maxlen=100)  # last 100 scores
     eps = eps_start                    # initialize epsilon
     for i_episode in range(1, n_episodes+1):
@@ -240,8 +241,8 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
         for t in range(max_t):
 
             action = agent.act(state, eps)
-            action_ = action_list[action]
-            next_state, reward, done, _ = env.step(action_)
+            # action_ = action_list[action]
+            next_state, reward, done, _ = env.step(action)
             agent.step(state, action, reward, next_state, done)
             state = next_state
             score += reward
@@ -260,4 +261,5 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay
     return scores
 
 agent = Agent(state_size=31, action_size=25, seed=0)
+
 scores = dqn()
