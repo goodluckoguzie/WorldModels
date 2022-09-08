@@ -72,6 +72,7 @@ elif "debug=1" in sys.argv:
 class SocNavEnv(gym.Env):
     def __init__(self):
         super().__init__()
+        self.previous_goal_distance = None
 
         self.window_initialised = False
 
@@ -171,7 +172,12 @@ class SocNavEnv(gym.Env):
         self.ticks += 1
 
         # check for the goal's distance
+        # check for the goal's distance
         distance_to_goal = np.linalg.norm(self.robot[0,0:2]-self.goal[0,0:2], ord=2)
+        if self.previous_goal_distance is None:
+            self.previous_goal_distance = distance_to_goal
+        distance_increment = distance_to_goal - self.previous_goal_distance
+        self.previous_goal_distance = distance_to_goal
 
         # check for human-robot collisions
         collision_with_a_human = False
@@ -196,7 +202,7 @@ class SocNavEnv(gym.Env):
             reward = MAXTICKS_REWARD
         else:
             self.robot_is_done = False
-            reward = -distance_to_goal/DISTANCE_REWARD_DIVISOR + ALIVE_REWARD
+            reward = -distance_increment/DISTANCE_REWARD_DIVISOR + ALIVE_REWARD
 
         return reward
 
