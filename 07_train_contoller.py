@@ -22,7 +22,7 @@ import cv2
 import numpy as np
 import math
 # from ENVIRONMENT import Socnavenv
-from ENVIRONMENT.Socnavenv_output import SocNavEnv
+from ENVIRONMENT.Socnavenv import SocNavEnv
 from tqdm import tqdm
 from UTILITY import utility 
 
@@ -114,9 +114,7 @@ def evaluate_control_model(vae, rnn, controller, device):
     s = 0
     cumulative = 0
     cumulative_ = 0
-    # mdrnn = MDRNNCell(latents, actions, hiddens, gaussians).to(device)
-    # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-    # rnn = RNN(latents, actions, hiddens).to(device)
+
     rnn.load_state_dict(torch.load("./MODEL/model.pt"))
     rnn = rnn.float()
 
@@ -133,6 +131,7 @@ def evaluate_control_model(vae, rnn, controller, device):
         action_distribution = controller(c_in)
         max_action = np.argmax(action_distribution)  
         action = action_list[max_action]
+        
         #action = torch.zeros(1, actions).to(device)
         # action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
         # action = np.atleast_2d(action)

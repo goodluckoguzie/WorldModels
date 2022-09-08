@@ -7,7 +7,7 @@ import os, time, datetime
 from os.path import join
 import time
 import numpy as np
-from ENVIRONMENT.Socnavenv_output import SocNavEnv
+from ENVIRONMENT.Socnavenv import SocNavEnv
 import random
 import os.path
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
