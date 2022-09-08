@@ -18,7 +18,7 @@ RESOLUTION_VIEW = 1000.
 MAP_SIZE = 8.0
 PIXEL_TO_WORLD = RESOLUTION / MAP_SIZE
 MARGIN = 0.5
-MAX_TICKS = 250
+MAX_TICKS = 350
 TIMESTEP = 0.1
 ROBOT_RADIUS = 0.15
 GOAL_RADIUS = 0.5
@@ -29,9 +29,9 @@ HUMAN_THRESHOLD = 0.4
 REACH_REWARD = 1.0
 OUTOFMAP_REWARD = -0.5
 MAXTICKS_REWARD = -0.5
-ALIVE_REWARD = -0.00001
+ALIVE_REWARD = -0.0005
 COLLISION_REWARD = -1.0
-DISTANCE_REWARD_DIVISOR = 1000
+DISTANCE_REWARD_DIVISOR = 100
 
 MAX_ADVANCE = 1.4
 MAX_ROTATION = 0.5*np.pi
@@ -74,6 +74,7 @@ class SocNavEnv(gym.Env):
         super().__init__()
 
         self.window_initialised = False
+        self.previous_goal_distance = None
 
         self.ticks = 0
         self.humans = np.zeros((NUMBER_OF_HUMANS,4))  # x, y, orientation, speed
@@ -172,6 +173,10 @@ class SocNavEnv(gym.Env):
 
         # check for the goal's distance
         distance_to_goal = np.linalg.norm(self.robot[0,0:2]-self.goal[0,0:2], ord=2)
+        if self.previous_goal_distance is None:
+            self.previous_goal_distance = distance_to_goal
+        goal_distance_increment = distance_to_goal - self.previous_goal_distance
+        self.previous_goal_distance = distance_to_goal
 
         # check for human-robot collisions
         collision_with_a_human = False
@@ -196,13 +201,15 @@ class SocNavEnv(gym.Env):
             reward = MAXTICKS_REWARD
         else:
             self.robot_is_done = False
-            reward = -distance_to_goal/DISTANCE_REWARD_DIVISOR + ALIVE_REWARD
+            reward = -goal_distance_increment/DISTANCE_REWARD_DIVISOR + ALIVE_REWARD
 
         return reward
 
 
     def reset(self):
         self.cumulative_reward = 0
+        self.previous_goal_distance = None
+
 
         HALF_SIZE = MAP_SIZE/2. - MARGIN
         # robot
