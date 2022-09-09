@@ -157,7 +157,7 @@ def main():
 
     # env = env.unwrapped
     agent = DQN(env, batch_size=128, memory_size=100000, target_update=100, gamma=0.95, learning_rate=1e-4, eps_min=0.05, eps_period=5000)
-    total_episode = 10000
+    total_episode = 10_000_000
     
     for i in range(total_episode):
         state = env.reset()
