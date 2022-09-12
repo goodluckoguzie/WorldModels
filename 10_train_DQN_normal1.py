@@ -4,189 +4,184 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import matplotlib.pyplot as plt
-import base64, io
-
 import numpy as np
-from collections import deque, namedtuple
-import torch
-import torch.optim as optim
-import torch.nn as nn
-import torch.nn.functional as F
-
-import numpy as np
-import gym
-import random
 from collections import deque
-# For visualization
-from gym.wrappers.monitoring import video_recorder
-import glob
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+import itertools
 
-# advance_split = 5
-# rotation_split = 5
+from Socnavenv import DiscreteSocNavEnv
 
-# advance_grid, rotation_grid = np.meshgrid(
-#     np.linspace(-1, 1, advance_split),
-#     np.linspace(-1, 1, rotation_split))
+GAMMA = 0.95
+BATCH_SIZE=1024
+BUFFER_SIZE=1_000_000_000
+MIN_REPLAY_SIZE=5_000_000
+EPSILON_START=1.0
+EPSILON_END=0.05
+EPSILON_DECAY=10_000
+TARGET_UPDATE_FREQ=21_000
 
-# action_list = np.hstack((
-#     advance_grid.reshape(( advance_split*rotation_split, 1)),
-#     rotation_grid.reshape((advance_split*rotation_split, 1))))
-# number_of_actions = action_list.shape[0]
+loss_fn = nn.MSELoss()
+# class Network(nn.Module):
+#     """
+#     Define a politica para tomar uma ação a partir de um estado
+#     """
+#     def __init__(self,env):
+#         super(Network, self).__init__()
+#         super().__init__()
+#         self.num_actions = env.action_space.n
+#         self.state_dim = env.observation_space.shape[0]    
+#         self.fc1 = torch.nn.Linear(self.state_dim,64,'linear')
+#         self.hidden1 = nn.Dropout(0.1)
+#         self.fc2 = torch.nn.Linear(64,64,'linear')
+#         self.hidden2 = nn.Dropout(0.08)
+#         self.fc3 = torch.nn.Linear(64,64,'linear')
+#         self.hidden3 = nn.Dropout(0.05)
+#         self.fc4 = torch.nn.Linear(64,64,'linear')
+#         self.fc5 = torch.nn.Linear(64,self.num_actions,'linear')
+        
+#     def forward(self,x):
+        
+#         x = self.hidden1(self.fc1(x))
+#         x = self.hidden2(F.relu(self.fc2(x)))
+#         x = self.hidden3(F.relu(self.fc3(x)))        
+#         x = F.relu(self.fc4(x))
+#         y = F.relu(self.fc5(x))
+#         return y
+    
 
-# from ENVIRONMENT.Socnavenv import SocNavEnv 
-# env = SocNavEnv()
-from ENVIRONMENT.Socnavenv import DiscreteSocNavEnv 
+
+class Network(nn.Module):
+    def __init__(self,env):
+        super().__init__()
+
+        in_features = int(np.prod(env.observation_space.shape))
+        self.net = nn.Sequential(
+            nn.Linear(in_features,64),
+            nn.Tanh(),
+            nn.Linear(64,env.action_space.n)
+            )
+    def forward(self,x):
+        return self.net(x)
+
+    def act(self,obs):
+        obs_t = torch.as_tensor(obs,dtype=torch.float32)
+        q_values = self(obs_t.unsqueeze(0))
+        #get action with highest q value
+        max_q_index = torch.argmax(q_values, dim=1)[0]
+        #turn the tensor to integer
+        action = max_q_index.detach().item()
+        return action
+
+# env = gym.make('CartPole-v0')
+# env = gym.make("MountainCar-v0")
 env = DiscreteSocNavEnv()
 
-print('State shape: ', env.observation_space)
-print('Number of actions: ', env.action_space)
+replay_buffer = deque(maxlen=BUFFER_SIZE)
+rew_buffer = deque([0.0], maxlen=100)
+episode_reward = 0.0
+
+online_net = Network(env)
+target_net = Network(env)
+
+target_net.load_state_dict(online_net.state_dict())
+optimizer = torch.optim.Adam(online_net.parameters(),lr=5e-4)
+# initialize the replace buffer
+
+obs = env.reset()
+for _ in range(MIN_REPLAY_SIZE):
+    action = env.action_space.sample()
+
+    new_obs, rew, done, _ = env.step(action)
+
+    transition = (obs, action, rew, done, new_obs)
+    replay_buffer.append(transition)
+    obs = new_obs
+
+    if done:
+        obs = env.reset()
+
+# #main training loop
+obs = env.reset()
+
+for step in itertools.count():
+    epsilon = np.interp(step, [0, EPSILON_DECAY], [EPSILON_START,EPSILON_END])
+
+    rnd_sample = random.random()
+
+    if rnd_sample <=epsilon:
+        action = env.action_space.sample()
+    else:
+        action = online_net.act(obs)
+
+    new_obs,rew,done,_ = env.step(action)
+    transition = (obs, action, rew, done, new_obs)
+    replay_buffer.append(transition)
+    obs = new_obs
+
+    episode_reward = episode_reward +  rew
+
+    if done:
+        obs = env.reset()
+
+        rew_buffer.append(episode_reward)
+        episode_reward = 0.0
+
+    #After solve,watch it play
+    if len(rew_buffer) >= 100:
+        if np.mean(rew_buffer) >= 3:
+            while True:
+                action = online_net.act(obs)
+                obs,_,_,done = env.step(action)
+                env.render()
+                if done:
+                    env.reset() 
+
+    #start Gradient Step
+    transition = random.sample(replay_buffer, BATCH_SIZE)
+
+    obses = np.asarray([t[0] for t in transition])
+    actions = np.asarray([t[1] for t in transition])
+    rews = np.asarray([t[2] for t in transition])
+    dones = np.asarray([t[3] for t in transition])
+    new_obses = np.asarray([t[4] for t in transition])
+
+    obses_t = torch.as_tensor(obses, dtype=torch.float32)
+    actions_t = torch.as_tensor(actions, dtype=torch.int64).unsqueeze(-1)
+    rews_t = torch.as_tensor(rews, dtype=torch.float32).unsqueeze(-1)
+    dones_t = torch.as_tensor(dones, dtype=torch.float32).unsqueeze(-1)
+    new_obses_t = torch.as_tensor(new_obses, dtype=torch.float32)
 
 
-class ReplayBuffer():
-    def __init__(self, max_size=100000):
-        super(ReplayBuffer, self).__init__()
-        self.max_size = max_size
-        self.memory = deque(maxlen=self.max_size)
-        
-    # Add the replay memory
-    def add(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+    #compute Target
+    target_q_values = target_net(new_obses_t)
+    max_target_q_values = target_q_values.max(dim=1, keepdim=True)[0]
 
-    # Sample the replay memory
-    def sample(self, batch_size):
-        batch = random.sample(self.memory, min(batch_size, len(self.memory)))
-        states, actions, rewards, next_states, dones = map(np.stack, zip(*batch))
-        return states, actions, rewards, next_states, dones
+    targets = rews_t + GAMMA * (1-dones_t) * max_target_q_values
 
-class DQNNet(nn.Module):
-    def __init__(self, input, output):
-        super(DQNNet, self).__init__()
-        self.input = nn.Linear(input, 200)
-        self.output = nn.Linear(200, output)
-        
-    def forward(self, x):
-        x = F.relu(self.input(x))
-        x = self.output(x)
-        return x
-    
-class DQN():
-    def __init__(self, env, memory_size=10000, learning_rate=1e-3, batch_size=64, target_update=1000, gamma=0.95, eps=1, eps_min=0.1, eps_period=2000):
-        super(DQN, self).__init__()
-        self.env = env
-                
-        # Torch
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-        # Deep Q network
-        self.predict_net = DQNNet(env.observation_space.shape[0], env.action_space.n).to(self.device)
-        # self.predict_net = DQNNet(env.observation_space.n, env.action_space.n).to(self.device)
+    #compute Loss
+    q_values = online_net(obses_t)
 
-        self.optimizer = optim.Adam(self.predict_net.parameters(), lr=learning_rate)
-        self.loss_fn = nn.MSELoss()
-        
-        # Target network
-        self.target_net = DQNNet(env.observation_space.shape[0], env.action_space.n).to(self.device)
-        # self.target_net = DQNNet(env.observation_space.n, env.action_space.n).to(self.device)
+    action_q_values = torch.gather(input=q_values, dim=1,index=actions_t)
 
-        self.target_net.load_state_dict(self.predict_net.state_dict())
-        self.target_update = target_update
-        self.update_count = 0
-        
-        # Replay buffer
-        self.replay_buffer = ReplayBuffer(memory_size)
-        self.batch_size = batch_size
-        
-        # Learning setting
-        self.gamma = gamma
-        
-        # Exploration setting
-        self.eps = eps
-        self.eps_min = eps_min
-        self.eps_period = eps_period
+    # loss = nn.functional.smooth_l1_loss(action_q_values, targets)
+    loss = loss_fn(action_q_values, targets)
 
-    # Get the action
-    def get_action(self, state):
-        # Random action
-        if np.random.rand() < self.eps:
-            self.eps = self.eps - (1 - self.eps_min) / self.eps_period if self.eps > self.eps_min else self.eps_min
-            return np.random.randint(0, self.env.action_space.n)
-        
-        # Get the action
-        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
-        q_values = self.predict_net(state).cpu().detach().numpy()
-        action = np.argmax(q_values)
-        
-        return action
-    
-    # Learn the policy
-    def learn(self):
-        # Replay buffer
-        states, actions, rewards, next_states, dones = self.replay_buffer.sample(self.batch_size)
-        states = torch.FloatTensor(states).to(self.device)
-        actions = torch.LongTensor(actions).to(self.device)
-        rewards = torch.FloatTensor(rewards).to(self.device)
-        next_states = torch.FloatTensor(next_states).to(self.device)
-        dones = torch.FloatTensor(dones).to(self.device)
-        
-        # Calculate values and target values
-        target_values = (rewards + self.gamma * torch.max(self.target_net(next_states), 1)[0] * (1-dones)).view(-1, 1)
-        predict_values = self.predict_net(states).gather(1, actions.view(-1, 1))
-        
-        # Calculate the loss and optimize the network
-        loss = self.loss_fn(predict_values, target_values)
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-        
-        # Update the target network
-        self.update_count += 1
-        if self.update_count == self.target_update:
-            self.target_net.load_state_dict(self.predict_net.state_dict())
-            self.update_count = 0
 
-def main():
-    ep_rewards = deque(maxlen=100)
-    best_test_reward = 0
-    # ENV_NAME = "Taxi-v3"
-    # env = gym.make(ENV_NAME)
-    # env = gym.make("CartPole-v0")
-    # env = gym.make("MountainCar-v0")
-    # env = DiscreteSocNavEnv()
+    #gradient descent
 
-    # env = env.unwrapped
-    agent = DQN(env, batch_size=128, memory_size=100000, target_update=100, gamma=0.95, learning_rate=1e-4, eps_min=0.05, eps_period=5000)
-    total_episode = 10_000_000
-    
-    for i in range(total_episode):
-        state = env.reset()
-        ep_reward = 0
-        while True:
-            action = agent.get_action(state)
-            next_state, reward , done, _ = env.step(action)
-       
-            ep_reward += reward
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
 
-            agent.replay_buffer.add(state, action, reward, next_state, done)
-            agent.learn()
-            
-            if done:
-                ep_rewards.append(ep_reward)
-                if i % 100 == 0:
-                    print("episode: {}\treward: {}\tepsilon: {}".format(i, round(np.mean(ep_rewards), 3), round(agent.eps, 3)))
-                    if best_test_reward < ep_reward:
-                        print('New best test reward. Saving model')
-                        best_test_reward = ep_reward
-                        torch.save(agent.predict_net.state_dict(), 'dqn_net.pth')
-                break
+    #Update Taregt Network
+    if step % TARGET_UPDATE_FREQ == 0:
+        target_net.load_state_dict(online_net.state_dict())
+        torch.save(online_net.state_dict(), 'net.pth')
 
-            state = next_state
-
-if __name__ == '__main__':
-    
-    main()
-    
+    #logging
+    if step % 100 == 0:
+        print()
+        print('Step', step)
+        print('Avg Reward',np.mean(rew_buffer))
 
 
 
