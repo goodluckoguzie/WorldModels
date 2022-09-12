@@ -11,7 +11,7 @@ import itertools
 from Socnavenv import DiscreteSocNavEnv
 
 GAMMA = 0.95
-BATCH_SIZE=1024
+BATCH_SIZE=512
 BUFFER_SIZE=1_000_000_000
 MIN_REPLAY_SIZE=5_000_000
 EPSILON_START=1.0
@@ -182,7 +182,6 @@ for step in itertools.count():
         print()
         print('Step', step)
         print('Avg Reward',np.mean(rew_buffer))
-
 
 
 
