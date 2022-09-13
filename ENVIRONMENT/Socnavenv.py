@@ -26,13 +26,13 @@ GOAL_THRESHOLD = ROBOT_RADIUS + GOAL_RADIUS
 NUMBER_OF_HUMANS = 5
 HUMAN_THRESHOLD = 0.4
 
-REACH_REWARD = 1.0
+REACH_REWARD = 2.0
 OUTOFMAP_REWARD = -0.5
 MAXTICKS_REWARD = -0.5
-ALIVE_REWARD = -0.0005
+ALIVE_REWARD = -0.002
 COLLISION_REWARD = -1.0
 DISTANCE_REWARD_DIVISOR = 100
-
+DISCOMFORT = -0.05
 MAX_ADVANCE = 1.4
 MAX_ROTATION = 0.5*np.pi
 
@@ -169,6 +169,7 @@ class SocNavEnv(gym.Env):
 
 
     def compute_reward_and_ticks(self):
+        dmin = float('inf')
         self.ticks += 1
 
         # check for the goal's distance
@@ -180,11 +181,16 @@ class SocNavEnv(gym.Env):
 
         # check for human-robot collisions
         collision_with_a_human = False
+        collision_with_a_human_is_close = False
         for human in range(self.humans.shape[0]):
             distance_to_human = np.linalg.norm(self.robot[0,0:2]-self.humans[human,0:2], ord=2)
             if distance_to_human < HUMAN_THRESHOLD:
                 collision_with_a_human = True
                 break
+            if distance_to_human < HUMAN_THRESHOLD + 0.15:
+                collision_with_a_human_is_close = True
+                break
+
 
         # calculate the reward and update is_done
         if MAP_SIZE/2 < self.robot[0,0] or self.robot[0,0] < -MAP_SIZE/2 or MAP_SIZE/2 < self.robot[0,1] or self.robot[0,1] < -MAP_SIZE/2:
@@ -199,11 +205,23 @@ class SocNavEnv(gym.Env):
         elif self.ticks > MAX_TICKS:
             self.robot_is_done = True
             reward = MAXTICKS_REWARD
+        # elif collision_with_a_human_is_close is True:
+        #     self.robot_is_done = False
+        #     print("yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+        #     reward = 0           
+
         else:
             self.robot_is_done = False
-            reward = -goal_distance_increment/DISTANCE_REWARD_DIVISOR + ALIVE_REWARD
+            if collision_with_a_human_is_close is True:
+                # print("yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+
+                reward = (-goal_distance_increment/DISTANCE_REWARD_DIVISOR + ALIVE_REWARD) + DISCOMFORT
+            else:
+
+                reward = -goal_distance_increment/DISTANCE_REWARD_DIVISOR + ALIVE_REWARD
 
         return reward
+
 
 
     def reset(self):
@@ -315,4 +333,5 @@ class DiscreteSocNavEnv(SocNavEnv):
     def step(self, action_idx):
         # print(action_idx, self.action_map[action_idx])
         return SocNavEnv.step(self, self.action_map[action_idx])
+
 

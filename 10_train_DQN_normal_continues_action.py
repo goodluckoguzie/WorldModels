@@ -11,27 +11,26 @@ import numpy as np
 from collections import deque, namedtuple
 
 # For visualization
-from gym.wrappers.monitoring import video_recorder
 import glob
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# advance_split = 5
-# rotation_split = 5
+advance_split = 5
+rotation_split = 5
 
-# advance_grid, rotation_grid = np.meshgrid(
-#     np.linspace(-1, 1, advance_split),
-#     np.linspace(-1, 1, rotation_split))
+advance_grid, rotation_grid = np.meshgrid(
+    np.linspace(-1, 1, advance_split),
+    np.linspace(-1, 1, rotation_split))
 
-# action_list = np.hstack((
-#     advance_grid.reshape(( advance_split*rotation_split, 1)),
-#     rotation_grid.reshape((advance_split*rotation_split, 1))))
-# number_of_actions = action_list.shape[0]
+action_list = np.hstack((
+    advance_grid.reshape(( advance_split*rotation_split, 1)),
+    rotation_grid.reshape((advance_split*rotation_split, 1))))
+number_of_actions = action_list.shape[0]
 
 # from ENVIRONMENT.Socnavenv import SocNavEnv 
 # env = SocNavEnv()
-from ENVIRONMENT.Socnavenv import DiscreteSocNavEnv 
+from ENVIRONMENT.Socnavenv import SocNavEnv 
 
-env = DiscreteSocNavEnv()
+env = SocNavEnv()
 print('State shape: ', env.observation_space)
 print('Number of actions: ', env.action_space)
 
@@ -225,7 +224,7 @@ class ReplayBuffer:
 
 
 
-def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.001, eps_decay=0.0995):
+def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.001, eps_decay=0.995):
     """Deep Q-Learning.
     
     Params
@@ -245,8 +244,8 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.001, eps_deca
         for t in range(max_t):
 
             action = agent.act(state, eps)
-            # action_ = action_list[action]
-            next_state, reward, done, _ = env.step(action)
+            action_ = action_list[action]
+            next_state, reward, done, _ = env.step(action_)
             agent.step(state, action, reward, next_state, done)
             state = next_state
             score += reward
