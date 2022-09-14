@@ -35,6 +35,7 @@ def discrete_to_continuous_action(action:int):
     """
     Function to return a continuous space action for a given discrete action
     """
+    
     if action == 0:
         return np.array([0, 0.125], dtype=np.float32)
     

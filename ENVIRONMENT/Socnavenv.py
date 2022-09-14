@@ -218,7 +218,7 @@ class SocNavEnv(gym.Env):
             reward = MAXTICKS_REWARD
         # elif collision_with_a_human_is_close is True:
         #     self.robot_is_done = False
-        #     print("yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+        #     print("yes")
         #     reward = 0           
 
         else:
