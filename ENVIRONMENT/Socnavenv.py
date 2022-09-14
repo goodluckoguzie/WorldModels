@@ -66,7 +66,7 @@ elif "debug=1" in sys.argv:
 #
 
 
-
+self.previous_goal_distance = None
 
 
 class SocNavEnv(gym.Env):
@@ -233,6 +233,7 @@ class SocNavEnv(gym.Env):
         return reward
 
     def reset(self):
+        self.previous_goal_distance = None
         self.cumulative_reward = 0
 
         HALF_SIZE = MAP_SIZE/2. - MARGIN
