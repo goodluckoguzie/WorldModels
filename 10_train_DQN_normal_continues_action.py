@@ -234,7 +234,7 @@ class Agent():
 class ReplayBuffer:
     """Fixed-size buffer to store experience tuples."""
 
-    def __init__(self, action_size, buffer_size, batch_size):
+    def __init__(self, action_size, buffer_size, batch_size, seed):
         """Initialize a ReplayBuffer object.
 
         Params
@@ -248,7 +248,7 @@ class ReplayBuffer:
         self.memory = deque(maxlen=buffer_size)  
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
-        # self.seed = random.seed(seed)
+        self.seed = random.seed(seed)
     
     def add(self, state, action, reward, next_state, done):
         """Add a new experience to memory."""
@@ -317,6 +317,6 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.001, eps_deca
             torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_norm.pt')
     return scores
 
-agent = Agent(state_size=31, action_size=12)
+agent = Agent(state_size=31, action_size=12, seed=0)
 
 scores = dqn()
