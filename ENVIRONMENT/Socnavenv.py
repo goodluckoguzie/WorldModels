@@ -6,7 +6,7 @@ import numpy as np
 import random
 
 import gym
-
+import math
 from gym import spaces
 
 import cv2
@@ -18,7 +18,7 @@ RESOLUTION_VIEW = 1000.
 MAP_SIZE = 8.0
 PIXEL_TO_WORLD = RESOLUTION / MAP_SIZE
 MARGIN = 0.5
-MAX_TICKS = 350
+MAX_TICKS = 250
 TIMESTEP = 0.1
 ROBOT_RADIUS = 0.15
 GOAL_RADIUS = 0.5
@@ -26,26 +26,15 @@ GOAL_THRESHOLD = ROBOT_RADIUS + GOAL_RADIUS
 NUMBER_OF_HUMANS = 5
 HUMAN_THRESHOLD = 0.4
 
-# REACH_REWARD = 3
-# OUTOFMAP_REWARD = -0.1
-# MAXTICKS_REWARD = -0.01
-# ALIVE_REWARD = -0.00005
-# COLLISION_REWARD = -0.1
-# DISTANCE_REWARD_DIVISOR = 100
-# DISCOMFORT = -0.001
-# MAX_ADVANCE = 1.4
-# MAX_ROTATION = 0.5*np.pi
-
-REACH_REWARD = 1
-OUTOFMAP_REWARD = -1
-MAXTICKS_REWARD = -1
-ALIVE_REWARD = -0.0005
-COLLISION_REWARD = -1
-DISTANCE_REWARD_DIVISOR = 100
+REACH_REWARD = 1.0
+OUTOFMAP_REWARD = -0.5
+MAXTICKS_REWARD = -0.5
+ALIVE_REWARD = -0.00001
+COLLISION_REWARD = -1.0
+DISTANCE_REWARD_DIVISOR = 1000
 DISCOMFORT = -0.03
 MAX_ADVANCE = 1.4
 MAX_ROTATION = 0.5*np.pi
-
 
 MILLISECONDS = 30
 
@@ -81,11 +70,12 @@ elif "debug=1" in sys.argv:
 
 
 class SocNavEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, relative_observations=True):
         super().__init__()
 
+
+        self.relative_observations = relative_observations
         self.window_initialised = False
-        self.previous_goal_distance = None
 
         self.ticks = 0
         self.humans = np.zeros((NUMBER_OF_HUMANS,4))  # x, y, orientation, speed
@@ -99,6 +89,7 @@ class SocNavEnv(gym.Env):
 
     @property
     def observation_space(self):
+
         low  = np.array([-MAP_SIZE/2, -MAP_SIZE/2, -1.0, -1.0,                                   # robot:  x, y, sin, cos
                          -MAP_SIZE/2, -MAP_SIZE/2] +                                             # goal:   x, y
                         [-MAP_SIZE/2, -MAP_SIZE/2, -1.0, -1.0, -MAX_ADVANCE]*NUMBER_OF_HUMANS  ) # humans: x, y, sin, cos, speed
@@ -106,6 +97,9 @@ class SocNavEnv(gym.Env):
                          +MAP_SIZE/2, +MAP_SIZE/2] +                                             # goal:   x, y
                         [+MAP_SIZE/2, +MAP_SIZE/2, +1.0, +1.0, +MAX_ADVANCE]*NUMBER_OF_HUMANS  ) # humans: x, y, sin, cos, speed
         return spaces.box.Box(low, high, low.shape, np.float32)
+    
+
+
 
     @property
     def action_space(self):
@@ -155,6 +149,9 @@ class SocNavEnv(gym.Env):
                 self.humans[human,0] = xp
                 self.humans[human,1] = yp
 
+
+ 
+
         if self.robot_is_done:
             raise Exception('step call within a finished episode!')
 
@@ -170,8 +167,10 @@ class SocNavEnv(gym.Env):
 
         if DEBUG > 0 and self.ticks%50==0:
             self.render()
+          
         elif DEBUG > 1:
             self.render()
+  
 
         if DEBUG > 0 and self.robot_is_done:
             print(f'cumulative reward: {self.cumulative_reward}')
@@ -233,18 +232,15 @@ class SocNavEnv(gym.Env):
 
         return reward
 
-
-
     def reset(self):
         self.cumulative_reward = 0
-        self.previous_goal_distance = None
-
 
         HALF_SIZE = MAP_SIZE/2. - MARGIN
         # robot
         self.robot[0,0] = random.uniform(-HALF_SIZE, HALF_SIZE) # x
         self.robot[0,1] = random.uniform(-HALF_SIZE, HALF_SIZE) # y
         self.robot[0,2] = random.uniform(-np.pi, np.pi)         # orientation
+        self.robot[0,2] = 0
 
         # goal
         self.goal[0,0] = random.uniform(-HALF_SIZE, HALF_SIZE)  # x
@@ -271,11 +267,44 @@ class SocNavEnv(gym.Env):
             if i.shape[1] > 3:
                 output[:, 4] = i[:, 3]
             return output.flatten()
+    
+        def make_relative(n, angle=False):
+            i = np.array(n)
 
-        robot_obs = observation_with_cos_sin_rather_than_angle(self.robot)
-        goal_obs = self.goal.flatten()
-        humans_obs = observation_with_cos_sin_rather_than_angle(self.humans)
+            for j in range(i.shape[0]):
+                xp = i[j,0]
+                yp = i[j,1]
+
+                A = np.array([[math.cos(-self.robot[0,2] ), -math.sin(-self.robot[0,2]), self.robot[0,0]],
+                             [math.sin(-self.robot[0,2]), math.cos(-self.robot[0,2]), self.robot[0,1] ],
+                             [0, 0, 1]])     #  matrix of the robot cordinates
+                A = np.linalg.inv(A) # inverse matrix of the robot cordinates
+                B = [[xp], [yp], [1]]  # x and y cordinate
+                G = [[xp], [yp], [1]]  # x and y cordinate
+
+                C = np.dot(A, B) # dot product
+                
+                i[j,0] = C[0,0]
+                i[j,1] = C[1,0]
+
+                if angle is True:
+                    i[j,2] = i[j,2] - self.robot[0,2] # converting the human cordinate from world cordinate to the robot cordinate 
+            return i
+
+        if self.relative_observations is True:
+            self.relative_robot = make_relative(self.robot, angle=True)
+            robot_obs = observation_with_cos_sin_rather_than_angle(self.relative_robot)
+            self.relative_goal = make_relative(self.goal)
+            goal_obs = self.relative_goal.flatten()
+            self.relative_human = make_relative(self.humans)
+            humans_obs = observation_with_cos_sin_rather_than_angle(self.relative_human)
+        else:
+            robot_obs = observation_with_cos_sin_rather_than_angle(self.robot)
+            goal_obs = self.goal.flatten()
+            humans_obs = observation_with_cos_sin_rather_than_angle(self.humans)
+
         return np.concatenate( (robot_obs, goal_obs, humans_obs) ).astype(np.float32)
+
 
 
     def render(self):
@@ -299,25 +328,43 @@ class SocNavEnv(gym.Env):
         if not self.window_initialised:
             cv2.namedWindow("world", cv2.WINDOW_NORMAL) 
             cv2.resizeWindow("world", int(RESOLUTION_VIEW), int(RESOLUTION_VIEW))
+            cv2.namedWindow("worldR", cv2.WINDOW_NORMAL) 
+            cv2.resizeWindow("worldR", int(RESOLUTION_VIEW), int(RESOLUTION_VIEW))
             self.window_initialised = True
 
         # empty the image
         self.world_image = (np.ones((int(RESOLUTION),int(RESOLUTION),3))*255).astype(np.uint8)
+        self.world_imageR = (np.ones((int(RESOLUTION),int(RESOLUTION),3))*255).astype(np.uint8)
+
         # draws robot
-        draw_oriented_point(self.world_image, self.robot, (255, 0, 0))
+        draw_oriented_point(self.world_image,  self.robot, (255, 0, 0))
+        print(self.relative_robot)
+        draw_oriented_point(self.world_imageR, self.relative_robot, (255, 0, 0))
+
         # draws goal
-        cv2.circle(self.world_image, (w2px(self.goal[0,0]), w2py(self.goal[0,1])), int(GOAL_RADIUS*100.), (0, 255, 0), 2)
+        cv2.circle(self.world_image,  (w2px(self.goal[0,0]),          w2py(self.goal[0,1])),          int(GOAL_RADIUS*100.), (0, 255, 0), 2)
+        cv2.circle(self.world_imageR, (w2px(self.relative_goal[0,0]), w2py(self.relative_goal[0,1])), int(GOAL_RADIUS*100.), (0, 255, 0), 2)
+
         # draws humans
         for human in range(NUMBER_OF_HUMANS):
             draw_oriented_point(self.world_image, self.humans[human:human+1,:], (0, 0, 255))
+            draw_oriented_point(self.world_imageR, self.relative_human[human:human+1,:], (0, 0, 255))
+
         # shows image
         cv2.imshow("world", self.world_image)
+        cv2.imshow("worldR", np.rot90(self.world_imageR))
+        
         k = cv2.waitKey(MILLISECONDS)
         if k%255 == 27:
             sys.exit(0)
 
     def close(self):
         pass
+
+
+
+
+
 
 
 class DiscreteSocNavEnv(SocNavEnv):
