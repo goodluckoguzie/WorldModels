@@ -35,7 +35,7 @@ def discrete_to_continuous_action(action:int):
     """
     Function to return a continuous space action for a given discrete action
     """
-    
+
     if action == 0:
         return np.array([0, 0.125], dtype=np.float32)
     
@@ -54,23 +54,23 @@ def discrete_to_continuous_action(action:int):
     elif action == 5:
         return np.array([-1, 0], dtype=np.float32)
 
-    # if action == 6:
-    #     return np.array([0.125, 0], dtype=np.float32)
+    if action == 6:
+        return np.array([0.125, 0], dtype=np.float32)
     
-    # elif action == 7:
-    #     return np.array([-0.125, 0], dtype=np.float32)
+    elif action == 7:
+        return np.array([-0.125, 0], dtype=np.float32)
 
-    # elif action == 8:
-    #     return np.array([-0.125, 1], dtype=np.float32) 
+    elif action == 8:
+        return np.array([-0.125, 1], dtype=np.float32) 
 
-    # elif action == 9:
-    #     return np.array([0, 1], dtype=np.float32)
+    elif action == 9:
+        return np.array([0, 1], dtype=np.float32)
 
-    # elif action == 10:
-    #     return np.array([0, -1], dtype=np.float32)
+    elif action == 10:
+        return np.array([0, -1], dtype=np.float32)
 
-    # if action == 11:
-    #     return np.array([0, -0.125], dtype=np.float32)
+    if action == 11:
+        return np.array([0, -0.125], dtype=np.float32)
     
     else:
         raise NotImplementedError
@@ -114,9 +114,9 @@ class QNetwork(nn.Module):
 BUFFER_SIZE = int(1e5)  # replay buffer size
 BATCH_SIZE = 64         # minibatch size
 GAMMA = 0.99            # discount factor
-TAU = 0.01#1e-3              # for soft update of target parameters
-LR = 5e-4               # learning rate 
-UPDATE_EVERY = 100       # how often to update the network
+TAU = 1e-5              # for soft update of target parameters
+LR = 5e-5               # learning rate 
+UPDATE_EVERY = 2      # how often to update the network
 
 
 
@@ -234,7 +234,7 @@ class Agent():
 class ReplayBuffer:
     """Fixed-size buffer to store experience tuples."""
 
-    def __init__(self, action_size, buffer_size, batch_size, seed):
+    def __init__(self, action_size, buffer_size, batch_size):
         """Initialize a ReplayBuffer object.
 
         Params
@@ -248,7 +248,7 @@ class ReplayBuffer:
         self.memory = deque(maxlen=buffer_size)  
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
-        self.seed = random.seed(seed)
+        # self.seed = random.seed(seed)
     
     def add(self, state, action, reward, next_state, done):
         """Add a new experience to memory."""
@@ -317,6 +317,6 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.001, eps_deca
             torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_norm.pt')
     return scores
 
-agent = Agent(state_size=31, action_size=6, seed=0)
+agent = Agent(state_size=31, action_size=12)
 
 scores = dqn()
