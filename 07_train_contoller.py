@@ -108,7 +108,7 @@ controller = Controller(latents, hiddens, number_of_actions).to(device)
 
 def evaluate_control_model(vae, rnn, controller, device):
 
-    env =  SocNavEnv()
+    env = SocNavEnv(relative_observations=True)
     total_episodes = 20
     time_steps = 200
     s = 0
@@ -199,7 +199,7 @@ def evaluate_control_model(vae, rnn, controller, device):
 def train_controller(controller, vae, rnn,  mode='real'):
     parameters = controller.parameters()
     es = cma.CMAEvolutionStrategy(flatten_parameters(parameters), 0.1,
-                                  {'popsize': 32})
+                                  {'popsize': 16})
 
     vae = vae.to(device)
     rnn = rnn.to(device)

@@ -57,8 +57,8 @@ rnn = rnn.float()
 # rnn.load_state_dict(torch.load("./MODEL/MDN_RNN_window.pt"))
 rnn.eval()
 
-from ENVIRONMENT.Socnavenv_output import SocNavEnv 
-env = SocNavEnv()
+from ENVIRONMENT.Socnavenv import SocNavEnv 
+env = SocNavEnv(relative_observations=True)
 
 # from ENVIRONMENT.sOcnavenv import DiscreteSocNavEnv 
 # env = DiscreteSocNavEnv()

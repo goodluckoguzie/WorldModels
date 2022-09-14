@@ -78,7 +78,7 @@ def discrete_to_continuous_action(action:int):
 
 
 from ENVIRONMENT.Socnavenv import SocNavEnv 
-env = SocNavEnv()
+env = SocNavEnv(relative_observations=True)
 
 
 print('State shape: ', env.observation_space)

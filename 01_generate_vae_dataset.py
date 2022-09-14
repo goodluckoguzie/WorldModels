@@ -38,7 +38,7 @@ class Rollout():
         if not os.path.exists(self.dir_name):
             os.makedirs(self.dir_name)
 
-        env = SocNavEnv()
+        env = SocNavEnv(relative_observations=True)
         s = 0
         start_time = time.time()
         while s < self.num_episodes_to_record:

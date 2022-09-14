@@ -242,7 +242,7 @@ class DQNAgent:
         np.save(os.path.join(self.save_path, "plots", "rewards"), np.array(self.rewards), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "losses"), np.array(self.episode_loss), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "exploration_rates"), np.array(self.epsilon), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array((self.total_grad_norm).cpu()/self.batch_size), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array((self.total_grad_norm.cpu())/self.batch_size), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "successes"), np.array(self.has_reached_goal), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "collisions"), np.array(self.has_collided), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "steps_to_reach"), np.array(self.steps), allow_pickle=True, fix_imports=True)
@@ -377,7 +377,7 @@ class DQNAgent:
 
 if __name__ == "__main__":
     # env = gym.make("SocNavEnv-v0")
-    env = SocNavEnv()
+    env = SocNavEnv(relative_observations=True)
 
     # env.configure("./configs/env.yaml")
     # setting environment to return padded observations
