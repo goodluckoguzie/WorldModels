@@ -11,26 +11,75 @@ import numpy as np
 from collections import deque, namedtuple
 
 # For visualization
+from gym.wrappers.monitoring import video_recorder
 import glob
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-advance_split = 5
-rotation_split = 5
+# advance_split = 5
+# rotation_split = 5
 
-advance_grid, rotation_grid = np.meshgrid(
-    np.linspace(-1, 1, advance_split),
-    np.linspace(-1, 1, rotation_split))
+# advance_grid, rotation_grid = np.meshgrid(
+#     np.linspace(-1, 1, advance_split),
+#     np.linspace(-1, 1, rotation_split))
 
-action_list = np.hstack((
-    advance_grid.reshape(( advance_split*rotation_split, 1)),
-    rotation_grid.reshape((advance_split*rotation_split, 1))))
-number_of_actions = action_list.shape[0]
+# action_list = np.hstack((
+#     advance_grid.reshape(( advance_split*rotation_split, 1)),
+#     rotation_grid.reshape((advance_split*rotation_split, 1))))
+# number_of_actions = action_list.shape[0]
 
-# from ENVIRONMENT.Socnavenv import SocNavEnv 
-# env = SocNavEnv()
+
+
+
+def discrete_to_continuous_action(action:int):
+    # print(action)
+    """
+    Function to return a continuous space action for a given discrete action
+    """
+    if action == 0:
+        return np.array([0, 0.125], dtype=np.float32)
+    
+    elif action == 1:
+        return np.array([0, -0.125], dtype=np.float32)
+
+    elif action == 2:
+        return np.array([1, 0.125], dtype=np.float32) 
+    
+    elif action == 3:
+        return np.array([1, -0.125], dtype=np.float32) 
+
+    elif action == 4:
+        return np.array([1, 0], dtype=np.float32)
+
+    elif action == 5:
+        return np.array([-1, 0], dtype=np.float32)
+
+    # if action == 6:
+    #     return np.array([0.125, 0], dtype=np.float32)
+    
+    # elif action == 7:
+    #     return np.array([-0.125, 0], dtype=np.float32)
+
+    # elif action == 8:
+    #     return np.array([-0.125, 1], dtype=np.float32) 
+
+    # elif action == 9:
+    #     return np.array([0, 1], dtype=np.float32)
+
+    # elif action == 10:
+    #     return np.array([0, -1], dtype=np.float32)
+
+    # if action == 11:
+    #     return np.array([0, -0.125], dtype=np.float32)
+    
+    else:
+        raise NotImplementedError
+
+
+
 from ENVIRONMENT.Socnavenv import SocNavEnv 
-
 env = SocNavEnv()
+
+
 print('State shape: ', env.observation_space)
 print('Number of actions: ', env.action_space)
 
@@ -64,9 +113,9 @@ class QNetwork(nn.Module):
 BUFFER_SIZE = int(1e5)  # replay buffer size
 BATCH_SIZE = 64         # minibatch size
 GAMMA = 0.99            # discount factor
-TAU = 1e-3              # for soft update of target parameters
+TAU = 0.01#1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate 
-UPDATE_EVERY = 2        # how often to update the network
+UPDATE_EVERY = 100       # how often to update the network
 
 
 
@@ -244,8 +293,9 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.001, eps_deca
         for t in range(max_t):
 
             action = agent.act(state, eps)
-            action_ = action_list[action]
-            next_state, reward, done, _ = env.step(action_)
+            action_continuous = discrete_to_continuous_action(action)
+            # action_ = action_list[action]
+            next_state, reward, done, _ = env.step(action_continuous)
             agent.step(state, action, reward, next_state, done)
             state = next_state
             score += reward
@@ -259,10 +309,13 @@ def dqn(n_episodes=1_000_000, max_t=1000, eps_start=1.0, eps_end=0.001, eps_deca
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
         if np.mean(scores_window)>=1.0:
             print('\nEnvironment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-100, np.mean(scores_window)))
-            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_norm.pth')
+            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_norm.pt')
             break
+        if np.mean(scores_window)>=.30:
+            print('saving model')
+            torch.save(agent.qnetwork_local.state_dict(), 'checkpoint_norm.pt')
     return scores
 
-agent = Agent(state_size=31, action_size=25, seed=0)
+agent = Agent(state_size=31, action_size=6, seed=0)
 
 scores = dqn()
