@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import deque
 import socnavenv
+from ENVIRONMENT.Socnavenv import SocNavEnv 
 import gym
 import numpy as np
 import copy
@@ -375,7 +376,9 @@ class DQNAgent:
     #     print(f"Average reward per episode: {total_reward/num_episodes}")
 
 if __name__ == "__main__":
-    env = gym.make("SocNavEnv-v0")
+    # env = gym.make("SocNavEnv-v0")
+    env = SocNavEnv()
+
     # env.configure("./configs/env.yaml")
     # setting environment to return padded observations
     # env.set_padded_observations(True)
