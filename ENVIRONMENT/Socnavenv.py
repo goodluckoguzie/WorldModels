@@ -66,7 +66,7 @@ elif "debug=1" in sys.argv:
 #
 
 
-self.previous_goal_distance = None
+previous_goal_distance = None
 
 
 class SocNavEnv(gym.Env):
