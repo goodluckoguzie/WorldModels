@@ -27,7 +27,7 @@ if not os.path.exists(rollout_dir):
 total_episodes = args.episodes
 
 
-def discrete_to_continuous_action(self, action:int):
+def discrete_to_continuous_action(action:int):
     """
     Function to return a continuous space action for a given discrete action
     """
@@ -81,10 +81,10 @@ class Rollout():
             prev_action = None
             for t in range(time_steps):
                 # env.render()
-                action = random.randint(0, 5)
-                action_continuous = discrete_to_continuous_action(action)
+                action_ = random.randint(0, 5)
+                action = discrete_to_continuous_action(action_)
 
-                nxt_obs, nxt_reward, done, _ = env.step(action_continuous)
+                nxt_obs, nxt_reward, done, _ = env.step(action)
                 prev_action = action 
                 action = torch.from_numpy(action).float()
                 obs = torch.from_numpy(obs).float()
