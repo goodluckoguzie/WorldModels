@@ -14,7 +14,7 @@ import argparse
 import yaml
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# device = 'cuda' if torch.cuda.is_available() else 'cpu'
 class DQN(nn.Module):
     def __init__(self, input_layer_size:int, hidden_layers:list):
         super(DQN, self).__init__() 

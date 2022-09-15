@@ -26,6 +26,33 @@ if not os.path.exists(rollout_dir):
 
 total_episodes = args.episodes
 
+
+def discrete_to_continuous_action(self, action:int):
+    """
+    Function to return a continuous space action for a given discrete action
+    """
+    if action == 0:
+        return np.array([0, 0.125], dtype=np.float32)
+    
+    elif action == 1:
+        return np.array([0, -0.125], dtype=np.float32)
+
+    elif action == 2:
+        return np.array([1, 0.125], dtype=np.float32) 
+    
+    elif action == 3:
+        return np.array([1, -0.125], dtype=np.float32) 
+
+    elif action == 4:
+        return np.array([1, 0], dtype=np.float32)
+
+    elif action == 5:
+        return np.array([-1, 0], dtype=np.float32)
+    
+    else:
+        raise NotImplementedError
+
+
 class Rollout():
     def __init__(self, data_dic, dir_name,mode, num_episodes_to_record):
         super().__init__()
@@ -54,8 +81,10 @@ class Rollout():
             prev_action = None
             for t in range(time_steps):
                 # env.render()
-                action = np.array([random.uniform(-1, 1), random.uniform(-1, 1)])
-                nxt_obs, nxt_reward, done, _ = env.step(action)
+                action = random.randint(0, 5)
+                action_continuous = discrete_to_continuous_action(action)
+
+                nxt_obs, nxt_reward, done, _ = env.step(action_continuous)
                 prev_action = action 
                 action = torch.from_numpy(action).float()
                 obs = torch.from_numpy(obs).float()
