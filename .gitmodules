@@ -1,0 +1,3 @@
+[submodule "Goodluck"]
+	path = Goodluck
+	url = https://github.com/robocomp/gsoc22-socnavenv.git
