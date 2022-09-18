@@ -91,7 +91,7 @@ val_loader   = DataLoader(val_obs_data,   batch_size=batch_size, shuffle=False)
 
 # model = Autoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-# model.load_state_dict(torch.load('./MODEL/vae_model1.pt'))
+model.load_state_dict(torch.load('./MODEL/vae_model1.pt'))
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 
