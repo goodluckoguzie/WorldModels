@@ -67,11 +67,16 @@ def preprocess_observation(obs):
     assert(type(obs) == dict)
     observation = np.array([], dtype=np.float32)
     observation = np.concatenate((observation, obs["goal"].flatten()) )
+    # print("sddddddddddddddddd")
+    # print(observation.shape)
+    # print("hhhhhhhhhhhhhhhhhhhh")
+    # print(observation.shape)
+    # print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
     observation = np.concatenate((observation, obs["humans"].flatten()) )
     observation = np.concatenate((observation, obs["laptops"].flatten()) )
     observation = np.concatenate((observation, obs["tables"].flatten()) )
     observation = np.concatenate((observation, obs["plants"].flatten()) )
-    return observation
+    return torch.from_numpy(observation)
 
 
 class Rollout():
@@ -94,6 +99,7 @@ class Rollout():
             reward_sequence= []
             done_sequence = []
             obs = env.reset()
+
             prev_reward = 0
             reward = 0
             
@@ -103,10 +109,13 @@ class Rollout():
                 action_ = random.randint(0, 5)
                 action = discrete_to_continuous_action(action_)
                 obs = preprocess_observation(obs)
+                # print("fffffffffffffffffffffffffff")
+                # print(obs)
+                # print("66666666666666666666666666666666666666666666")
 
                 nxt_obs, nxt_reward, done, _ = env.step(action)
                 prev_action = action 
-                # action = torch.from_numpy(action).float()
+                action = torch.from_numpy(action).float()
                 # obs = torch.from_numpy(obs).float()
                 # obs = preprocess_observation(obs)
                 obs_sequence.append(obs)

@@ -1,11 +1,10 @@
 import sys
 import torch
-import torchvision
+# import torchvision
 import torch.optim as optim
 import argparse
 import torch.nn as nn
 import matplotlib.pyplot as plt
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import numpy as np
 import argparse
@@ -29,16 +28,16 @@ if not os.path.exists(vae_dir):
 
 # leanring parameters
 epochs = args.epochs
-batch_size = 10240
-input_size = 31
-z_dim = 62
+batch_size = 512
+input_size = 47
+z_dim = 94
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 Val_dataset = []
 Train_dataset = []
 
-train_dataset = torch.load('./data/saved_vae_rollout_train.pt')
-val_dataset = torch.load('./data/saved_vae_rollout_validation.pt')
+train_dataset = torch.load('./Data/saved_vae_rollout_train.pt')
+val_dataset = torch.load('./Data/saved_vae_rollout_validation.pt')
 
 
 class VAE_Dataset(torch.utils.data.Dataset):
@@ -63,14 +62,26 @@ def flating_obs_data(data):
     print('obs_dataset.size :', imgs.size())
     return imgs
 
+# def flating_obs_data(data):
+#     imgs = []
+#     for episode_data in data.values():
+      
+#         imgs = imgs + episode_data['obs_sequence']
+#         print('obs_sequence: {}'.format(len(imgs)))
+#         img = np.stack((imgs))
+#     print('obs_dataset.size :', img.shape)
+#     return imgs
+
+
+
 obs_data = flating_obs_data(train_dataset)
 import random
-random.shuffle(obs_data)
-# obs_data = utility.normalised(obs_data)
+# obs_data = random.shuffle(obs_data)
+# # # obs_data = utility.normalised(obs_data)
 train_obs_data = VAE_Dataset(obs_data)
 
 val_obs_data = flating_obs_data(val_dataset)
-# val_obs_data = utility.normalised(val_obs_data)
+# # val_obs_data = utility.normalised(val_obs_data)
 val_obs_data = VAE_Dataset(obs_data)
 
 # train_obs_data = VAE_Dataset( utility.normalised(flating_obs_data(train_dataset)))
@@ -84,14 +95,13 @@ if args.max_samples > 0:
 print(f'max_samples: {args.max_samples}')
 
 
-# training and validation data loaders
+# # training and validation data loaders
 train_loader = DataLoader(train_obs_data, batch_size=batch_size, shuffle=True)
 val_loader   = DataLoader(val_obs_data,   batch_size=batch_size, shuffle=False)
 
 
 # model = Autoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
 model = VariationalAutoencoder(input_dims=input_size, hidden_dims=200, latent_dims=z_dim).to(device)
-model.load_state_dict(torch.load('./MODEL/vae_model1.pt'))
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 
@@ -181,7 +191,7 @@ def train_model(model, batch_size, patience, n_epochs):
             break
         
     # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('./MODEL/vae_model1.pt'))
+    model.load_state_dict(torch.load('./MODEL/vae_model.pt'))
 
     return  model, avg_train_losses, avg_valid_losses
 
@@ -211,11 +221,11 @@ plt.show()
 fig.savefig('loss_plot.png', bbox_inches='tight')
 
 
-#epochs = range(1,35)
-#plt.plot(epochs, train_epoch_loss, 'g', label='Training loss')
-#plt.plot(epochs, val_epoch_loss, 'b', label='validation loss')
-#plt.title('Training and Validation loss')
-#plt.xlabel('Epochs')
-#plt.ylabel('Loss')
-#plt.legend()
-#plt.show()
+# # #epochs = range(1,35)
+# # #plt.plot(epochs, train_epoch_loss, 'g', label='Training loss')
+# # #plt.plot(epochs, val_epoch_loss, 'b', label='validation loss')
+# # #plt.title('Training and Validation loss')
+# # #plt.xlabel('Epochs')
+# # #plt.ylabel('Loss')
+# # #plt.legend()
+# # #plt.show()
