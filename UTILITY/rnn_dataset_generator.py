@@ -1,30 +1,32 @@
 import sys
 import torch
-import torchvision
 import torch.optim as optim
-import argparse
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import numpy as np
 import os, time, datetime
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-time_steps = 200
+time_steps = 350
 
 
 def pad_tensor( tensor, pad):
     pad_size = pad - tensor.size(0)
     return torch.cat([tensor.to(device), torch.zeros([pad_size, tensor.size(1)]).to(device)], dim=0)
 
-
+# torch.from_numpy(
 def fit_dataset_to_rnn(dataset):
     
     for episode_idx, episode_data in enumerate(dataset.values()):
         # print(episode_idx)
 
-
         obs_sequence = episode_data['obs_sequence']
         # print(obs_sequence.shape)
+        # obs_sequence = np.asarray(obs_sequence)
+        # obs_sequence = obs_sequence.tolist()
+        # obs_sequence =  np.array(obs_sequence)
+        # obs_sequence =  tuple(obs_sequence)
+        # obs_sequence =  torch.from_numpy(obs_sequence)
 
         action_sequence = episode_data['action_sequence']
         reward_sequence = episode_data['reward_sequence']
@@ -55,6 +57,3 @@ def fit_dataset_to_rnn(dataset):
         episode_data['reward_sequence'] = reward_sequence
     print("done padding the datset ")
     return dataset
-
-
-
