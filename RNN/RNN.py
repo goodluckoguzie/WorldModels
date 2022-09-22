@@ -18,15 +18,18 @@ class RNN(nn.Module):
     def forward(self, states):
         
         #h, _ = self.rnn(states)
-        h,_  = self.rnn(states)
+        h,h_out  = self.rnn(states)
         # h_out = h_out.view(-1, self.n_hiddens)
         y = self.fc(h)
-        return y, None, None
+        return y, None, h_out
     
     def infer(self, states, hidden):
         h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
         y = self.fc(h)
         return y, None, None, next_hidden
+
+    def init_hidden(self):
+        return nn.init.kaiming_uniform_(torch.empty(1, self.n_hiddens))
 
 
 
@@ -60,6 +63,10 @@ class LSTM(nn.Module):
         y = self.fc(h)
         
         return y , h_out
+
+    # def init_hidden(self):
+    #     return nn.init.kaiming_uniform_(torch.empty(1, self.n_hiddens))
+
 
 
 class LSTM_reward(nn.Module):

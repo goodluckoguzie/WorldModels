@@ -7,7 +7,7 @@ import numpy as np
 import os, time, datetime
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-time_steps = 350
+time_steps = 300
 
 
 def pad_tensor( tensor, pad):

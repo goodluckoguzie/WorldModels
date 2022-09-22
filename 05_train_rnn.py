@@ -18,13 +18,13 @@ args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-latents = 31
+latents = 47
 actions = 2
 hiddens = 256
 epochs = args.epochs
-train_window = 1#0 
-batch_size = 2048
-timestep = 200
+train_window = 1 
+batch_size = 32
+timestep = 350
 num_layers = 2
 
 # train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
@@ -32,8 +32,8 @@ num_layers = 2
 
 
 
-train_data = torch.load('./data/saved_vae_rollout_train.pt')
-val_data = torch.load('./data/saved_vae_rollout_validation.pt')
+train_data = torch.load('./Data/saved_vae_rollout_train.pt')
+val_data = torch.load('./Data/saved_vae_rollout_validation.pt')
 train_dat = fit_dataset_to_rnn(train_data)
 val_dat = fit_dataset_to_rnn(val_data)
 
@@ -65,6 +65,8 @@ l1 = nn.MSELoss()
 # l1 = nn.CrossEntropyLoss()
 # l1 = nn.L1Loss()
 rnn = RNN(latents, actions, hiddens).to(device)
+# rnn.load_state_dict(torch.load("./MODEL/model.pt"))
+
 # rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
 # rnn.load_state_dict(torch.load("./MODEL/model1.pt"))
 # rnn.load_state_dict(torch.load('./MODEL/model.pt'))
@@ -116,6 +118,7 @@ def train_model(model, batch_size, patience, n_epochs):
                 # we have 200 timesteps in an episode . 
                 action = action.to(device)
                 current_timestep = current_timestep.to(device)
+                # print("curent ",current_timestep.shape)
                 optimizer.zero_grad()  
                 nxt_timestep = nxt_timestep.to(device)
                 states = torch.cat([current_timestep, action], dim=-1) 
@@ -161,8 +164,8 @@ def train_model(model, batch_size, patience, n_epochs):
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.sum(train_losses)/len(train_dataset)
-        valid_loss = np.sum(valid_losses)/len(train_dataset)
+        train_loss = np.sum(train_losses)/(len(train_dataset)*w)
+        valid_loss = np.sum(valid_losses)/(len(train_dataset)*w)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         

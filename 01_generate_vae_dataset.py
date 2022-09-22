@@ -12,7 +12,7 @@ import argparse
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
 import numpy as np
-time_steps = 350
+time_steps = 300
 
 parser = argparse.ArgumentParser("total_episodes asigning")
 parser.add_argument('--episodes', type=int,
