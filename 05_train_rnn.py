@@ -23,8 +23,8 @@ actions = 2
 hiddens = 256
 epochs = args.epochs
 train_window = 1 
-batch_size = 32
-timestep = 350
+batch_size = 128
+timestep = 300
 num_layers = 2
 
 # train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
@@ -110,7 +110,7 @@ def train_model(model, batch_size, patience, n_epochs):
             # print(batch_idx)
 
             train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
-            w = 0                                   
+            # w = 0                                   
                                # next shift the sliding window a step ahead now our label is the 12th timestep
             for current_timestep, nxt_timestep,action,_ in train_inout_seq:
                 
@@ -122,6 +122,10 @@ def train_model(model, batch_size, patience, n_epochs):
                 optimizer.zero_grad()  
                 nxt_timestep = nxt_timestep.to(device)
                 states = torch.cat([current_timestep, action], dim=-1) 
+                # print(states.shape)
+                # print("tttttttttttttttttttttttttttttttttttttt")
+                # print(nxt_timestep.shape)
+                # print("endddddddddddddddddddddddddddddddd")
                 # forward pass: compute predicted outputs by passing inputs to the model
                 # predicted_nxt_timestep, _= rnn(states)
                 predicted_nxt_timestep, _,_ = rnn(states)
@@ -142,7 +146,7 @@ def train_model(model, batch_size, patience, n_epochs):
             # print(batch_idx)
 
             train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
-            w = 0                                                                   # next shift the sliding window a step ahead now our label is the 12th timestep
+            # w = 0                                                                   # next shift the sliding window a step ahead now our label is the 12th timestep
             for current_timestep, nxt_timestep,action,_ in train_inout_seq:
 
                 # we have 200 timesteps in an episode . 
@@ -158,14 +162,14 @@ def train_model(model, batch_size, patience, n_epochs):
                 # calculate the loss
                 val_loss_rnn = l1(predicted_nxt_timestep, nxt_timestep)
                 valid_losses.append(val_loss_rnn.item())  
-                w = w+1
+                # w = w+1
 
 
 
         # print training/validation statistics 
         # calculate average loss over an epoch
-        train_loss = np.sum(train_losses)/(len(train_dataset)*w)
-        valid_loss = np.sum(valid_losses)/(len(train_dataset)*w)
+        train_loss = np.sum(train_losses)/(len(train_dataset))
+        valid_loss = np.sum(valid_losses)/(len(train_dataset))
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
         
