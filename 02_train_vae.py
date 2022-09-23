@@ -75,8 +75,8 @@ def flating_obs_data(data):
 
 
 obs_data = flating_obs_data(train_dataset)
-import random
-obs_data = random.shuffle(obs_data)
+# import random
+# obs_data = random.shuffle(obs_data)
 # # # obs_data = utility.normalised(obs_data)
 train_obs_data = VAE_Dataset(obs_data)
 
