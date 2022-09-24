@@ -181,6 +181,7 @@ def evaluate_control_model(vae, rnn, controller, device):
             # out_full, hidden = mdrnn(rnn_input, hidden)
             with torch.no_grad():
                 rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+                print("dddddddddddddddddddddddddddddddddddddd",rnn_input.shape)
                 _,_, hidden = rnn(rnn_input)
       
             c_in = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
@@ -214,7 +215,7 @@ def train_controller(controller, vae, rnn,  mode='real'):
     epoch = 0
     best = 0.0
     cur_best = None
-    epochs = 10
+    epochs = 8
     while not es.stop():
         print('epoch : {}'.format(epoch))
         solutions = es.ask()
@@ -244,3 +245,4 @@ if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
     env.configure('./configs/env.yaml')
     train_controller(controller, vae, rnn)
+    

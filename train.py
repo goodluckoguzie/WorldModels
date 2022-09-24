@@ -83,6 +83,18 @@ if __name__ == "__main__":
             agent.train()
         
         else: raise NotImplementedError()
+# ####################################################################################################################
+    elif args["agent"].lower() == "duelingdqnrnn":
+        if args["type"].lower() == "mlp":
+            from agents.duelingDQN_RNN import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+# ##############################################################################################################################
+
     
     elif args["agent"].lower() == "a2c":
         if args["type"].lower() == "mlp":
