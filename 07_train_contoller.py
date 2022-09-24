@@ -207,14 +207,14 @@ def evaluate_control_model(vae, rnn, controller, device):
 def train_controller(controller, vae, rnn,  mode='real'):
     parameters = controller.parameters()
     es = cma.CMAEvolutionStrategy(flatten_parameters(parameters), 0.1,
-                                  {'popsize': 32})
+                                  {'popsize': 10})
     vae = vae.to(device)
     rnn = rnn.to(device)
     start_time = time.time()
     epoch = 0
     best = 0.0
     cur_best = None
-    epochs = 8
+    epochs = 5
     while not es.stop():
         print('epoch : {}'.format(epoch))
         solutions = es.ask()
