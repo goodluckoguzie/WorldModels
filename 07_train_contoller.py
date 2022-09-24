@@ -181,7 +181,6 @@ def evaluate_control_model(vae, rnn, controller, device):
             # out_full, hidden = mdrnn(rnn_input, hidden)
             with torch.no_grad():
                 rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-                print("dddddddddddddddddddddddddddddddddddddd",rnn_input.shape)
                 _,_, hidden = rnn(rnn_input)
       
             c_in = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
@@ -208,7 +207,7 @@ def evaluate_control_model(vae, rnn, controller, device):
 def train_controller(controller, vae, rnn,  mode='real'):
     parameters = controller.parameters()
     es = cma.CMAEvolutionStrategy(flatten_parameters(parameters), 0.1,
-                                  {'popsize': 10})
+                                  {'popsize': 32})
     vae = vae.to(device)
     rnn = rnn.to(device)
     start_time = time.time()
