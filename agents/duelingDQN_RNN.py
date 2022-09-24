@@ -223,7 +223,7 @@ class DuelingDQNAgent:
             # exploit
             with torch.no_grad():
                 # q = self.duelingDQN(torch.from_numpy(current_state).reshape(1, -1).float().to(self.device))
-                q = self.duelingDQN(current_state).reshape(1, -1).float().to(self.device)
+                q = self.duelingDQN(current_state.unsqueeze(0)).reshape(1, -1).float().to(self.device)
 
                 action_discrete = torch.argmax(q).item()
                 action_continuous = self.discrete_to_continuous_action(action_discrete)
