@@ -208,11 +208,11 @@ class DuelingDQNAgent:
         elif action == 5:
             return np.array([-1, 0], dtype=np.float32)
         
-        # elif action == 6:
-        #     return np.array([-0.8, +0.4], dtype=np.float32)
+        elif action == 6:
+            return np.array([-0.8, +0.4], dtype=np.float32)
 
-        # elif action == 7:
-        #     return np.array([-0.8, -0.4], dtype=np.float32)
+        elif action == 7:
+            return np.array([-0.8, -0.4], dtype=np.float32)
         
         else:
             raise NotImplementedError
@@ -231,7 +231,7 @@ class DuelingDQNAgent:
         
         else:
             # explore
-            act = np.random.randint(0, 6)
+            act = np.random.randint(0, 8)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
