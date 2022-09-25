@@ -29,7 +29,7 @@ if not os.path.exists(rollout_dir):
 total_episodes = args.episodes
 
 
-def discrete_to_continuous_action(self, action:int):
+def discrete_to_continuous_action(action:int):
     """
     Function to return a continuous space action for a given discrete action
     """
