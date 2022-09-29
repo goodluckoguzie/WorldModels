@@ -13,9 +13,15 @@ World Models consists of three main components: Vision (**V**), Model (**M**), a
 **V** consists of a convolutional [Variational Autoencoder (VAE)](https://arxiv.org/abs/1606.05908), which compresses frames taken from the gameplay into a latent vector *z*. **M** consists of a [Long Short-Term Memory Recurrent Neural Networks](https://arxiv.org/pdf/1909.09586.pdf), from a [Recurrent Neural Network (RNN)](https://en.wikipedia.org/wiki/Recurrent_neural_network). This RNN takes latent vectors *z* from **V** and predicts the next frame. And finally **C** is a simple single layer linear model that maps the output from **M** to actions to perform in the environment. **C** is trained using [Evolution Strategies](https://blog.openai.com/evolution-strategies/), particularly the [CMA-ES](https://arxiv.org/abs/1604.00772) algorithm.
 
 
+### To Train our Baseline duelingDQN 
+We trained our agent using duelling DQN in order to set a benchmark for on-going research. To train our benchmark model, run the code below.
 
-### VAE Dataset 
-1) To generate our dataset for VAE. The dataset are flatten episodes,generating sequence of rollouts. To generate images from 2000 rollouts, run the command below. This command generates test,train and validation dataset.
+```sh
+python3 T.py -a="duelingdqn" -t="mlp" -e="./configs/env.yaml" -c="./configs/duelingDQN.yaml" --kwargs run_name=dueling_mlp
+```
+
+### To Generate our Dataset 
+1) To generate our dataset. The dataset are flatten episodes,generating sequence of rollouts. To generate images from 2000 rollouts, run the command below. This command generates test,train and validation dataset.
 
 ```sh
 python3 01_generate_vae_dataset.py  ----rollouts 2000 
@@ -26,32 +32,13 @@ python3 01_generate_vae_dataset.py  ----rollouts 2000
 python3 02_train_vae.py --epochs 1000 
 ```
 
-
-
-### Test Our VAE
-3) After training our VAE model. To test on our model, run the command below
-
-```sh
-python3 03_test_vae.py 
-```
-### RNN Dataset
-4) To generate a dataset of 1000 episodes, run the command below. 
-
-```sh
-python3 04_generate_rnn_dataset.py --epochs 1000 -
-```
 ### Train Our RNN
 5) To train on our model for 1000 episode run the command below 
 
 ```sh
 python3 05_train_rnn.py --epochs 1000
 ```
-### Test Our RNN
-6) After training our RNN model. To test on our model, run the command below
 
-```sh
-python3 06_test_rnn.py 
-```
 ### Train Our Controller 
 7) To train on our controller model, run the command below 
 
@@ -65,6 +52,16 @@ python3 07_train_contoller.py --episodes 1000
 ```sh
 python3 08_test_controller.py --episodes 1000
 ```
+
+
+### Train Our DuelingDQN with our trained RNN and VAE model
+ To train our model, run the code below.
+
+```sh
+python3 T.py -a="duelingdqn" -t="mlp" -e="./configs/env.yaml" -c="./configs/DQN_RNN_VAE.yaml" --kwargs run_name=dueling_mlp
+```
+
+
 ## License
 
 The original research for World Models was conducted by Ha & Schmidhuber.
