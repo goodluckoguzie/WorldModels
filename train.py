@@ -42,6 +42,8 @@ if __name__ == "__main__":
     ap.add_argument('-k', '--kwargs', nargs='*', action=ParseKwargs)
     args = vars(ap.parse_args())
 
+
+
     env.configure(args["env_config"])
 
     if args["agent"].lower() == "dqn":
