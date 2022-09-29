@@ -72,6 +72,9 @@ class DuelingDQNAgent:
         # declaring the network
         self.duelingDQN = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
         
+        # initializing using xavier initialization
+        self.duelingDQN.apply(self.xavier_init_weights)
+
         #initializing the fixed targets
         self.fixed_targets = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
         self.fixed_targets.load_state_dict(self.duelingDQN.state_dict())
@@ -199,11 +202,11 @@ class DuelingDQNAgent:
         elif action == 5:
             return np.array([-1, 0], dtype=np.float32)
         
-        elif action == 6:
-            return np.array([-0.8, +0.4], dtype=np.float32)
+        # elif action == 6:
+        #     return np.array([-0.8, +0.4], dtype=np.float32)
 
-        elif action == 7:
-            return np.array([-0.8, -0.4], dtype=np.float32)
+        # elif action == 7:
+        #     return np.array([-0.8, -0.4], dtype=np.float32)
         
         else:
             raise NotImplementedError
@@ -220,7 +223,7 @@ class DuelingDQNAgent:
         
         else:
             # explore
-            act = np.random.randint(0, 8)
+            act = np.random.randint(0, 6)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
@@ -341,7 +344,7 @@ class DuelingDQNAgent:
 
                 # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
                 next_obs = self.preprocess_observation(next_obs)
-                
+
                 # rendering if reqd
                 if self.render and ((i+1) % self.render_freq == 0):
                     self.env.render()
