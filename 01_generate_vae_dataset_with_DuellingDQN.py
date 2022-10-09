@@ -281,7 +281,7 @@ class Rollout():
             
             prev_action = None
             for t in range(time_steps):
-                env.render()
+                # env.render()
                 obs = agent.preprocess_observation(obs)
                 act_continuous, act_discrete = agent.get_action(obs, 0)
 
