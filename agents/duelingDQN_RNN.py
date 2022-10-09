@@ -231,7 +231,7 @@ class DuelingDQNAgent:
         
         else:
             # explore
-            act = np.random.randint(0, 8)
+            act = np.random.randint(0, 7)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
@@ -331,7 +331,7 @@ class DuelingDQNAgent:
         hiddens = 256
         rnn = RNN(latents, actions, hiddens).to(self.device)
         rnn = rnn.float()
-        rnn.load_state_dict(torch.load('./MODEL/model1.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/model.pt'))
         rnn.eval()
 
         # train loop
@@ -340,7 +340,7 @@ class DuelingDQNAgent:
             current_obs = self.preprocess_observation(current_obs)
 
 
-            action = random.randint(0, 8)
+            action = random.randint(0, 7)
             action = self.discrete_to_continuous_action(action)
             action = np.atleast_2d(action)
             action = torch.from_numpy(action).to(self.device)

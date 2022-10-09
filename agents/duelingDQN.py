@@ -220,7 +220,7 @@ class DuelingDQNAgent:
         
         else:
             # explore
-            act = np.random.randint(0, 8)
+            act = np.random.randint(0, 7)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
