@@ -238,7 +238,7 @@ class DuelingDQNAgent:
             raise NotImplementedError
 
     def get_action(self, current_state, epsilon):
-        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn/episode00182500.pth'))
+        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_0.00015/episode00100000.pth'))
         self.duelingDQN.eval()
 
             # exploit
@@ -248,60 +248,6 @@ class DuelingDQNAgent:
             action_continuous = self.discrete_to_continuous_action(action_discrete)
             return action_continuous, action_discrete
 
-
-
-
-
-
-
-# def discrete_to_continuous_action(action:int):
-#     """
-#     Function to return a continuous space action for a given discrete action
-#     """
-#     if action == 0:
-#         return np.array([0, 0.25], dtype=np.float32) 
-    
-#     elif action == 1:
-#         return np.array([0, -0.25], dtype=np.float32) 
-
-#     elif action == 2:
-#         return np.array([1, 0.125], dtype=np.float32) 
-    
-#     elif action == 3:
-#         return np.array([1, -0.125], dtype=np.float32) 
-
-#     elif action == 4:
-#         return np.array([1, 0], dtype=np.float32)
-
-#     elif action == 5:
-#         return np.array([-1, 0], dtype=np.float32)
-    
-#     elif action == 6:
-#         return np.array([-0.8, +0.4], dtype=np.float32)
-
-#     elif action == 7:
-#         return np.array([-0.8, -0.4], dtype=np.float32)
-    
-#     else:
-#         raise NotImplementedError
-
-# def preprocess_observation(obs):
-#     """
-#     To convert dict observation to numpy observation
-#     """
-#     assert(type(obs) == dict)
-#     observation = np.array([], dtype=np.float32)
-#     observation = np.concatenate((observation, obs["goal"].flatten()) )
-#     # print("sddddddddddddddddd")
-#     # print(observation.shape)
-#     # print("hhhhhhhhhhhhhhhhhhhh")
-#     # print(observation.shape)
-#     # print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-#     observation = np.concatenate((observation, obs["humans"].flatten()) )
-#     observation = np.concatenate((observation, obs["laptops"].flatten()) )
-#     observation = np.concatenate((observation, obs["tables"].flatten()) )
-#     observation = np.concatenate((observation, obs["plants"].flatten()) )
-#     return torch.from_numpy(observation)
 
 
 class Rollout():
@@ -338,12 +284,7 @@ class Rollout():
                 env.render()
                 obs = agent.preprocess_observation(obs)
                 act_continuous, act_discrete = agent.get_action(obs, 0)
-                # action_ = random.randint(0, 7)
-                # action = discrete_to_continuous_action(action_)
-                
-                # print("fffffffffffffffffffffffffff")
-                # print(obs)
-                # print("66666666666666666666666666666666666666666666")
+
 
                 nxt_obs, nxt_reward, done, _ = env.step(act_continuous)
                 action = torch.from_numpy(act_continuous).float()
@@ -368,11 +309,11 @@ class Rollout():
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
         if self.mode == 'train':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_train.pt') 
+            torch.save(self.data_dic, self.dir_name + 'saved_dqn_rollout_train.pt') 
         elif self.mode  == 'test':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_test.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_dqn_rollout_test.pt')
         elif self.mode  == 'val':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_validation.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_dqn_rollout_validation.pt')
 
 
 
