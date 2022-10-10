@@ -204,7 +204,7 @@ class DuelingDQNAgent:
         observation = np.concatenate((observation, obs["laptops"].flatten()) )
         observation = np.concatenate((observation, obs["tables"].flatten()) )
         observation = np.concatenate((observation, obs["plants"].flatten()) )
-        return observation
+        return torch.from_numpy(observation)
     
     def discrete_to_continuous_action(self, action:int):
         """
