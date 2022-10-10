@@ -238,12 +238,12 @@ class DuelingDQNAgent:
             raise NotImplementedError
 
     def get_action(self, current_state, epsilon):
-        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_0.00015/episode00100000.pth'))
+        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn/episode00100000.pth'))
         self.duelingDQN.eval()
 
             # exploit
         with torch.no_grad():
-            q = self.duelingDQN(torch.from_numpy(current_state).reshape(1, -1).float().to(self.device))
+            q = self.duelingDQN(torch.from_numpy((current_state.numpy())).reshape(1, -1).float().to(self.device))
             action_discrete = torch.argmax(q).item()
             action_continuous = self.discrete_to_continuous_action(action_discrete)
             return action_continuous, action_discrete
