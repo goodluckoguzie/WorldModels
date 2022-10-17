@@ -106,6 +106,17 @@ if __name__ == "__main__":
             else:
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
+
+
+    elif args["agent"].lower() == "dnqtrainedrnnduelingdqnversion":
+        if args["type"].lower() == "mlp":
+            from agents.dqn_trained_rnn_duelingDQN_version import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
 # ##############################################################################################################################
 
     
