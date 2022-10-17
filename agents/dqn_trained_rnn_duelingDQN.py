@@ -331,7 +331,7 @@ class DuelingDQNAgent:
         hiddens = 256
         rnn = RNN(latents, actions, hiddens).to(self.device)
         rnn = rnn.float()
-        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model1.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model.pt'))
         rnn.eval()
 
         # train loop
