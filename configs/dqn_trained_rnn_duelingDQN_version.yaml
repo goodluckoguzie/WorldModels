@@ -1,6 +1,6 @@
 lr: 0.001  # learning rate
 buffer_size: 200_000  # buffer size
-batch_size: 128  # batch size for sampling from the buffer
+batch_size: 64 # batch size for sampling from the buffer
 gamma: 0.99  # discount factor
 num_episodes: 100_000  # number of episodes to train
 epsilon: 1.0  # initial value of epsilon
