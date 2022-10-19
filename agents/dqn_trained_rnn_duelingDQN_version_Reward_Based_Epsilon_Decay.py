@@ -13,6 +13,12 @@ import yaml
 import argparse
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
+import sys
+sys.path.append('./WorldModels')
+from RNN.RNN import LSTM,RNN
+
+
+
 
 class DuelingDQN(nn.Module):
     def __init__(self, input_size, hidden_layers:list, v_net_layers:list, a_net_layers:list) -> None:
@@ -72,6 +78,9 @@ class DuelingDQNAgent:
         # declaring the network
         self.duelingDQN = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
         
+        # initializing using xavier initialization
+        self.duelingDQN.apply(self.xavier_init_weights)
+
         #initializing the fixed targets
         self.fixed_targets = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
         self.fixed_targets.load_state_dict(self.duelingDQN.state_dict())
@@ -213,7 +222,9 @@ class DuelingDQNAgent:
         if np.random.random() > epsilon:
             # exploit
             with torch.no_grad():
-                q = self.duelingDQN(torch.from_numpy(current_state).reshape(1, -1).float().to(self.device))
+                # q = self.duelingDQN(torch.from_numpy(current_state).reshape(1, -1).float().to(self.device))
+                q = self.duelingDQN(current_state.unsqueeze(0)).reshape(1, -1).float().to(self.device)
+
                 action_discrete = torch.argmax(q).item()
                 action_continuous = self.discrete_to_continuous_action(action_discrete)
                 return action_continuous, action_discrete
@@ -303,6 +314,8 @@ class DuelingDQNAgent:
         self.writer.add_scalar("Steps to reach goal / episode", self.steps, episode)
         self.writer.flush()  
 
+
+
     def train(self):
         self.loss_fn = nn.MSELoss()
         self.optimizer = optim.Adam(self.duelingDQN.parameters(), lr=self.lr)
@@ -316,17 +329,35 @@ class DuelingDQNAgent:
 
         self.average_reward = 0
 
+
         
         self.STEPS_TO_TAKE = 198
         self.REWARD_INCREMENT = 0.0093
         self.REWARD_THRESHOLD = 0
         self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
 
+
+        latents = 47
+        actions = 2
+        hiddens = 256
+        rnn = RNN(latents, actions, hiddens).to(self.device)
+        rnn = rnn.float()
+        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model1.pt'))
+        rnn.eval()
         
+
         # train loop
         for i in range(self.num_episodes):
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
+
+
+            # action = random.randint(0, 7)
+            # action = self.discrete_to_continuous_action(action)
+            # action = np.atleast_2d(action)
+            # action = torch.from_numpy(action).to(self.device)
+
+
             done = False
             self.episode_reward = 0
             self.total_grad_norm = 0
@@ -334,24 +365,57 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
-
-
-
-
+            hidden = rnn.init_hidden()
+            hidden= hidden.unsqueeze(0).unsqueeze(0)
 
             
             while not done: 
-                # sampling an action from the current state
-                action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
 
-                # taking a step in the environment
+
+                # unsqueezed_action = action.unsqueeze(0)
+                z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
+                z = z.unsqueeze(0)
+                hidden= hidden[0]
+
+
+
+                # with torch.no_grad():
+                #     rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+                #     _,_, hidden = rnn(rnn_input)
+                
+                # print("z",z.shape)
+                # print("hidden",hidden.shape)
+
+                current_obs = torch.cat((z, hidden.to(self.device)),-1)
+                # current_obs = torch.cat((z.unsqueeze(0), hidden[0]),-1)
+                current_obs =  current_obs.squeeze(0).squeeze(0)
+
+                # # sampling an action from the current state
+                action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
+                
+
+                # # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
 
                 # incrementing total steps
                 self.steps += 1
 
-                # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
+                # # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
                 next_obs = self.preprocess_observation(next_obs)
+                next_obs_ = next_obs
+
+
+                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
+                next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
+
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                    # print("ddddddddddddddddddddddddddd",rnn_input.shape)
+                    _,_, hidden = rnn(rnn_input.to(self.device))
+        
+                next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)),-1)
+
+
                 
                 # rendering if reqd
                 if self.render and ((i+1) % self.render_freq == 0):
@@ -368,8 +432,12 @@ class DuelingDQNAgent:
                     self.has_collided = 1
                     self.steps = self.env.EPISODE_LENGTH
 
+                next_obs = next_obs.squeeze(0).squeeze(0).cpu()
+                current_obs = current_obs.squeeze(0).squeeze(0).cpu()
                 # storing the current state transition in the replay buffer. 
                 self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
+                # print("currenttttttttttttttttttttttt",current_obs.shape)
+                # print("nxt_obbbbbbbbbbbbbbbbbbbbs",next_obs.shape)
 
 
                 # sampling a mini-batch of state transitions if the replay buffer has sufficent examples
@@ -377,7 +445,7 @@ class DuelingDQNAgent:
                     self.update()
 
                 # setting the current observation to the next observation
-                current_obs = next_obs
+                current_obs = next_obs_
 
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
@@ -389,6 +457,7 @@ class DuelingDQNAgent:
             # decaying epsilon
             # if self.epsilon > self.min_epsilon:
             #     self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
+
             self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
 
             if self.epsilon  > self.min_epsilon and self.episode_reward >= self.REWARD_THRESHOLD:    
@@ -449,9 +518,15 @@ if __name__ == "__main__":
     env.configure("./configs/env.yaml")
     env.set_padded_observations(True)
 
+
+    # rnn = RNN(latents, actions, hiddens).to(self.device)
+    # rnn = rnn.float()
+    # rnn.load_state_dict(torch.load('./MODEL/model.pt'))
+    # rnn.eval()
+
     # config file for the model
-    config = "./configs/duelingDQN_Reward_Based_Epsilon_Decay.yaml"
-    input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    config = "./configs/dqn_trained_rnn_duelingDQN_version_Reward_Based_Epsilon_Decay.yaml"
+    input_layer_size = 303#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
     agent.train()
     
