@@ -332,8 +332,8 @@ class DuelingDQNAgent:
 
         
         self.STEPS_TO_TAKE = 198
-        self.REWARD_INCREMENT = 0.0093
-        self.REWARD_THRESHOLD = 0
+        self.REWARD_INCREMENT = 0.0023
+        self.REWARD_THRESHOLD = -0.7
         self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
 
 
