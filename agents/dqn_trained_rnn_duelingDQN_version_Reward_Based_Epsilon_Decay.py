@@ -333,7 +333,7 @@ class DuelingDQNAgent:
         
         self.STEPS_TO_TAKE = 198
         self.REWARD_INCREMENT = 0.0023
-        self.REWARD_THRESHOLD = -0.7
+        self.REWARD_THRESHOLD = -0.8
         self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
 
 
@@ -342,7 +342,7 @@ class DuelingDQNAgent:
         hiddens = 256
         rnn = RNN(latents, actions, hiddens).to(self.device)
         rnn = rnn.float()
-        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model1.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model.pt'))
         rnn.eval()
         
 
