@@ -40,25 +40,26 @@ def discrete_to_continuous_action(action:int):
         return np.array([0, -0.25], dtype=np.float32) 
 
     elif action == 2:
-        return np.array([1, 0.125], dtype=np.float32) 
+        return np.array([1, 0.25], dtype=np.float32) 
     
     elif action == 3:
-        return np.array([1, -0.125], dtype=np.float32) 
+        return np.array([1, -0.25], dtype=np.float32) 
 
     elif action == 4:
         return np.array([1, 0], dtype=np.float32)
 
     elif action == 5:
-        return np.array([-1, 0], dtype=np.float32)
+        return np.array([1, 0], dtype=np.float32)
     
     elif action == 6:
-        return np.array([-0.8, +0.4], dtype=np.float32)
+        return np.array([0.8, -0.45], dtype=np.float32)
 
     elif action == 7:
-        return np.array([-0.8, -0.4], dtype=np.float32)
+        return np.array([0.8, 0.45], dtype=np.float32)
     
     else:
         raise NotImplementedError
+
 
 def preprocess_observation(obs):
     """
@@ -102,13 +103,12 @@ class Rollout():
 
             prev_reward = 0
             reward = 0
-            
-            prev_action = None
             for t in range(time_steps):
-                # env.render()
+                env.render()
                 action_ = random.randint(0, 7)
                 action = discrete_to_continuous_action(action_)
                 obs = preprocess_observation(obs)
+                #print(obs)
                 # print("fffffffffffffffffffffffffff")
                 # print(obs)
                 # print("66666666666666666666666666666666666666666666")
@@ -150,7 +150,8 @@ if __name__ == "__main__":
 
 
     env.configure('./configs/env.yaml')
-    
+    env.set_padded_observations(True)
+
     rollout_dic = {}
     rollout_dir = 'Data/'
     train_dataset = Rollout(rollout_dic, rollout_dir,'train', int(total_episodes))

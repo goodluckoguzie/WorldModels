@@ -186,36 +186,36 @@ class DuelingDQNAgent:
         observation = np.concatenate((observation, obs["plants"].flatten()) )
         return observation
     
-    def discrete_to_continuous_action(self, action:int):
-        """
-        Function to return a continuous space action for a given discrete action
-        """
-        if action == 0:
-            return np.array([0, 0.25], dtype=np.float32) 
-        
-        elif action == 1:
-            return np.array([0, -0.25], dtype=np.float32) 
+	def discrete_to_continuous_action(action:int):
+	    """
+	    Function to return a continuous space action for a given discrete action
+	    """
+	    if action == 0:
+		return np.array([0, 0.25], dtype=np.float32) 
+	    
+	    elif action == 1:
+		return np.array([0, -0.25], dtype=np.float32) 
 
-        elif action == 2:
-            return np.array([1, 0.125], dtype=np.float32) 
-        
-        elif action == 3:
-            return np.array([1, -0.125], dtype=np.float32) 
+	    elif action == 2:
+		return np.array([1, 0.25], dtype=np.float32) 
+	    
+	    elif action == 3:
+		return np.array([1, -0.25], dtype=np.float32) 
 
-        elif action == 4:
-            return np.array([1, 0], dtype=np.float32)
+	    elif action == 4:
+		return np.array([1, 0], dtype=np.float32)
 
-        elif action == 5:
-            return np.array([-1, 0], dtype=np.float32)
-        
-        elif action == 6:
-            return np.array([-0.8, +0.4], dtype=np.float32)
+	    elif action == 5:
+		return np.array([1, 0], dtype=np.float32)
+	    
+	    elif action == 6:
+		return np.array([0.8, -0.45], dtype=np.float32)
 
-        elif action == 7:
-            return np.array([-0.8, -0.4], dtype=np.float32)
-        
-        else:
-            raise NotImplementedError
+	    elif action == 7:
+		return np.array([0.8, 0.45], dtype=np.float32)
+	    
+	    else:
+		raise NotImplementedError
 
     def get_action(self, current_state, epsilon):
 

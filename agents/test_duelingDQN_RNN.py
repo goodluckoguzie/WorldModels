@@ -219,20 +219,16 @@ class DuelingDQNAgent:
 
     def get_action(self, current_state, epsilon):
 
-        if np.random.random() > epsilon:
-            # exploit
-            with torch.no_grad():
-                # q = self.duelingDQN(torch.from_numpy(current_state).reshape(1, -1).float().to(self.device))
-                q = self.duelingDQN(current_state.unsqueeze(0)).reshape(1, -1).float().to(self.device)
 
-                action_discrete = torch.argmax(q).item()
-                action_continuous = self.discrete_to_continuous_action(action_discrete)
-                return action_continuous, action_discrete
-        
-        else:
-            # explore
-            act = np.random.randint(0, 7)
-            return self.discrete_to_continuous_action(act), act 
+        # exploit
+        with torch.no_grad():
+            # q = self.duelingDQN(torch.from_numpy(current_state).reshape(1, -1).float().to(self.device))
+            q = self.duelingDQN(current_state.unsqueeze(0)).reshape(1, -1).float().to(self.device)
+
+            action_discrete = torch.argmax(q).item()
+            action_continuous = self.discrete_to_continuous_action(action_discrete)
+            return action_continuous, action_discrete
+
     
     def calculate_grad_norm(self):
         total_norm = 0
@@ -314,8 +310,6 @@ class DuelingDQNAgent:
         self.writer.add_scalar("Steps to reach goal / episode", self.steps, episode)
         self.writer.flush()  
 
-
-
     def train(self):
         self.loss_fn = nn.MSELoss()
         self.optimizer = optim.Adam(self.duelingDQN.parameters(), lr=self.lr)
@@ -335,7 +329,6 @@ class DuelingDQNAgent:
         rnn = rnn.float()
         rnn.load_state_dict(torch.load('./MODEL/model.pt'))
         rnn.eval()
-        
 
         # train loop
         for i in range(self.num_episodes):
@@ -343,10 +336,10 @@ class DuelingDQNAgent:
             current_obs = self.preprocess_observation(current_obs)
 
 
-            # action = random.randint(0, 7)
-            # action = self.discrete_to_continuous_action(action)
-            # action = np.atleast_2d(action)
-            # action = torch.from_numpy(action).to(self.device)
+            action = random.randint(0, 5)
+            action = self.discrete_to_continuous_action(action)
+            action = np.atleast_2d(action)
+            action = torch.from_numpy(action).to(self.device)
 
 
             done = False
@@ -356,49 +349,43 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
-            hidden = rnn.init_hidden()
-            hidden= hidden.unsqueeze(0).unsqueeze(0)
 
             
             while not done: 
 
 
-                # unsqueezed_action = action.unsqueeze(0)
+                unsqueezed_action = action.unsqueeze(0)
                 z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
-                z = z.unsqueeze(0)
-                hidden= hidden[0]
+                unsqueezed_z = z.unsqueeze(0)
 
+                with torch.no_grad():
+                    rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+                    _,_, hidden = rnn(rnn_input)
 
-
-                # with torch.no_grad():
-                #     rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-                #     _,_, hidden = rnn(rnn_input)
-                
-                # print("z",z.shape)
-                # print("hidden",hidden.shape)
-
-                current_obs = torch.cat((z, hidden.to(self.device)),-1)
-                # current_obs = torch.cat((z.unsqueeze(0), hidden[0]),-1)
+                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
+                current_obs = torch.cat((z.unsqueeze(0), hidden[0]),-1)
                 current_obs =  current_obs.squeeze(0).squeeze(0)
 
-                # # sampling an action from the current state
+                # sampling an action from the current state
                 action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
                 
 
-                # # taking a step in the environment
+                # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
 
                 # incrementing total steps
                 self.steps += 1
 
-                # # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
+                # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
                 next_obs = self.preprocess_observation(next_obs)
                 next_obs_ = next_obs
 
 
                 unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
                 next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
-
+                # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
+                # rnn_input = torch.cat((z, action, reward_), -1).float()
+                # out_full, hidden = mdrnn(rnn_input, hidden)
                 with torch.no_grad():
                     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
                     # print("ddddddddddddddddddddddddddd",rnn_input.shape)
@@ -469,9 +456,17 @@ class DuelingDQNAgent:
                 self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
             
    
-    def eval(self, num_episodes, path=None):
-        if path is not None:
-            self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
+    def eval(self, num_episodes=10, path=None):
+        latents = 47
+        actions = 2
+        hiddens = 256
+        rnn = RNN(latents, actions, hiddens).to(self.device)
+        rnn = rnn.float()
+        rnn.load_state_dict(torch.load('./MODEL/model.pt'))
+        rnn.eval()
+        if path is None:
+            self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn/episode00177500.pth'))
+
         
         self.duelingDQN.eval()
 
@@ -480,11 +475,58 @@ class DuelingDQNAgent:
         for i in range(num_episodes):
             o = self.env.reset()
             o = self.preprocess_observation(o)
+
+
+            action = random.randint(0, 5)
+            action = self.discrete_to_continuous_action(action)
+            action = np.atleast_2d(action)
+            action = torch.from_numpy(action).to(self.device)
             done = False
             while not done:
-                act_continuous, act_discrete = self.get_action(o, 0)
-                new_state, reward, done, info = self.env.step(act_continuous)
-                new_state = self.preprocess_observation(new_state)
+
+                unsqueezed_action = action.unsqueeze(0)
+                z = torch.from_numpy(o).unsqueeze(0).to(self.device)
+                unsqueezed_z = z.unsqueeze(0)
+
+                with torch.no_grad():
+                    rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+                    _,_, hidden = rnn(rnn_input)
+
+                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
+                o = torch.cat((z.unsqueeze(0), hidden[0]),-1)
+                o =  o.squeeze(0).squeeze(0)
+
+                # sampling an action from the current state
+                action_continuous, action_discrete = self.get_action(o, self.epsilon)
+                
+
+                # taking a step in the environment
+                next_obs, reward, done, info = self.env.step(action_continuous)
+
+                # incrementing total steps
+                self.steps += 1
+
+                # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
+                next_obs = self.preprocess_observation(next_obs)
+                next_obs_ = next_obs
+
+
+                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
+                next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
+                # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
+                # rnn_input = torch.cat((z, action, reward_), -1).float()
+                # out_full, hidden = mdrnn(rnn_input, hidden)
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                    # print("ddddddddddddddddddddddddddd",rnn_input.shape)
+                    _,_, hidden = rnn(rnn_input.to(self.device))
+        
+                next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)),-1)
+
+
+                # act_continuous, act_discrete = self.get_action(o, 0)
+                # new_state, reward, done, info = self.env.step(act_continuous)
+                # new_state = self.preprocess_observation(new_state)
                 total_reward += reward
 
                 self.env.render()
@@ -492,7 +534,7 @@ class DuelingDQNAgent:
                 if info["REACHED_GOAL"]:
                     successive_runs += 1
 
-                o = new_state
+                o = next_obs
 
         print(f"Total episodes run: {num_episodes}")
         print(f"Total successive runs: {successive_runs}")
@@ -510,8 +552,8 @@ if __name__ == "__main__":
     # rnn.eval()
 
     # config file for the model
-    config = "./configs/dqn_trained_rnn_duelingDQN_version.yaml"
+    config = "./configs/duelingDQNRNN.yaml"
     input_layer_size = 303#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
-    agent.train()
+    agent.eval()
     
