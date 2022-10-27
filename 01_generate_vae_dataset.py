@@ -104,7 +104,7 @@ class Rollout():
             prev_reward = 0
             reward = 0
             for t in range(time_steps):
-                env.render()
+                # env.render()
                 action_ = random.randint(0, 7)
                 action = discrete_to_continuous_action(action_)
                 obs = preprocess_observation(obs)
