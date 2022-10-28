@@ -1,6 +1,6 @@
 lr: 0.001  # learning rate
 buffer_size: 200_000  # buffer size
-batch_size: 1024  # batch size for sampling from the buffer
+batch_size: 64  # batch size for sampling from the buffer
 gamma: 0.99  # discount factor
 num_episodes: 100_000  # number of episodes to train
 epsilon: 1.0  # initial value of epsilon
@@ -9,7 +9,7 @@ polyak_const: 0.995  # polyak constant for updating the target network
 min_epsilon: 0.015  # minimum value of epsilon after which decay won't occur
 render: False  # setting it to True would render after every "render_freq" episodes
 render_freq: 500  # if render is True, the episode will be rendered after every render_freq episodes
-save_path: "./models/duelingdqn_epsilon_decay_rate_0.15_Reward_Based_Epsilon_Decay_-0.7"  # path to save the model files
+save_path: "./models/duelingdqn_epsilon_decay_rate_0.15_Reward_Based_Epsilon_Decay_action_8"  # path to save the model files
 save_freq: 50  # model would be saved after every save_freq epsidoes
 hidden_layers: [512, 128]  # the hidden layers of the model. Input layer size will be fixed according to the observation shape
 v_net_layers: [128, 64, 4, 1]  # value network
