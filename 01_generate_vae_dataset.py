@@ -108,11 +108,6 @@ class Rollout():
                 action_ = np.random.randint(0, 4)
                 action = discrete_to_continuous_action(action_)
                 obs = preprocess_observation(obs)
-                #print(obs)
-                # print("fffffffffffffffffffffffffff")
-                # print(obs)
-                # print("66666666666666666666666666666666666666666666")
-
                 nxt_obs, nxt_reward, done, _ = env.step(action)
                 prev_action = action 
                 action = torch.from_numpy(action).float()
