@@ -181,30 +181,29 @@ class DuelingDQNAgent:
         """
         Function to return a continuous space action for a given discrete action
         """
-        # Turning anti-clockwise
-        if action == 1:
+        if action == 0:
             return np.array([0, 1], dtype=np.float32) 
         # Turning clockwise
-        elif action == 2:
+        elif action == 1:
             return np.array([0, -1], dtype=np.float32) 
         # Turning anti-clockwise and moving forward
-        elif action == 3:
-            return np.array([1, 0.5], dtype=np.float32) 
-        # Turning clockwise and moving forward
-        elif action == 4:
-            return np.array([1, -0.5], dtype=np.float32) 
-        # Move forward
-        elif action == 5:
+        # elif action == 3:
+        #     return np.array([1, 0.5], dtype=np.float32) 
+        # # Turning clockwise and moving forward
+        # elif action == 4:
+        #     return np.array([1, -0.5], dtype=np.float32) 
+        # # Move forward
+        elif action == 2:
             return np.array([1, 0], dtype=np.float32)
         # stop the robot
-        elif action == 6:
+        elif action == 3:
             return np.array([0, 0], dtype=np.float32)
             # Turning clockwise with a reduced speed and rotation
-        elif action == 7:
-            return np.array([0.5, 1], dtype=np.float32)
-            # Turning anti-clockwise with a reduced speed and rotation
-        elif action == 8:
-            return np.array([0.5, -1], dtype=np.float32)
+        # elif action == 7:
+        #     return np.array([0.5, 1], dtype=np.float32)
+        #     # Turning anti-clockwise with a reduced speed and rotation
+        # elif action == 8:
+        #     return np.array([0.5, -1], dtype=np.float32)
         
         else:
             raise NotImplementedError
@@ -221,7 +220,8 @@ class DuelingDQNAgent:
         
         else:
             # explore
-            act = np.random.randint(1, 8)
+            act = np.random.randint(0, 4)
+            print(act)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
