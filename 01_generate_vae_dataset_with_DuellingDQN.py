@@ -206,7 +206,7 @@ class DuelingDQNAgent:
         observation = np.concatenate((observation, obs["plants"].flatten()) )
         return torch.from_numpy(observation)
 	    
-    def discrete_to_continuous_action(action:int):
+    def discrete_to_continuous_action(self,action:int):
         """
         Function to return a continuous space action for a given discrete action
         """
@@ -240,7 +240,7 @@ class DuelingDQNAgent:
 
     def get_action(self, current_state, epsilon):
         # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_0.00015/episode00100000.pth'))
-        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8/episode00026650.pth'))
+        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_0.15_Reward_Based_Epsilon_Decay_action_8/episode00026650.pth'))
 
         self.duelingDQN.eval()
 
