@@ -3,7 +3,7 @@ import torch
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience=7, verbose=False, delta=0, path='./MODEL/model.pt', trace_func=print):
+    def __init__(self, patience=7, verbose=False, delta=0, path='./MODEL/rnn_model.pt', trace_func=print):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -53,7 +53,7 @@ class EarlyStopping:
 
 class EarlyStopping_Reward:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience=7, verbose=False, delta=0, path='./MODEL/model_rnn10.pt', trace_func=print):
+    def __init__(self, patience=7, verbose=False, delta=0, path='./MODEL/model_rnn.pt', trace_func=print):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
