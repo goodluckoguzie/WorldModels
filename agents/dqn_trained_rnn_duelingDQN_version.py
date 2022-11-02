@@ -187,9 +187,6 @@ class DuelingDQNAgent:
         return observation
     
     def discrete_to_continuous_action(self ,action:int):
-        """
-        Function to return a continuous space action for a given discrete action
-        """
         if action == 0:
             return np.array([0, 1], dtype=np.float32) 
         # Turning clockwise
@@ -233,6 +230,7 @@ class DuelingDQNAgent:
         else:
             # explore
             act = np.random.randint(0, 4)
+            print(act)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
