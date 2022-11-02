@@ -186,36 +186,37 @@ class DuelingDQNAgent:
         observation = np.concatenate((observation, obs["plants"].flatten()) )
         return observation
     
-    def discrete_to_continuous_action(self, action:int):
+    def discrete_to_continuous_action(self ,action:int):
         """
         Function to return a continuous space action for a given discrete action
         """
         if action == 0:
-            return np.array([0, 0.25], dtype=np.float32) 
-        
+            return np.array([0, 1], dtype=np.float32) 
+        # Turning clockwise
         elif action == 1:
-            return np.array([0, -0.25], dtype=np.float32) 
-
+            return np.array([0, -1], dtype=np.float32) 
+        # Turning anti-clockwise and moving forward
+        # elif action == 3:
+        #     return np.array([1, 0.5], dtype=np.float32) 
+        # # Turning clockwise and moving forward
+        # elif action == 4:
+        #     return np.array([1, -0.5], dtype=np.float32) 
+        # # Move forward
         elif action == 2:
-            return np.array([1, 0.125], dtype=np.float32) 
-        
-        elif action == 3:
-            return np.array([1, -0.125], dtype=np.float32) 
-
-        elif action == 4:
             return np.array([1, 0], dtype=np.float32)
-
-        elif action == 5:
-            return np.array([-1, 0], dtype=np.float32)
-        
-        elif action == 6:
-            return np.array([-0.8, +0.4], dtype=np.float32)
-
-        elif action == 7:
-            return np.array([-0.8, -0.4], dtype=np.float32)
+        # stop the robot
+        elif action == 3:
+            return np.array([0, 0], dtype=np.float32)
+            # Turning clockwise with a reduced speed and rotation
+        # elif action == 7:
+        #     return np.array([0.5, 1], dtype=np.float32)
+        #     # Turning anti-clockwise with a reduced speed and rotation
+        # elif action == 8:
+        #     return np.array([0.5, -1], dtype=np.float32)
         
         else:
             raise NotImplementedError
+
 
     def get_action(self, current_state, epsilon):
 
@@ -333,7 +334,7 @@ class DuelingDQNAgent:
         hiddens = 256
         rnn = RNN(latents, actions, hiddens).to(self.device)
         rnn = rnn.float()
-        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model1.pt'))
         rnn.eval()
         
 
