@@ -8,4 +8,4 @@ save_path: "./MODEL/RNN_hidden_512_layer_3"  # path to save the model files
 
 save_freq: 50  # model would be saved after every save_freq epsidoes
 num_layers: 3
-run_name: RNN
+run_name: RNN_hidden_512_layer_3

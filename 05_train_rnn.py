@@ -215,6 +215,7 @@ class RNN_LSTM():
         # self.render_freq = None
         self.save_freq = None
         self.run_name = None
+        # print("dddddddddddddddddddddd",self.run_name )
 
                 # setting values from config file
         self.configure(self.config)
