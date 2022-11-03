@@ -122,33 +122,69 @@ def create_inout_sequences(input_data,action_data, tw):
         
 #         return y , h_out
 
-
-
-
 class LSTM(nn.Module):
-    def __init__(self, n_latents, n_actions, n_hiddens):
-        super(LSTM, self).__init__()
+
+    # def __init__(self, n_features, n_classes, n_hidden, n_layers):            
+    def __init__(self, n_latents, n_actions, n_hiddens,num_layers):            
+
+        super().__init__()
+        self.lstm = nn.LSTM(input_size=n_latents+n_actions, hidden_size=n_hiddens,num_layers=num_layers,batch_first=True)
+
         self.n_latents = n_latents
         self.n_actions = n_actions
         self.n_hiddens = n_hiddens
-        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
-        self.fc = nn.Linear(n_hiddens, n_latents)
+        self.num_layers = num_layers
+        # HE-Initialisierung
+        weight = torch.zeros(num_layers,n_hiddens)
+        nn.init.kaiming_uniform_(weight)
+        self.weight = nn.Parameter(weight)
 
-    def forward(self, states):
+        self.classifier = nn.Linear(n_hiddens, n_latents)
+
+    def init_hidden(self):       
+        # hidden_state = torch.zeros(self.lstm.num_layers,batch_size,self.lstm.hidden_size)
+        # cell_state = torch.zeros(self.lstm.num_layers,batch_size,self.lstm.hidden_size)
+        hidden_state = torch.zeros(self.lstm.num_layers,self.lstm.hidden_size)
+        cell_state = torch.zeros(self.lstm.num_layers,self.lstm.hidden_size)
+        return hidden_state, cell_state
+
+    def forward(self, x):
+        self.hidden = self.init_hidden()
+        _,( hidden, _) = self.lstm(x)   
+
+            # Propagate input through LSTM
         
-        #h, _ = self.rnn(states)
-        h,h_out  = self.rnn(states)
-        # h_out = h_out.view(-1, self.n_hiddens)
-        y = self.fc(h)
-        return y, None, h_out
-    
-    def infer(self, states, hidden):
-        h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
-        y = self.fc(h)
-        return y, None, None, next_hidden
+        hidden_out = hidden.view(-1, self.n_hiddens)               
+        out=hidden[-1]                                  
+        return self.classifier(out) ,hidden_out
 
-    def init_hidden(self):
-        return nn.init.kaiming_uniform_(torch.empty(1, self.n_hiddens))
+
+
+
+# class LSTM(nn.Module):
+#     def __init__(self, n_latents, n_actions, n_hiddens):
+#         super(LSTM, self).__init__()
+#         self.n_latents = n_latents
+#         self.n_actions = n_actions
+#         self.n_hiddens = n_hiddens
+#         self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+#         self.fc = nn.Linear(n_hiddens, n_latents)
+
+#     def forward(self, states):
+        
+#         #h, _ = self.rnn(states)
+#         h,h_out  = self.rnn(states)
+#         # h_out = h_out.view(-1, self.n_hiddens)
+#         y = self.fc(h)
+#         return y, None, h_out
+    
+#     def infer(self, states, hidden):
+#         h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
+#         y = self.fc(h)
+#         return y, None, None, next_hidden
+
+#     def init_hidden(self):
+#         return nn.init.kaiming_uniform_(torch.empty(1, self.n_hiddens))
 
 
 
@@ -185,7 +221,7 @@ class RNN_LSTM():
 
 
         # declaring the network
-        self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens).to(self.device)
+        self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens,self.num_layers).to(self.device)
         # print(self.RNN)
         # print("yes)")
         
@@ -235,9 +271,12 @@ class RNN_LSTM():
 
         # variable to keep count of the number of steps that has occured
         self.steps = 0
-
+        # check vae dir exists, if not, create it
+        RNN_runs = 'RNN_runs'
+        if not os.path.exists(RNN_runs):
+            os.makedirs(RNN_runs)
         if self.run_name is not None:
-            self.writer = SummaryWriter('runs/'+self.run_name)
+            self.writer = SummaryWriter('RNN_runs/'+self.run_name)
         else:
             self.writer = SummaryWriter()
 
@@ -318,9 +357,9 @@ class RNN_LSTM():
                     # forward pass: compute predicted outputs by passing inputs to the model
                     # predicted_nxt_timestep, _= rnn(states)
                     # print(states.shape)
-                    predicted_nxt_timestep, _,_ = rnn(states)
+                    predicted_nxt_timestep, _ = rnn(states)
 
-                    predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
+                    # predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                     # calculate the loss
                     loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
                     loss_rnn.backward()
@@ -346,9 +385,9 @@ class RNN_LSTM():
                     states = torch.cat([current_timestep, action], dim=-1) 
                     # forward pass: compute predicted outputs by passing inputs to the model
                     # predicted_nxt_timestep, _ = rnn(states)
-                    predicted_nxt_timestep, _,_ = rnn(states)
+                    predicted_nxt_timestep, _= rnn(states)
 
-                    predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
+                    # predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                     # calculate the loss
                     val_loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
                     self.valid_losses.append(val_loss_rnn.item())  
@@ -395,7 +434,7 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        rnn.load_state_dict(torch.load('./MODEL/rnn_model.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_3.pt'))
 
         return  rnn, self.avg_train_losses, self.avg_valid_losses
 
@@ -444,9 +483,9 @@ class RNN_LSTM():
 
 
 # config file for the model
-config = "./configs/RNN.yaml"
+config = "./configs/RNN_hidden_512_layer_3.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_512_layer_3")
 
 # print(config)
 
