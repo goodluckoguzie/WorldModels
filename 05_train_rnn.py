@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_6 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -27,7 +27,7 @@ from torch.utils.tensorboard import SummaryWriter
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-config = "./configs/RNN.yaml"
+# config = "./configs/RNN.yaml"
 
 # latents = 47
 # actions = 2
@@ -434,7 +434,7 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_3.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_6.pt'))
 
         return  rnn, self.avg_train_losses, self.avg_valid_losses
 
@@ -483,9 +483,9 @@ class RNN_LSTM():
 
 
 # config file for the model
-config = "./configs/RNN_hidden_512_layer_3.yaml"
+config = "./configs/RNN_hidden_512_layer_6.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_512_layer_3")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_512_layer_6")
 
 # print(config)
 
