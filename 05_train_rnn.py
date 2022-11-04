@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping_6 as EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_1 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -20,26 +20,11 @@ import argparse
 import torch.nn.functional as f
 from torch.distributions.normal import Normal
 from torch.autograd import Variable
-# parser = argparse.ArgumentParser("mode asigning")
-# parser.add_argument('--epochs', type=int, help="epochs")
-# args = parser.parse_args()
+
 from torch.utils.tensorboard import SummaryWriter
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-
-# config = "./configs/RNN.yaml"
-
-# latents = 47
-# actions = 2
-# hiddens = 256
-# epochs = args.epochs
-train_window = 1 
-# batch_size = 128
-timestep = 300
-# num_layers = 2
-
-# train_dataset = torch.load('./data/saved_rnn_rollout_train.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
-# val_dataset = torch.load('./data/saved_rnn_rollout_validation.pt')# our training dataset got from extract_data_for_rnn.py . note that the time step here and there must tally 
+# train_window = 1 
+# timestep = 300
 
 
 
@@ -66,22 +51,9 @@ class MDN_Dataset(torch.utils.data.Dataset):
         return (action, obs)
 
 
-# from torchmetrics import MeanAbsolutePercentageError
-# l1 = MeanAbsolutePercentageError().to(device)
-# l1 = nn.CrossEntropyLoss()
-# l1 = nn.L1Loss()
-# rnn = RNN(latents, actions, hiddens).to(device)
-# rnn.load_state_dict(torch.load("./MODEL/model.pt"))
-
-# rnn = LSTM(latents, actions, hiddens,num_layers).to(device)
-# rnn.load_state_dict(torch.load("./MODEL/model1.pt"))
-# rnn.load_state_dict(torch.load('./MODEL/model.pt'))
-
-# optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
-
 def create_inout_sequences(input_data,action_data, tw):
     inout_seq = []
-    for i in range(timestep-tw):#the timestep is gotten from the extracted data this must tally with that of extract_data_for_rnn.py
+    for i in range(Agent.timestep-tw):#the timestep is gotten from the extracted data this must tally with that of extract_data_for_rnn.py
         train_seq = input_data[:,i:i+tw,:]
         train_label = input_data[:,i+tw:i+tw+1,:]
 
@@ -91,101 +63,42 @@ def create_inout_sequences(input_data,action_data, tw):
     return inout_seq
 
 
-# class LSTM(nn.Module):
-
-
-#     def __init__(self, n_latents, n_actions, n_hiddens,num_layers):
-#         super(LSTM, self).__init__()
-        
-#         self.n_latents = n_latents
-#         self.n_actions = n_actions
-#         self.n_hiddens = n_hiddens
-#         self.num_layers = num_layers
-#         self.rnn = nn.LSTM(n_latents+n_actions, hidden_size=n_hiddens,num_layers=num_layers,
-#                             batch_first=True)
-#         self.fc = nn.Linear(n_hiddens, n_latents)
-
-#     def forward(self, states):
-#         h_0 = Variable(torch.zeros(
-#             self.num_layers, states.size(0), self.n_hiddens)).to(device)
-        
-#         c_0 = Variable(torch.zeros(
-#             self.num_layers, states.size(0), self.n_hiddens)).to(device)
-        
-#         # Propagate input through LSTM
-#         h, (h_out, _) = self.rnn(states, (h_0, c_0))
-        
-#         h_out = h_out.view(-1, self.n_hiddens)
-        
-#         #out = self.fc(h_out)
-#         y = self.fc(h)
-        
-#         return y , h_out
-
 class LSTM(nn.Module):
 
-    # def __init__(self, n_features, n_classes, n_hidden, n_layers):            
-    def __init__(self, n_latents, n_actions, n_hiddens,num_layers):            
-
-        super().__init__()
-        self.lstm = nn.LSTM(input_size=n_latents+n_actions, hidden_size=n_hiddens,num_layers=num_layers,batch_first=True)
-
+    def __init__(self, n_latents,n_actions, n_hiddens, n_layers):            
+        # super().__init__()
+        super(LSTM, self).__init__()
         self.n_latents = n_latents
         self.n_actions = n_actions
         self.n_hiddens = n_hiddens
-        self.num_layers = num_layers
+        self.n_layers = n_layers
+        
+
+        self.lstm = nn.LSTM(input_size=n_latents+n_actions,hidden_size=n_hiddens, num_layers=n_layers,batch_first=True,dropout=0.65)
+
         # HE-Initialisierung
-        weight = torch.zeros(num_layers,n_hiddens)
+        weight = torch.zeros(n_layers,n_hiddens)
         nn.init.kaiming_uniform_(weight)
         self.weight = nn.Parameter(weight)
 
+
         self.classifier = nn.Linear(n_hiddens, n_latents)
 
-    def init_hidden(self):       
-        # hidden_state = torch.zeros(self.lstm.num_layers,batch_size,self.lstm.hidden_size)
-        # cell_state = torch.zeros(self.lstm.num_layers,batch_size,self.lstm.hidden_size)
-        hidden_state = torch.zeros(self.lstm.num_layers,self.lstm.hidden_size)
-        cell_state = torch.zeros(self.lstm.num_layers,self.lstm.hidden_size)
-        return hidden_state, cell_state
+    def init_hidden(self):      
+ 
+        hidden_state = torch.zeros(self.lstm.num_layers,Agent.batch_size,self.lstm.hidden_size)
+        cell_state = torch.zeros(self.lstm.num_layers,Agent.batch_size,self.lstm.hidden_size)
+        return (hidden_state, cell_state)
 
     def forward(self, x):
         self.hidden = self.init_hidden()
-        _,( hidden, _) = self.lstm(x)   
+        # _, (hidden, _) = self.lstm(x)                  
+        h,h_out = self.lstm(x)                  
 
-            # Propagate input through LSTM
-        
-        hidden_out = hidden.view(-1, self.n_hiddens)               
-        out=hidden[-1]                                  
-        return self.classifier(out) ,hidden_out
-
-
-
-
-# class LSTM(nn.Module):
-#     def __init__(self, n_latents, n_actions, n_hiddens):
-#         super(LSTM, self).__init__()
-#         self.n_latents = n_latents
-#         self.n_actions = n_actions
-#         self.n_hiddens = n_hiddens
-#         self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
-#         self.fc = nn.Linear(n_hiddens, n_latents)
-
-#     def forward(self, states):
-        
-#         #h, _ = self.rnn(states)
-#         h,h_out  = self.rnn(states)
-#         # h_out = h_out.view(-1, self.n_hiddens)
-#         y = self.fc(h)
-#         return y, None, h_out
-    
-#     def infer(self, states, hidden):
-#         h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
-#         y = self.fc(h)
-#         return y, None, None, next_hidden
-
-#     def init_hidden(self):
-#         return nn.init.kaiming_uniform_(torch.empty(1, self.n_hiddens))
-
+        # out=hidden[-1]                                  
+        # return self.classifier(out)
+        y = self.classifier(h)
+        return y,None,h_out
 
 
 class RNN_LSTM():
@@ -208,9 +121,8 @@ class RNN_LSTM():
         self.batch_size = None
         # self.gamma = None
         # self.lr = None
-        # self.polyak_const = None
-        # self.render = None
-        # self.min_epsilon = None
+        self.timestep = None
+        self.train_window = None
         self.save_path = None
         # self.render_freq = None
         self.save_freq = None
@@ -258,10 +170,18 @@ class RNN_LSTM():
             self.save_path = config["save_path"]
             assert(self.save_path is not None), f"Argument save_path cannot be None"
 
-
         if self.run_name is None:
             self.run_name = config["run_name"]
             assert(self.run_name is not None), f"Argument save_path cannot be None"
+
+        if self.train_window is None:
+            self.train_window = config["train_window"]
+            assert(self.train_window is not None), f"Argument save_path cannot be None"
+
+
+        if self.timestep is None:
+            self.timestep = config["timestep"]
+            assert(self.timestep is not None), f"Argument save_path cannot be None"
 
 
         if self.save_freq is None:
@@ -338,7 +258,7 @@ class RNN_LSTM():
                 # print("batch_idx")
                 # print(batch_idx)
 
-                train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
+                train_inout_seq = create_inout_sequences(obs, action, Agent.train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
                 # w = 0                                   
                                 # next shift the sliding window a step ahead now our label is the 12th timestep
                 for current_timestep, nxt_timestep,action,_ in train_inout_seq:
@@ -351,16 +271,8 @@ class RNN_LSTM():
                     optimizer.zero_grad()  
                     nxt_timestep = nxt_timestep.to(device)
                     states = torch.cat([current_timestep, action], dim=-1) 
-                    # print(states.shape)
-                    # print("tttttttttttttttttttttttttttttttttttttt")
-                    # print(nxt_timestep.shape)
-                    # print("endddddddddddddddddddddddddddddddd")
-                    # forward pass: compute predicted outputs by passing inputs to the model
-                    # predicted_nxt_timestep, _= rnn(states)
-                    # print(states.shape)
-                    predicted_nxt_timestep, _ = rnn(states)
-
-                    # predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
+                    predicted_nxt_timestep, _ ,_= rnn(states)
+                    predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                     # calculate the loss
                     loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
                     loss_rnn.backward()
@@ -375,7 +287,7 @@ class RNN_LSTM():
                 # print("batch_idx")
                 # print(batch_idx)
 
-                train_inout_seq = create_inout_sequences(obs, action, train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
+                train_inout_seq = create_inout_sequences(obs, action, Agent.train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
                 # w = 0                                                                   # next shift the sliding window a step ahead now our label is the 12th timestep
                 for current_timestep, nxt_timestep,action,_ in train_inout_seq:
 
@@ -385,10 +297,8 @@ class RNN_LSTM():
                     nxt_timestep = nxt_timestep.to(device)
                     states = torch.cat([current_timestep, action], dim=-1) 
                     # forward pass: compute predicted outputs by passing inputs to the model
-                    # predicted_nxt_timestep, _ = rnn(states)
-                    predicted_nxt_timestep, _= rnn(states)
-
-                    # predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
+                    predicted_nxt_timestep, _,_= rnn(states)
+                    predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                     # calculate the loss
                     val_loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
                     self.valid_losses.append(val_loss_rnn.item())  
@@ -428,69 +338,25 @@ class RNN_LSTM():
             
             # early_stopping needs the validation loss to check if it has decresed, 
             # and if it has, it will make a checkpoint of the current model
-            if epoch % 5 == 0:
+            if epoch % 10 == 0:
                 early_stopping(self.valid_loss, rnn)
             
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_6.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_1.pt'))
 
         return  rnn, self.avg_train_losses, self.avg_valid_losses
 
 
-
-
-
-
-
-        # # visualize the loss as the network trained
-        # fig = plt.figure(figsize=(10,8))
-        # plt.plot(range(1,len(train_loss)+1),train_loss, label='Training Loss')
-        # plt.plot(range(1,len(valid_loss)+1),valid_loss,label='Validation Loss')
-
-        # # find position of lowest validation loss
-        # minposs = valid_loss.index(min(valid_loss))+1 
-        # plt.axvline(minposs, linestyle='--', color='r',label='Early Stopping Checkpoint')
-
-        # plt.xlabel('epochs')
-        # plt.ylabel('loss')
-        # plt.ylim(0, 0.5) # consistent scale
-        # plt.xlim(0, len(train_loss)+1) # consistent scale
-        # plt.grid(True)
-        # plt.legend()
-        # plt.tight_layout()
-        # plt.show()
-        # fig.savefig('loss_plot.png', bbox_inches='tight')
-
-
-        #epochs = range(1,35)
-        #plt.plot(epochs, train_epoch_loss, 'g', label='Training loss')
-        #plt.plot(epochs, val_epoch_loss, 'b', label='validation loss')
-        #plt.title('Training and Validation loss')
-        #plt.xlabel('Epochs')
-        #plt.ylabel('Loss')
-        #plt.legend()
-        #plt.show(
-
-
-
-
-
-    # ap = argparse.ArgumentParser()
-    # ap.add_argument("-c", "--config", required=True, help="path to config file for the agent")
-    # args = vars(ap.parse_args())
-
-
 # config file for the model
-config = "./configs/RNN_hidden_512_layer_6.yaml"
+config = "./configs/RNN_hidden_256_layer_1.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_512_layer_6")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_1")
+
 
 # print(config)
-
-
 rnn, train_loss, valid_loss = Agent.train_model()
 
 
