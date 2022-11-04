@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping_3 as EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_6 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -32,7 +32,7 @@ train_data = torch.load('./Data/saved_vae_rollout_train.pt')
 val_data = torch.load('./Data/saved_vae_rollout_validation.pt')
 train_dat = fit_dataset_to_rnn(train_data)
 val_dat = fit_dataset_to_rnn(val_data)
-print("EarlyStopping_3")
+print("EarlyStopping_6")
 
 
     
@@ -345,15 +345,15 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_3.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_6.pt'))
 
         return  rnn, self.avg_train_losses, self.avg_valid_losses
 
 
 # config file for the model
-config = "./configs/RNN_hidden_256_layer_3.yaml"
+config = "./configs/RNN_hidden_256_layer_6.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_3")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_6")
 
 
 # print(config)
