@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping_6 as EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_2 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -32,7 +32,7 @@ train_data = torch.load('./Data/saved_vae_rollout_train.pt')
 val_data = torch.load('./Data/saved_vae_rollout_validation.pt')
 train_dat = fit_dataset_to_rnn(train_data)
 val_dat = fit_dataset_to_rnn(val_data)
-
+print("EarlyStopping_2")
 
 
     
@@ -255,7 +255,14 @@ class RNN_LSTM():
             rnn.train() #activate model for training
 
             for batch_idx, (action, obs) in enumerate(self.train_dataloader):# get a batch of timesteps seperated by episodes
-                # print("batch_idx")×
+                # print("batch_idx")
+                # print(batch_idx)
+
+                train_inout_seq = create_inout_sequences(obs, action, Agent.train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
+                # w = 0                                   
+                                # next shift the sliding window a step ahead now our label is the 12th timestep
+                for current_timestep, nxt_timestep,action,_ in train_inout_seq:
+                    
                     
                     # we have 200 timesteps in an episode . 
                     action = action.to(device)
@@ -338,15 +345,15 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_6.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_2.pt'))
 
         return  rnn, self.avg_train_losses, self.avg_valid_losses
 
 
 # config file for the model
-config = "./configs/RNN_hidden_256_layer_6.yaml"
+config = "./configs/RNN_hidden_256_layer_2.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_6")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_2")
 
 
 # print(config)
