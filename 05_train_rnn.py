@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping_2 as EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_3 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -345,15 +345,15 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_2.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_3.pt'))
 
         return  rnn, self.avg_train_losses, self.avg_valid_losses
 
 
 # config file for the model
-config = "./configs/RNN_hidden_256_layer_2.yaml"
+config = "./configs/RNN_hidden_256_layer_3.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_2")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_3")
 
 
 # print(config)
