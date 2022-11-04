@@ -7,7 +7,7 @@ batch_size: 128
 save_path: "./MODEL/RNN_hidden_256_layer_2"  # path to save the model files
 
 save_freq: 50  # model would be saved after every save_freq epsidoes
-num_layers: 1
+num_layers: 2
 run_name: RNN_hidden_256_layer_2
 train_window : 1 
 timestep : 300
