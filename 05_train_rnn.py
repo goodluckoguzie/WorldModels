@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping_2 as EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_0 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -63,42 +63,71 @@ def create_inout_sequences(input_data,action_data, tw):
     return inout_seq
 
 
-class LSTM(nn.Module):
 
-    def __init__(self, n_latents,n_actions, n_hiddens, n_layers):            
-        # super().__init__()
+
+class LSTM(nn.Module):
+    def __init__(self, n_latents, n_actions, n_hiddens):
         super(LSTM, self).__init__()
         self.n_latents = n_latents
         self.n_actions = n_actions
         self.n_hiddens = n_hiddens
-        self.n_layers = n_layers
+        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        self.fc = nn.Linear(n_hiddens, n_latents)
+
+    def forward(self, states):
+        
+        #h, _ = self.rnn(states)
+        h,h_out  = self.rnn(states)
+        # h_out = h_out.view(-1, self.n_hiddens)
+        y = self.fc(h)
+        return y, None, h_out
+    
+    def infer(self, states, hidden):
+        h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
+        y = self.fc(h)
+        return y, None, None, next_hidden
+
+    def init_hidden(self):
+        return nn.init.kaiming_uniform_(torch.empty(1, self.n_hiddens))
+
+
+
+# class LSTM(nn.Module):
+
+#     def __init__(self, n_latents,n_actions, n_hiddens, n_layers):            
+#         # super().__init__()
+#         super(LSTM, self).__init__()
+#         self.n_latents = n_latents
+#         self.n_actions = n_actions
+#         self.n_hiddens = n_hiddens
+#         self.n_layers = n_layers
         
 
-        self.lstm = nn.LSTM(input_size=n_latents+n_actions,hidden_size=n_hiddens, num_layers=n_layers,batch_first=True,dropout=0.65)
+#         self.lstm = nn.LSTM(input_size=n_latents+n_actions,hidden_size=n_hiddens, num_layers=n_layers,batch_first=True,dropout=0.65)
 
-        # HE-Initialisierung
-        weight = torch.zeros(n_layers,n_hiddens)
-        nn.init.kaiming_uniform_(weight)
-        self.weight = nn.Parameter(weight)
+#         # HE-Initialisierung
+#         weight = torch.zeros(n_layers,n_hiddens)
+#         nn.init.kaiming_uniform_(weight)
+#         self.weight = nn.Parameter(weight)
 
 
-        self.classifier = nn.Linear(n_hiddens, n_latents)
+#         self.classifier = nn.Linear(n_hiddens, n_latents)
 
-    def init_hidden(self):      
+#     def init_hidden(self):      
  
-        hidden_state = torch.zeros(self.lstm.num_layers,Agent.batch_size,self.lstm.hidden_size)
-        cell_state = torch.zeros(self.lstm.num_layers,Agent.batch_size,self.lstm.hidden_size)
-        return (hidden_state, cell_state)
+#         hidden_state = torch.zeros(self.lstm.num_layers,Agent.batch_size,self.lstm.hidden_size)
+#         cell_state = torch.zeros(self.lstm.num_layers,Agent.batch_size,self.lstm.hidden_size)
+#         return (hidden_state, cell_state)
 
-    def forward(self, x):
-        self.hidden = self.init_hidden()
-        # _, (hidden, _) = self.lstm(x)                  
-        h,h_out = self.lstm(x)                  
+#     def forward(self, x):
+#         self.hidden = self.init_hidden()
+#         # _, (hidden, _) = self.lstm(x)                  
+#         h,h_out = self.lstm(x)                  
 
-        # out=hidden[-1]                                  
-        # return self.classifier(out)
-        y = self.classifier(h)
-        return y,None,h_out
+#         # out=hidden[-1]                                  
+#         # return self.classifier(out)
+#         y = self.classifier(h)
+#         return y,None,h_out
 
 
 class RNN_LSTM():
@@ -133,8 +162,10 @@ class RNN_LSTM():
         self.configure(self.config)
 
 
+        self.RNN  = LSTM(self.n_latents, self.n_actions, self.n_hiddens).to(device)
+
         # declaring the network
-        self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens,self.num_layers).to(self.device)
+        # self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens,self.num_layers).to(self.device)
         # print(self.RNN)
         # print("yes)")
         
@@ -345,15 +376,15 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_2.pt'))
+        rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_0.pt'))
 
         return  rnn, self.avg_train_losses, self.avg_valid_losses
 
 
 # config file for the model
-config = "./configs/RNN_hidden_256_layer_2.yaml"
+config = "./configs/RNN_hidden_256_layer_0.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_2")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_0")
 
 
 # print(config)
