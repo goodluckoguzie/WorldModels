@@ -235,9 +235,10 @@ class RNN_LSTM():
         self.train_dataset = MDN_Dataset(train_dat)
         self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)#load our training dataset 
 
-        val_dataset = MDN_Dataset(val_dat)
-        self.val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=self.batch_size, shuffle=True)#load our validation dataset 
+        self.val_dataset = MDN_Dataset(val_dat)
+        self.val_dataloader = torch.utils.data.DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)#load our validation dataset 
         self.l1 = nn.MSELoss()
+        self.optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
 
     def plot(self, episode):
         self.Train_loss.append(self.train_loss)
@@ -274,16 +275,15 @@ class RNN_LSTM():
         # eval_losses = []
         # losses_rnn = []
         print("dddddd",self.num_episodes)
-        for epoch in range(0, self.num_episodes):
+        for epoch in range(1, self.num_episodes + 1):
 
             ###################
             # train the model #
             ###################
             # model.train() #activate model for training
-            rnn = self.RNN
-            optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
+            # rnn = self.RNN
 
-            rnn.train() #activate model for training
+            self.RNN.train() #activate model for training
 
             for batch_idx, (action, obs) in enumerate(self.train_dataloader):# get a batch of timesteps seperated by episodes
                 # print("batch_idx")
@@ -299,21 +299,21 @@ class RNN_LSTM():
                     action = action.to(device)
                     current_timestep = current_timestep.to(device)
                     # print("curent ",current_timestep.shape)
-                    optimizer.zero_grad()  
+                    self.optimizer.zero_grad()  
                     nxt_timestep = nxt_timestep.to(device)
                     states = torch.cat([current_timestep, action], dim=-1) 
-                    predicted_nxt_timestep, _ ,_= rnn(states)
+                    predicted_nxt_timestep, _ ,_=  self.RNN(states)
                     predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                     # calculate the loss
                     loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
                     loss_rnn.backward()
-                    optimizer.step()
+                    self.optimizer.step()
                     self.train_losses.append(loss_rnn.item())
 
             ######################    
             # validate the model #
             ######################
-            rnn.eval() # activate our model for evaluation
+            self.RNN.eval() # activate our model for evaluation
             for batch_idx, (action, obs) in enumerate(self.val_dataloader):# get a batch of timesteps seperated by episodes
                 # print("batch_idx")
                 # print(batch_idx)
@@ -328,7 +328,7 @@ class RNN_LSTM():
                     nxt_timestep = nxt_timestep.to(device)
                     states = torch.cat([current_timestep, action], dim=-1) 
                     # forward pass: compute predicted outputs by passing inputs to the model
-                    predicted_nxt_timestep, _,_= rnn(states)
+                    predicted_nxt_timestep, _,_=  self.RNN(states)
                     predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                     # calculate the loss
                     val_loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
@@ -340,7 +340,7 @@ class RNN_LSTM():
             # print training/validation statistics 
             # calculate average loss over an epoch
             self.train_loss = np.sum(self.train_losses)/(len(self.train_dataset))
-            self.valid_loss = np.sum(self.valid_losses)/(len(self.val_dataloader))
+            self.valid_loss = np.sum(self.valid_losses)/(len(self.val_dataset))
             self.avg_train_losses.append(self.train_loss)
             self.avg_valid_losses.append(self.valid_loss)
 
