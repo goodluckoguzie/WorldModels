@@ -165,7 +165,7 @@ class RNN_LSTM():
         self.RNN  = LSTM(self.n_latents, self.n_actions, self.n_hiddens).to(device)
 
         # declaring the network
-        # self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens,self.num_layers).to(self.device)
+        self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens,self.num_layers).to(self.device)
         # print(self.RNN)
         # print("yes)")
         
