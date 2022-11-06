@@ -162,10 +162,10 @@ class RNN_LSTM():
         self.configure(self.config)
 
 
-        self.RNN  = LSTM(self.n_latents, self.n_actions, self.n_hiddens).to(device)
+        # self.RNN  = LSTM(self.n_latents, self.n_actions, self.n_hiddens).to(device)
 
         # declaring the network
-        # self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens,self.num_layers).to(self.device)
+        self.RNN = LSTM(self.n_latents, self.n_actions, self.n_hiddens,self.num_layers).to(self.device)
         # print(self.RNN)
         # print("yes)")
 
@@ -220,7 +220,7 @@ class RNN_LSTM():
             assert(self.train_window is not None), f"Argument save_path cannot be None"
 
 
-        if self.timestep is None:3
+        if self.timestep is None:
             self.timestep = config["timestep"]
             assert(self.timestep is not None), f"Argument save_path cannot be None"
 
