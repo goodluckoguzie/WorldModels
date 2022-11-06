@@ -238,7 +238,7 @@ class RNN_LSTM():
         self.val_dataset = MDN_Dataset(val_dat)
         self.val_dataloader = torch.utils.data.DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)#load our validation dataset 
         self.l1 = nn.MSELoss()
-        self.optimizer = torch.optim.Adam(rnn.parameters(), lr=1e-4)
+        self.optimizer = torch.optim.Adam(self.RNN.parameters(), lr=1e-4)
 
     def plot(self, episode):
         self.Train_loss.append(self.train_loss)
