@@ -379,15 +379,15 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        self.rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_3.pt'))
+        self.rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_6.pt'))
 
         return  self.rnn, self.avg_train_losses, self.avg_valid_losses
 
 
 # config file for the model
-config = "./configs/RNN_hidden_256_layer_3.yaml"
+config = "./configs/RNN_hidden_256_layer_6.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_3")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_6")
 
 
 # print(config)
