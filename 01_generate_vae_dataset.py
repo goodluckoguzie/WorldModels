@@ -114,7 +114,7 @@ class Rollout():
                 # obs = torch.from_numpy(obs).float()
                 # obs = preprocess_observation(obs)
                 obs_sequence.append(obs)
-                print(obs.shape)
+                # print(obs.shape)
                 # nxt_obs_sequence.append(nxt_obs)
                 action_sequence.append(action)
                 reward_sequence.append(reward)
