@@ -114,6 +114,7 @@ class Rollout():
                 # obs = torch.from_numpy(obs).float()
                 # obs = preprocess_observation(obs)
                 obs_sequence.append(obs)
+                print(obs.shape)
                 # nxt_obs_sequence.append(nxt_obs)
                 action_sequence.append(action)
                 reward_sequence.append(reward)
@@ -132,11 +133,11 @@ class Rollout():
                         "reward_sequence":reward_sequence, "done_sequence":done_sequence}        
             s+=1
         if self.mode == 'train':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_train.pt') 
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_train_new.pt') 
         elif self.mode  == 'test':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_test.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_test_new.pt')
         elif self.mode  == 'val':
-            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_validation.pt')
+            torch.save(self.data_dic, self.dir_name + 'saved_vae_rollout_validation_new.pt')
 
 
 
