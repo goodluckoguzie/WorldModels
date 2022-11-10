@@ -261,21 +261,27 @@ class RNN_LSTM():
     def plot(self, episode):
         self.Train_loss.append(self.train_loss)
         self.Valid_loss.append(self.valid_loss)
-
+        self.grad_norms.append(self.total_grad_norm/self.batch_size)
 
         if not os.path.isdir(os.path.join(self.save_path, "plots")):
             os.makedirs(os.path.join(self.save_path, "plots"))
+
+
+        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm/self.batch_size), allow_pickle=True, fix_imports=True)
 
         np.save(os.path.join(self.save_path, "plots", "Train_loss"), np.array(self.train_loss), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "Valid_loss"), np.array(self.valid_loss), allow_pickle=True, fix_imports=True)
 
         self.writer.add_scalar("Train_loss / epoch", self.train_loss, episode)
         self.writer.add_scalar("valid_loss / epoch", self.valid_loss, episode)
+        self.writer.add_scalar("Average total grad norm / episode", (self.total_grad_norm/self.batch_size), episode)
 
 
     def train_model(self):
         self.Train_loss = []
         self.Valid_loss = []
+        self.grad_norms = []
+
             # early stopping patience; how long to wait after last time validation loss improved.
         patience = 100
         
@@ -294,6 +300,7 @@ class RNN_LSTM():
         # losses_rnn = []
         for epoch in range(1, self.num_episodes + 1):
 
+
             ###################
             # train the model #
             ###################
@@ -311,7 +318,7 @@ class RNN_LSTM():
                                 # next shift the sliding window a step ahead now our label is the 12th timestep
                 for current_timestep, nxt_timestep,action,_ in train_inout_seq:
                     
-                    
+                    self.total_grad_norm = 0                    
                     # we have 200 timesteps in an episode . 
                     action = action.to(device)
                     current_timestep = current_timestep.to(device)
@@ -324,6 +331,8 @@ class RNN_LSTM():
                     # calculate the loss
                     loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
                     loss_rnn.backward()
+                            # gradient clipping
+                    self.total_grad_norm += torch.nn.utils.clip_grad_norm_(self.rnn.parameters(), max_norm=0.5).cpu()
                     self.optimizer.step()
                     self.train_losses.append(loss_rnn.item())
 
