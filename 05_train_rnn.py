@@ -335,6 +335,8 @@ class RNN_LSTM():
                     # print("curent ",current_timestep.shape)
                     self.optimizer.zero_grad()  
                     nxt_timestep = nxt_timestep.to(device)
+                    print("ddddddddddddddddddddddddddactionactionactionddddddddddddddddddddddddd",action.shape)
+
                     print("ddddddddddddddddddddddddddddddddddddddddddddddddddd",current_timestep)
                     print("ddddddddddddddddddddddddddddddddddddddddddddddddddd",current_timestep.shape)
                     print("ddddddddddddddddddddddddddddddddddddddddddddddddddd",len(current_timestep))
@@ -357,8 +359,8 @@ class RNN_LSTM():
             ######################
             self.rnn.eval() # activate our model for evaluation
             for batch_idx, (action, obs) in enumerate(self.val_dataloader):# get a batch of timesteps seperated by episodes
-                # print("batch_idx")
-                # print(batch_idx)
+                print("batch_idx")
+                print(len(action))
 
                 train_inout_seq = create_inout_sequences(obs, action, Agent.train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
                 # w = 0                                                                   # next shift the sliding window a step ahead now our label is the 12th timestep
@@ -426,7 +428,7 @@ class RNN_LSTM():
 # config file for the model
 config = "./configs/RNN_hidden_256_layer_2.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_2_win1")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_2_win5")
 
 
 # print(config)
