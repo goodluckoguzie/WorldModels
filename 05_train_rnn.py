@@ -314,10 +314,11 @@ class RNN_LSTM():
                 # print(batch_idx)
 
                 train_inout_seq = create_inout_sequences(obs, action, Agent.train_window) #using the a sliding window of 10 . the the first 10 time step and the 11th timetep will be our label.
-                # w = 0                                   
+                w = 0                                   
                                 # next shift the sliding window a step ahead now our label is the 12th timestep
                 for current_timestep, nxt_timestep,action,_ in train_inout_seq:
                     
+
                     self.total_grad_norm = 0                    
                     # we have 200 timesteps in an episode . 
                     action = action.to(device)
@@ -326,15 +327,16 @@ class RNN_LSTM():
                     self.optimizer.zero_grad()  
                     nxt_timestep = nxt_timestep.to(device)
                     states = torch.cat([current_timestep, action], dim=-1) 
-                    predicted_nxt_timestep, _ ,_=  self.rnn(states)
+                    predicted_nxt_timestep, _ ,_=  self.rnn(states) 
                     predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
                     # calculate the loss
                     loss_rnn = self.l1(predicted_nxt_timestep, nxt_timestep)
                     loss_rnn.backward()
                             # gradient clipping
-                    self.total_grad_norm += torch.nn.utils.clip_grad_norm_(self.rnn.parameters(), max_norm=0.5).cpu()
+                    self.total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.rnn.parameters(), max_norm=0.5).cpu())/w
                     self.optimizer.step()
                     self.train_losses.append(loss_rnn.item())
+                    w = w+1
 
             ######################    
             # validate the model #
