@@ -412,7 +412,7 @@ class RNN_LSTM():
 # config file for the model
 config = "./configs/RNN_hidden_256_layer_3.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_3_win3")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_3_win1")
 
 
 # print(config)
