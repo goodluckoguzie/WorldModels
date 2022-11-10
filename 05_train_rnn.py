@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping_1 as EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_2 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -103,7 +103,7 @@ class LSTM(nn.Module):
         self.n_layers = n_layers
         
 
-        self.lstm = nn.LSTM(input_size=n_latents+n_actions,hidden_size=n_hiddens, num_layers=n_layers,batch_first=True,dropout=0.65)
+        self.lstm = nn.LSTM(input_size=n_latents+n_actions,hidden_size=n_hiddens, num_layers=n_layers,batch_first=True,dropout=0.70)
 
         # HE-Initialisierung
         weight = torch.zeros(n_layers,n_hiddens)
@@ -404,15 +404,15 @@ class RNN_LSTM():
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        self.rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_1.pt'))
+        self.rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_2.pt'))
 
         return  self.rnn, self.avg_train_losses, self.avg_valid_losses
 
 
 # config file for the model
-config = "./configs/RNN_hidden_256_layer_1.yaml"
+config = "./configs/RNN_hidden_256_layer_2.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_1_win3")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_2_win3")
 
 
 # print(config)
