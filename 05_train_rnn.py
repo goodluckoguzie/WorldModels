@@ -197,7 +197,7 @@ class RNN_LSTM():
 
         self.l1 = nn.MSELoss()
         self.rnn = self.RNN
-        self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=1e-4)
+        self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=6e-4)
         
     def configure(self, config:str):
         with open(config, "r") as ymlfile:
@@ -335,6 +335,11 @@ class RNN_LSTM():
                     # print("curent ",current_timestep.shape)
                     self.optimizer.zero_grad()  
                     nxt_timestep = nxt_timestep.to(device)
+                    print("ddddddddddddddddddddddddddddddddddddddddddddddddddd",current_timestep)
+                    print("ddddddddddddddddddddddddddddddddddddddddddddddddddd",current_timestep.shape)
+                    print("ddddddddddddddddddddddddddddddddddddddddddddddddddd",len(current_timestep))
+
+
                     states = torch.cat([current_timestep, action], dim=-1) 
                     predicted_nxt_timestep, _ ,_=  self.rnn(states) 
                     predicted_nxt_timestep = predicted_nxt_timestep[:, -1:, :] #get the last array for the predicted class
@@ -421,7 +426,7 @@ class RNN_LSTM():
 # config file for the model
 config = "./configs/RNN_hidden_256_layer_1.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_1_win3")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_1_win1")
 
 
 # print(config)
