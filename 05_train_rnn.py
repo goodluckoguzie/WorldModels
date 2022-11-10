@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
 import numpy as np
-from UTILITY.early_stopping_for_rnn import  EarlyStopping_1 as EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping_2 as EarlyStopping
 from UTILITY import utility
 from UTILITY.rnn_dataset_generator import fit_dataset_to_rnn
 import torch
@@ -29,10 +29,17 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 train_data = torch.load('./Data/saved_vae_rollout_train.pt')
+
+split_idx = 5_000
+train_data = dict(list(train_data.items())[:split_idx])
+
 val_data = torch.load('./Data/saved_vae_rollout_validation.pt')
+val_data = dict(list(val_data.items())[:split_idx ])
+
 train_dat = fit_dataset_to_rnn(train_data)
 val_dat = fit_dataset_to_rnn(val_data)
-print("EarlyStopping_1")
+print("EarlyStopping_2")
+
 
 
     
@@ -172,9 +179,11 @@ class RNN_LSTM():
 # torch.utils.data.Subset
 
         self.train_dataset = MDN_Dataset(train_dat)
+        # print("yes)")
+
         print(len(self.train_dataset ))
 
-        self.train_dataset  = torch.utils.data.Subset(self.train_dataset , np.arange(self.num_train_samples))
+        # self.train_dataset  = torch.utils.data.Subset(self.train_dataset , np.arange(self.num_train_samples))
 
         print(len(self.train_dataset ))
 
@@ -182,9 +191,9 @@ class RNN_LSTM():
         self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)#load our training dataset 
 
         self.val_dataset = MDN_Dataset(val_dat)
-        self.val_dataset  = torch.utils.data.Subset(self.val_dataset , np.arange(self.num_train_samples *0.1))
+        # self.val_dataset  = torch.utils.data.Subset(self.val_dataset , np.arange(self.num_train_samples *0.1))
         self.val_dataloader = torch.utils.data.DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=True)#load our validation dataset 
-        print(len(self.val_dataset ))
+        # print(len(self.val_dataset ))
 
         self.l1 = nn.MSELoss()
         self.rnn = self.RNN
@@ -399,20 +408,20 @@ class RNN_LSTM():
             # and if it has, it will make a checkpoint of the current model
             if epoch % 10 == 0:
                 early_stopping(self.valid_loss, self.rnn)
-            65
+            
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
         # load the last checkpoint with the best model
-        self.rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_1.pt'))
+        self.rnn.load_state_dict(torch.load('./MODEL/rnn_model_layer_2.pt'))
 
         return  self.rnn, self.avg_train_losses, self.avg_valid_losses
 
 
 # config file for the model
-config = "./configs/RNN_hidden_256_layer_1.yaml"
+config = "./configs/RNN_hidden_256_layer_2.yaml"
     # declaring the network
-Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_1_win1")
+Agent = RNN_LSTM(config, run_name="RNN_hidden_256_layer_2_win3")
 
 
 # print(config)
