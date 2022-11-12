@@ -77,7 +77,7 @@ class VAEHyperParams:
     # img_width = 96
     # img_channels = 3
     n_hiddens = 256
-    batch_size = 1024 # 
+    batch_size = 64 # 
     test_batch = 12
     n_sample = 64
 
