@@ -106,7 +106,7 @@ class VAE_MODEL():
         self.log_interval = None
         self.save_interval = None
         self.max_step = None
-        # self.save_path = None
+        self.save_path = None
         self.n_workers = None
         self.run_name = None
         # print("dddddddddddddddddddddd",self.run_name )
@@ -198,9 +198,9 @@ class VAE_MODEL():
             self.max_step = config["max_step"]
             assert(self.max_step is not None), f"Argument max_step cannot be None"
 
-        # if self.save_path is None:
-        #     self.save_path = config["save_path"]
-        #     assert(self.save_path is not None), f"Argument save_path cannot be None"
+        if self.save_path is None:
+            self.save_path = config["save_path"]
+            assert(self.save_path is not None), f"Argument save_path cannot be None"
 
         if self.n_workers is None:
             self.n_workers = config["n_workers"]
@@ -212,11 +212,11 @@ class VAE_MODEL():
 
 
         # check vae dir exists, if not, create it
-        VAE_runs = 'VAE_runs'
-        if not os.path.exists(VAE_runs):
-            os.makedirs(VAE_runs)
+        VAE_RUNS = 'VAE_RUNS'
+        if not os.path.exists(VAE_RUNS):
+            os.makedirs(VAE_RUNS)
         if self.run_name is not None:
-            self.writer = SummaryWriter('VAE_runs/'+self.run_name)
+            self.writer = SummaryWriter('VAE_RUNS/'+self.run_name)
         else:
             self.writer = SummaryWriter()
 
@@ -247,7 +247,7 @@ class VAE_MODEL():
 
     def train(self):
 
-        def evaluate():
+        def evaluate(self):
             self.model.eval()
             self.valid_losses = []
             total_recon_loss = []
@@ -282,6 +282,7 @@ class VAE_MODEL():
         self.global_step = 0
         self.train_losses = []
         self.valid_losses = []
+        
         while self.global_step < self.max_step:
             print("epochs",self.global_step)
             self.total_grad_norm = 0   
@@ -300,7 +301,7 @@ class VAE_MODEL():
 
                 # if global_step % hp.log_interval == 0:
                 if self.global_step % 1 == 0:
-                    self.valid_losses,recon_loss, kld = evaluate()
+                    self.valid_losses,recon_loss, kld = evaluate(self)
                     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
                         log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, kld)
@@ -313,6 +314,9 @@ class VAE_MODEL():
                     print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
                                 f'train_loss: {self.train_loss:.8f} ' +
                                 f'valid_loss: {self.valid_loss:.8f}')
+                                
+                    self.plot(self.global_step +1)
+
 
                 if self.global_step % self.save_interval == 0:
                     d = {
