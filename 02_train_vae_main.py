@@ -299,49 +299,49 @@ class VAE_MODEL():
                 self.optimizer.step()
                 self.train_losses.append(loss.item())
 
-                # if global_step % hp.log_interval == 0:
-                if self.global_step % 1 == 0:
-                    self.valid_losses,recon_loss, kld = evaluate(self)
-                    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
-                        log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, kld)
-                        f.write(log)
-                    epoch_len = len(str(self.global_step))
+            # if global_step % hp.log_interval == 0:
+            # if self.global_step % 1 == 0:
+            self.valid_losses,recon_loss, kld = evaluate(self)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
+                log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, kld)
+                f.write(log)
+            epoch_len = len(str(self.global_step))
 
-                    self.train_loss = np.mean(self.train_losses)/len(self.loader)
-                    self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
+            self.train_loss = np.mean(self.train_losses)/len(self.loader)
+            self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
 
-                    print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
-                                f'train_loss: {self.train_loss:.8f} ' +
-                                f'valid_loss: {self.valid_loss:.8f}')
-                                
-                    self.plot(self.global_step +1)
+            print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
+                        f'train_loss: {self.train_loss:.8f} ' +
+                        f'valid_loss: {self.valid_loss:.8f}')
+                        
+            self.plot(self.global_step +1)
 
 
-                if self.global_step % self.save_interval == 0:
-                    d = {
-                        'model': self.model.state_dict(),
-                        'optimizer': self.optimizer.state_dict(),
-                    }
-                    torch.save(
-                        d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//1000))
-                        )
+            if self.global_step % self.save_interval == 0:
+                d = {
+                    'model': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                }
+                torch.save(
+                    d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//1000))
+                    )
 
-                    
-                self.global_step += 1
-                        # clear lists to track next epoch
-                self.train_losses = []
-                self.valid_losses = []
+                
+            self.global_step += 1
+                    # clear lists to track next epoch
+            self.train_losses = []
+            self.valid_losses = []
 
                 # and if it has, it will make a checkpoint of the current model
-                if self.global_step % 50 == 0:
-                    self.early_stopping(self.valid_loss, self.model)
-                    print(print_msg)
+            if self.global_step % 10 == 0:
+                self.early_stopping(self.valid_loss, self.model)
+                print(print_msg)
 
-                if self.early_stopping.early_stop:
-                    print("Early stopping")
-                    break
-                
+            if self.early_stopping.early_stop:
+                print("Early stopping")
+                break
+            
 
 
 
