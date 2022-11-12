@@ -13,5 +13,5 @@ log_interval: 5000
 save_interval: 10000
 max_step: 100_0000
 n_workers: 0
-run_name: VAE
-
+run_name: VAE_MODEL
+save_path: "./MODEL/VAE_MODEL"  # path to save the model files
