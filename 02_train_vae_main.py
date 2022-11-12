@@ -237,7 +237,9 @@ class VAE_MODEL():
 
         np.save(os.path.join(self.save_path, "plots", "Train_loss"), np.array(self.train_loss), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "Valid_loss"), np.array(self.valid_loss), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "kld_loss"), np.array(self.total_kld_loss), allow_pickle=True, fix_imports=True)
 
+        self.writer.add_scalar("kld_loss / epoch", self.total_kld_loss, episode)
         self.writer.add_scalar("Train_loss / epoch", self.train_loss, episode)
         self.writer.add_scalar("valid_loss / epoch", self.valid_loss, episode)
         self.writer.add_scalar("Average total grad norm / episode", (self.total_grad_norm/self.batch_size), episode)
@@ -249,7 +251,7 @@ class VAE_MODEL():
 
         def evaluate(self):
             self.model.eval()
-            self.valid_losses = []
+            valid_losses = []
             total_recon_loss = []
             total_kld_loss = []
             n_sample = self.n_sample
@@ -267,13 +269,16 @@ class VAE_MODEL():
                         # c_x_hat[idx] = x_hat[0]
                     total_recon_loss.append(recon_loss.item())
                     total_kld_loss.append(kld.item())
-                    self.valid_losses.append(valid_loss.item())
+                    valid_losses.append(valid_loss.item())
                     
                 z = torch.randn([self.n_sample, self.n_latents]).to(DEVICE)
+            # self.total_recon_loss =np.mean(total_recon_loss)
+            total_kld_loss =np.mean(total_kld_loss)
+            # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",total_recon_loss)
 
 
             self.model.train()
-            return self.valid_losses,np.mean(total_recon_loss), np.mean(total_kld_loss)
+            return valid_losses, total_recon_loss, total_kld_loss
 
         self.Train_loss = []
         self.Valid_loss = []
@@ -301,15 +306,16 @@ class VAE_MODEL():
 
             # if global_step % hp.log_interval == 0:
             # if self.global_step % 1 == 0:
-            self.valid_losses,recon_loss, kld = evaluate(self)
+            self.valid_losses,self.total_recon_loss, self.total_kld_loss = evaluate(self)
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
-                log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, kld)
+                log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, self.total_kld_loss)
                 f.write(log)
             epoch_len = len(str(self.global_step))
 
             self.train_loss = np.mean(self.train_losses)/len(self.loader)
             self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
+            # self.kld = (self.kld )/len(self.valid_loader)
 
             print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
                         f'train_loss: {self.train_loss:.8f} ' +
