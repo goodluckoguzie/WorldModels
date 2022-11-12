@@ -23,7 +23,7 @@ class HyperParams:
     rnn_hunits = 256
     ctrl_hidden_dims = 512
     log_interval = 5000
-    save_interval = 10000
+    save_interval = 50
 
     use_binary_feature = False
     score_cut = 300 # to save
