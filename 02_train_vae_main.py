@@ -12,7 +12,7 @@ from torch.nn import functional as F
 from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 import yaml
-from UTILITY.early_stopping_for_vae import  EarlyStopping_1
+from UTILITY.early_stopping_for_vae import  EarlyStopping
 
 DEVICE = None
 
@@ -212,15 +212,15 @@ class VAE_MODEL():
 
 
         # check vae dir exists, if not, create it
-        VAE_RUNS = 'VAE_RUNS'
-        if not os.path.exists(VAE_RUNS):
-            os.makedirs(VAE_RUNS)
+        VAE_runs = 'VAE_runs'
+        if not os.path.exists(VAE_runs):
+            os.makedirs(VAE_runs)
         if self.run_name is not None:
-            self.writer = SummaryWriter('VAE_RUNS/'+self.run_name)
+            self.writer = SummaryWriter('VAE_runs/'+self.run_name)
         else:
             self.writer = SummaryWriter()
 
-        self.early_stopping = EarlyStopping_1(patience=100, verbose=True)
+        self.early_stopping = EarlyStopping(patience=100, verbose=True)
 
 
 
@@ -229,17 +229,11 @@ class VAE_MODEL():
         self.Valid_loss.append(self.valid_loss)
         self.grad_norms.append(self.total_grad_norm/self.batch_size)
 
-        if not os.path.isdir(os.path.join(self.save_path, "plots")):
-            os.makedirs(os.path.join(self.save_path, "plots"))
-
 
         np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm/self.batch_size), allow_pickle=True, fix_imports=True)
-
         np.save(os.path.join(self.save_path, "plots", "Train_loss"), np.array(self.train_loss), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "Valid_loss"), np.array(self.valid_loss), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "kld_loss"), np.array(self.total_kld_loss), allow_pickle=True, fix_imports=True)
 
-        self.writer.add_scalar("kld_loss / epoch", self.total_kld_loss, episode)
         self.writer.add_scalar("Train_loss / epoch", self.train_loss, episode)
         self.writer.add_scalar("valid_loss / epoch", self.valid_loss, episode)
         self.writer.add_scalar("Average total grad norm / episode", (self.total_grad_norm/self.batch_size), episode)
@@ -247,16 +241,16 @@ class VAE_MODEL():
 
 
 
+
     def train(self):
+
 
         def evaluate(self):
             self.model.eval()
             valid_losses = []
             total_recon_loss = []
             total_kld_loss = []
-            n_sample = self.n_sample
-            # c_x = torch.zeros([n_sample, 3, 96, 96])
-            # c_x_hat = torch.zeros([n_sample, 3, 96, 96])
+
             with torch.no_grad():
                 for idx, obs in enumerate(self.valid_loader):
                     x = obs.to(DEVICE)
@@ -264,90 +258,105 @@ class VAE_MODEL():
                     x_hat, mu, logvar = self.model(x)
                     valid_loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
 
-                    # if idx < n_sample:
-                        # c_x[idx] = x[0]
-                        # c_x_hat[idx] = x_hat[0]
                     total_recon_loss.append(recon_loss.item())
                     total_kld_loss.append(kld.item())
                     valid_losses.append(valid_loss.item())
                     
-                z = torch.randn([self.n_sample, self.n_latents]).to(DEVICE)
-            # self.total_recon_loss =np.mean(total_recon_loss)
             total_kld_loss =np.mean(total_kld_loss)
-            # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",total_recon_loss)
-
-
             self.model.train()
             return valid_losses, total_recon_loss, total_kld_loss
 
-        self.Train_loss = []
-        self.Valid_loss = []
-        self.grad_norms = []
-        # to track the validation loss as the model trains
-        self.global_step = 0
-        self.train_losses = []
-        self.valid_losses = []
+        global_step = 0
+        # model = self.VAE(47,256,47).to(DEVICE)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
+
+        # Loaded pretrained VAE
+        # ckpts = sorted(glob.glob(os.path.join(hp.ckpt_dir, 'vae', '*k.pth.tar')))
+        # if ckpts:
+        #     ckpt = ckpts[-1]
+        #     vae_state = torch.load(ckpt)
+        #     model.load_state_dict(vae_state['model'])
+        #     global_step = int(os.path.basename(ckpt).split('.')[0][:-1]) * 1000
+        #     print('Loaded vae ckpt {}'.format(ckpt))
+
+        data_path = self.data_dir 
+        dataset = GameSceneDataset(data_path)
+        loader = DataLoader(
+            dataset, batch_size=self.batch_size, shuffle=True,
+            num_workers=self.n_workers,
+        )
+        # print("hp.batch_sizehp.batch_sizehp.batch_sizehp.batch_size",self.batch_size)
+        # print("hp.vsizehp.vsizehp.vsizehp.vsizehp.vsizehp.vsizehp.vsize",self.vsize)
+        self.ckpt_dir = os.path.join(self.ckpt_dir, 'vae')
+        sample_dir = os.path.join(self.ckpt_dir, 'samples')
+        os.makedirs(sample_dir, exist_ok=True)
+        # print(len(loader))
+        total_grad_norm = 0
         
-        while self.global_step < self.max_step:
-            print("epochs",self.global_step)
+        while global_step <  self.max_step:
+
+            self.Train_loss = []
+            self.Valid_loss = []
+            self.grad_norms = []
+            self.global_step = 0
+            self.train_losses = []
+            self.valid_losses = []
             self.total_grad_norm = 0   
-            for idx, obs in enumerate(tqdm(self.loader, total=len(self.loader))):
+
+            for idx, obs in enumerate(tqdm(loader, total=len(loader))):
                 x = obs.to(DEVICE)
                 x_hat, mu, logvar = self.model(x)
                 
                 loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
-        
-
-                self.optimizer.zero_grad()
+                optimizer.zero_grad()
                 loss.backward()
-                self.total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())/idx
-                self.optimizer.step()
+                total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())#/w
+                # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh,",total_grad_norm )
+                optimizer.step()
                 self.train_losses.append(loss.item())
 
-            # if global_step % hp.log_interval == 0:
-            # if self.global_step % 1 == 0:
-            self.valid_losses,self.total_recon_loss, self.total_kld_loss = evaluate(self)
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
-                log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, self.total_kld_loss)
-                f.write(log)
-            epoch_len = len(str(self.global_step))
+                self.valid_losses,self.total_recon_loss, self.total_kld_loss = evaluate(self)
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
+                #     log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, self.total_kld_loss)
+                #     f.write(log)
+                epoch_len = len(str(self.global_step))
 
-            self.train_loss = np.mean(self.train_losses)/len(self.loader)
-            self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
-            # self.kld = (self.kld )/len(self.valid_loader)
+                self.train_loss = np.mean(self.train_losses)/len(self.loader)
+                self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
+                # self.kld = (self.kld )/len(self.valid_loader)
 
-            print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
-                        f'train_loss: {self.train_loss:.8f} ' +
-                        f'valid_loss: {self.valid_loss:.8f}')
-                        
-            self.plot(self.global_step +1)
+                print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
+                            f'train_loss: {self.train_loss:.8f} ' +
+                            f'valid_loss: {self.valid_loss:.8f}')
+                            
+                self.plot(self.global_step +1)
 
 
-            if self.global_step % self.save_interval == 0:
-                d = {
-                    'model': self.model.state_dict(),
-                    'optimizer': self.optimizer.state_dict(),
-                }
-                torch.save(
-                    d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//1000))
-                    )
+                if self.global_step % self.save_interval == 0:
+                    d = {
+                        'model': self.model.state_dict(),
+                        'optimizer': self.optimizer.state_dict(),
+                    }
+                    torch.save(
+                        d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//1000))
+                        )
 
+                    
+                self.global_step += 1
+                        # clear lists to track next epoch
+                self.train_losses = []
+                self.valid_losses = []
+
+                    # and if it has, it will make a checkpoint of the current model
+                if self.global_step % 10 == 0:
+                    self.early_stopping(self.valid_loss, self.model)
+                    print(print_msg)
+
+                if self.early_stopping.early_stop:
+                    print("Early stopping")
+                    break
                 
-            self.global_step += 1
-                    # clear lists to track next epoch
-            self.train_losses = []
-            self.valid_losses = []
-
-                # and if it has, it will make a checkpoint of the current model
-            if self.global_step % 10 == 0:
-                self.early_stopping(self.valid_loss, self.model)
-                print(print_msg)
-
-            if self.early_stopping.early_stop:
-                print("Early stopping")
-                break
-            
 
 
 
@@ -359,7 +368,7 @@ if __name__ == '__main__':
     # config file for the model
     config = "./configs/VAE_model.yaml"
         # declaring the network
-    Agent = VAE_MODEL(config, run_name="VAE_model")
+    Agent = VAE_MODEL(config, run_name="VAE")
 
 
     # print(config)
