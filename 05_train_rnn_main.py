@@ -1,20 +1,23 @@
 import torch
 import torch.nn as nn
 import numpy as np
-# from hparams import VAEHyperParams as hp
-# from models import VAE, vae_loss
+# from hparams import RNNHyperParams as hp
+# from models import VAE, RNN
 from torch.utils.data import DataLoader
 from data import *
 from tqdm import tqdm
 import os, sys
-from torchvision.utils import save_image
+# from torchvision.utils import save_image
 from torch.nn import functional as F
 from datetime import datetime
+
+DEVICE = None
+
 from torch.utils.tensorboard import SummaryWriter
 import yaml
 from UTILITY.early_stopping_for_vae import  EarlyStopping
 
-DEVICE = None
+
 
 class Decoder(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
@@ -72,20 +75,36 @@ class VAE(nn.Module):
         z,mu , sigma = self.encoder(x)
         return self.decoder(z),mu , sigma
 
-
-
-def vae_loss(recon_x, x, mu, logvar):
-    """ VAE loss function """
-    recon_loss = nn.MSELoss(size_average=False)
-    BCE = recon_loss(recon_x, x)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return BCE + KLD, BCE, KLD
-
+    def vae_loss(recon_x, x, mu, logvar):
+        """ VAE loss function """
+        recon_loss = nn.MSELoss(size_average=False)
+        BCE = recon_loss(recon_x, x)
+        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        return BCE + KLD, BCE, KLD
 
 
 
+class RNN(nn.Module):
+    def __init__(self, n_latents, n_actions, n_hiddens):
+        super(RNN, self).__init__()
+        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        # target --> next latent (vision)
+        self.fc = nn.Linear(n_hiddens, n_latents)
 
-class VAE_MODEL():
+    def forward(self, states):
+        h, _ = self.rnn(states)
+        y = self.fc(h)
+        return y, None, None
+    
+    def infer(self, states, hidden):
+        h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
+        y = self.fc(h)
+        return y, None, None, next_hidden
+
+
+
+
+class RNN_MODEL():
     def __init__(self, config:str, **kwargs) -> None:
         assert(config is not None)
         # initializing the env
@@ -108,6 +127,8 @@ class VAE_MODEL():
         self.save_path = None
         self.n_workers = None
         self.run_name = None
+        self.seq_len = None
+        self.run_name = None
         # print("dddddddddddddddddddddd",self.run_name )
 
                 # setting values from config file
@@ -118,7 +139,10 @@ class VAE_MODEL():
 
         # declaring the network
         global_step = 0
-        self.model = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
+        self.vae = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
+
+
+        self.rnn = RNN(self.n_latents, self.n_actions, self.n_hiddens).to(DEVICE)
 
   
         self.data_path = self.data_dir# if not self.extra else self.extra_dir
@@ -137,7 +161,7 @@ class VAE_MODEL():
 
 
 
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=6e-4)
+        self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=6e-4)
         
     def configure(self, config:str):
         with open(config, "r") as ymlfile:
@@ -145,7 +169,12 @@ class VAE_MODEL():
 
         if self.extra is None:
             self.extra = config["extra"]
-            assert(self.extra is not None), f"Argument extra size cannot be None"
+            assert(self.extra is not None), f"Argument seq_len size cannot be None"
+
+
+        if self.seq_len is None:
+            self.seq_len = config["seq_len"]
+            assert(self.seq_len is not None), f"Argument extra size cannot be None"
 
         if self.data_dir is None:
             self.data_dir = config["data_dir"]
@@ -210,11 +239,12 @@ class VAE_MODEL():
             assert(self.run_name is not None), f"Argument run_name cannot be None"
 
 
-        VAE_runs = 'VAE_runs'
-        if not os.path.exists(VAE_runs):
-            os.makedirs(VAE_runs)
+        # check vae dir exists, if not, create it
+        RNN_runs = 'RNN_model_runs'
+        if not os.path.exists(RNN_runs):
+            os.makedirs(RNN_runs)
         if self.run_name is not None:
-            self.writer = SummaryWriter('VAE_runs/'+self.run_name)
+            self.writer = SummaryWriter('RNN_model_runs/'+self.run_name)
         else:
             self.writer = SummaryWriter()
 
@@ -226,17 +256,16 @@ class VAE_MODEL():
         self.Train_loss.append(self.train_loss)
         self.Valid_loss.append(self.valid_loss)
         self.grad_norms.append(self.total_grad_norm/self.batch_size)
-        
+
         if not os.path.isdir(os.path.join(self.save_path, "plots")):
             os.makedirs(os.path.join(self.save_path, "plots"))
 
 
         np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm/self.batch_size), allow_pickle=True, fix_imports=True)
+
         np.save(os.path.join(self.save_path, "plots", "Train_loss"), np.array(self.train_loss), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "Valid_loss"), np.array(self.valid_loss), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "KLD_loss"), np.array(self.total_kld_loss), allow_pickle=True, fix_imports=True)
 
-        self.writer.add_scalar("KLD/ epoch", self.total_kld_loss, episode)
         self.writer.add_scalar("Train_loss / epoch", self.train_loss, episode)
         self.writer.add_scalar("valid_loss / epoch", self.valid_loss, episode)
         self.writer.add_scalar("Average total grad norm / episode", (self.total_grad_norm/self.batch_size), episode)
@@ -244,116 +273,161 @@ class VAE_MODEL():
 
 
 
-
     def train(self):
-
-
-        def evaluate(self):
-            self.model.eval()
-            valid_losses = []
-            total_recon_loss = []
-            total_kld_loss = []
-
-            with torch.no_grad():
-                for idx, obs in enumerate(self.valid_loader):
-                    x = obs.to(DEVICE)
-                    # import pdb; pdb.set_trace()
-                    x_hat, mu, logvar = self.model(x)
-                    valid_loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
-
-                    total_recon_loss.append(recon_loss.item())
-                    total_kld_loss.append(kld.item())
-                    valid_losses.append(valid_loss.item())
-                    
-            total_kld_loss =np.mean(total_kld_loss)
-            self.model.train()
-            return valid_losses, total_recon_loss, total_kld_loss
-
+        self.Train_loss = []
+        self.Valid_loss = []
+        self.grad_norms = []
+        # to track the validation loss as the model trains
         self.global_step = 0
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
-        data_path = self.data_dir 
-        dataset = GameSceneDataset(data_path)
+        self.train_losses = []
+        self.valid_losses = []
+        # vae = VAE(hp.vsize,hp.n_hiddens,hp.vsize).to(DEVICE)
+
+        # Loaded pretrained VAE
+        # vae = VAE(hp.vsize).to(DEVICE)
+
+        ckpt_dir = 'ckpt'
+        self.ckpt = sorted(glob.glob(os.path.join(ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        self.vae_state = torch.load(self.ckpt)
+        self.vae.load_state_dict(self.vae_state['model'])
+        self.vae.eval()
+        print('Loaded vae ckpt {}'.format(self.ckpt))
+
+        # rnn = RNN(hp.vsize, hp.asize, hp.rnn_hunits).to(DEVICE)
+        # ckpts = sorted(glob.glob(os.path.join(hp.ckpt_dir, 'rnn', '*k.pth.tar')))
+        # if ckpts:
+        #     ckpt = ckpts[-1]
+        #     rnn_state = torch.load(ckpt)
+        #     rnn.load_state_dict(rnn_state['model'])
+        #     global_step = int(os.path.basename(ckpt).split('.')[0][:-1]) * 1000
+        #     print('Loaded rnn ckpt {}'.format(ckpt))
+
+
+        self.data_path = self.data_dir #if not hp.extra else hp.extra_dir
+        # optimizer = torch.optim.RMSprop(rnn.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=1e-4)
+
+        self.dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len)
+
         self.loader = DataLoader(
-            dataset, batch_size=self.batch_size, shuffle=True,
-            num_workers=self.n_workers,
+            self.dataset, batch_size=1, shuffle=True, drop_last=True,
+            num_workers=self.n_workers, collate_fn=collate_fn
+        )
+        self.testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False)
+        self.valid_loader = DataLoader(
+            self.testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn
         )
 
-        valid_loader = GameSceneDataset(data_path, training=False)
-        self.valid_loader = DataLoader(valid_loader, batch_size=self.test_batch, shuffle=False, drop_last=True)
+        self.ckpt_dir = os.path.join(self.ckpt_dir, 'rnn')
+        self.sample_dir = os.path.join(self.ckpt_dir, 'samples')
+        os.makedirs(self.sample_dir, exist_ok=True)
 
-        self.ckpt_dir = os.path.join(self.ckpt_dir, 'vae')
-        sample_dir = os.path.join(self.ckpt_dir, 'samples')
-        os.makedirs(sample_dir, exist_ok=True)
-        # print(len(loader))
-        self.total_grad_norm = 0
+        self.l1 = nn.L1Loss()
+                    
+    
+
+        def evaluate(self):
+            self.rnn.eval()
+            self.total_loss = []
+            l1 = nn.L1Loss()
+            with torch.no_grad():
+                for idx, (obs, actions) in enumerate(self.valid_loader):
+                    obs, actions = obs.to(DEVICE), actions.to(DEVICE)
+                    _,latent_mu, latent_var = self.vae.encoder(obs) # (B*T, vsize)
+                    z = latent_mu
+                    # z = vae.reparam(latent_mu, latent_var) # (B*T, vsize)
+                    z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
+
+                    next_z = z[:, 1:, :]
+                    z, actions = z[:, :-1, :], actions[:, :-1, :]
+                    states = torch.cat([z, actions], dim=-1) # (B, T, vsize+asize)
+                    # states = torch.cat([GO_states, next_states[:,:-1,:]], dim=1)
+                    x, _, _ = self.rnn(states)
+                    
+                    loss = self.l1(x, next_z)
         
+                    self.total_loss.append(loss.item())
+            self.rnn.train()
+            return np.mean(self.total_loss)
+
         for idx in range(1, self.max_step + 1):        # while self.global_step < self.max_step:
-            # print("epochs",self.global_step)
+            # GO_states = torch.zeros([hp.batch_size, 1, hp.vsize+hp.asize]).to(DEVICE)
+            # with tqdm(enumerate(self.loader), total=len(self.loader), ncols=70, leave=False) as t:
+
+                # t.set_description('Step {}'.format(self.global_step))
  
             self.Train_loss = []
             self.Valid_loss = []
             self.grad_norms = []
             self.train_losses = []
             self.valid_losses = []
-            self.total_grad_norm = 0   
+            self.total_grad_norm = 0  
 
-            # for idx, obs in enumerate(tqdm(loader, total=len(loader))):
-            for idx, obs in enumerate(self.loader):
-                x = obs.to(DEVICE)
-                x_hat, mu, logvar = self.model(x)
-                loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
+            for idx, (obs, actions) in enumerate(self.loader):
+
+                # for idx, (obs, actions) in t:
+                obs, actions = obs.to(DEVICE), actions.to(DEVICE)
+                with torch.no_grad():
+                    _,latent_mu, latent_var = self.vae.encoder(obs) # (B*T, vsize)
+                    z = latent_mu
+                    z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
+                next_z = z[:, 1:, :]
+                z, actions = z[:, :-1, :], actions[:, :-1, :]                  
+                states = torch.cat([z, actions], dim=-1) # (B, T, vsize+asize)
+                x, _, _ = self.rnn(states)
+                loss = self.l1(x, next_z)
                 self.optimizer.zero_grad()
                 loss.backward()
-                self.total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())/idx
+                total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.rnn.parameters(), max_norm=0.5).cpu())/self.global_step
                 self.optimizer.step()
                 self.train_losses.append(loss.item())
-            self.global_step += 1
+                self.global_step += 1
 
-            self.valid_losses,self.total_recon_loss, self.total_kld_loss = evaluate(self)
-            # now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            # with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
-            #     log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, self.total_kld_loss)
-            #     f.write(log)
-            epoch_len = len(str(self.global_step))
 
-            self.train_loss = np.mean(self.train_losses)/len(self.loader)
-            self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
-            self.kld = (self.total_kld_loss )/len(self.valid_loader)
-            print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
-                        f'train_loss: {self.train_loss:.8f} ' +
-                        f'valid_loss: {self.valid_loss:.8f}')
-                   
-            self.plot(self.global_step +1)
+            if self.global_step % 1 == 0:
+                self.valid_losses = evaluate(self)
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
+                    log = '{} || Step: {}, train_loss: {:.4f}, loss: {:.4f}\n'.format(now, self.global_step, loss.item(), self.valid_losses)
+                    f.write(log)
+            
             if self.global_step % self.save_interval == 0:
                 d = {
-                    'model': self.model.state_dict(),
+                    'model': self.rnn.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
                 }
                 torch.save(
-                    d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//self.save_interval ))
-                    )                
-                    # clear lists to track next epoch
-            self.train_losses = []
-            self.valid_losses = []
-
-                # and if it has, it will make a checkpoint of the current model
-            if self.global_step % 50 == 0:
-                self.early_stopping(self.valid_loss, self.model)
+                    d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//self.save_interval))
+                )
                 print(print_msg)
 
-            if self.early_stopping.early_stop:
-                print("Early stopping")
-                break
-                
+            self.epoch_len = len(str(self.global_step))
+            self.train_loss = np.mean(self.train_losses)/len(self.loader)
+            self.valid_loss = self.valid_losses/len(self.valid_loader)
+
+            print_msg = (f'[{self.global_step:>{self.epoch_len}}/{self.global_step:>{self.epoch_len}}] ' +
+                        f'train_loss: {self.train_loss:.8f} ' +
+                        f'valid_loss: {self.valid_loss:.8f}')
+            
+
+                # clear lists to track next epoch
+            self.train_losses = []
+            self.valid_losses = []
+            
+
+
+
+
 
 if __name__ == '__main__':
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    np.random.seed(0)
 
     # config file for the model
-    config = "./configs/VAE_model.yaml"
+    config = "./configs/RNN_model.yaml"
         # declaring the network
-    Agent = VAE_MODEL(config, run_name="VAE_runs")
+    Agent =RNN_MODEL(config, run_name="RNN_model_runs")
+
 
     # print(config)
     Agent.train()
-
