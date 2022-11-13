@@ -233,7 +233,9 @@ class VAE_MODEL():
         np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm/self.batch_size), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "Train_loss"), np.array(self.train_loss), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "Valid_loss"), np.array(self.valid_loss), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "KLD_loss"), np.array(self.total_kld_loss), allow_pickle=True, fix_imports=True)
 
+        self.writer.add_scalar("KLD/ epoch", self.total_kld_loss, episode)
         self.writer.add_scalar("Train_loss / epoch", self.train_loss, episode)
         self.writer.add_scalar("valid_loss / epoch", self.valid_loss, episode)
         self.writer.add_scalar("Average total grad norm / episode", (self.total_grad_norm/self.batch_size), episode)
@@ -324,7 +326,7 @@ class VAE_MODEL():
 
             self.train_loss = np.mean(self.train_losses)/len(self.loader)
             self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
-            # self.kld = (self.kld )/len(self.valid_loader)
+            self.kld = (self.total_kld_loss )/len(self.valid_loader)
 
             print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
                         f'train_loss: {self.train_loss:.8f} ' +
