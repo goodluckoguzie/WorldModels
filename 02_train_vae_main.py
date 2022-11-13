@@ -266,9 +266,9 @@ class VAE_MODEL():
             self.model.train()
             return valid_losses, total_recon_loss, total_kld_loss
 
-        global_step = 0
+        self.global_step = 0
         # model = self.VAE(47,256,47).to(DEVICE)
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
 
         # Loaded pretrained VAE
         # ckpts = sorted(glob.glob(os.path.join(hp.ckpt_dir, 'vae', '*k.pth.tar')))
@@ -293,12 +293,12 @@ class VAE_MODEL():
         # print(len(loader))
         total_grad_norm = 0
         
-        while global_step <  self.max_step:
-
+        while self.global_step <  self.max_step:
+            # print("epochs",self.global_step)
+ 
             self.Train_loss = []
             self.Valid_loss = []
             self.grad_norms = []
-            self.global_step = 0
             self.train_losses = []
             self.valid_losses = []
             self.total_grad_norm = 0   
@@ -308,55 +308,55 @@ class VAE_MODEL():
                 x_hat, mu, logvar = self.model(x)
                 
                 loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
-                optimizer.zero_grad()
+                self.optimizer.zero_grad()
                 loss.backward()
                 total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())#/w
                 # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh,",total_grad_norm )
-                optimizer.step()
-                self.train_losses.append(loss.item())
+                self.optimizer.step()
+            self.train_losses.append(loss.item())
 
-                self.valid_losses,self.total_recon_loss, self.total_kld_loss = evaluate(self)
-                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                # with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
-                #     log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, self.total_kld_loss)
-                #     f.write(log)
-                epoch_len = len(str(self.global_step))
+            self.valid_losses,self.total_recon_loss, self.total_kld_loss = evaluate(self)
+            # now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
+            #     log = '{} || Step: {}, loss: {:.4f}, kld: {:.4f}\n'.format(now, self.global_step, recon_loss, self.total_kld_loss)
+            #     f.write(log)
+            epoch_len = len(str(self.global_step))
 
-                self.train_loss = np.mean(self.train_losses)/len(self.loader)
-                self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
-                # self.kld = (self.kld )/len(self.valid_loader)
+            self.train_loss = np.mean(self.train_losses)/len(self.loader)
+            self.valid_loss = np.mean(self.valid_losses)/len(self.valid_loader)
+            # self.kld = (self.kld )/len(self.valid_loader)
 
-                print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
-                            f'train_loss: {self.train_loss:.8f} ' +
-                            f'valid_loss: {self.valid_loss:.8f}')
-                            
-                self.plot(self.global_step +1)
+            print_msg = (f'[{self.global_step:>{epoch_len}}/{self.global_step:>{epoch_len}}] ' +
+                        f'train_loss: {self.train_loss:.8f} ' +
+                        f'valid_loss: {self.valid_loss:.8f}')
+                        
+            self.plot(self.global_step +1)
 
 
-                if self.global_step % self.save_interval == 0:
-                    d = {
-                        'model': self.model.state_dict(),
-                        'optimizer': self.optimizer.state_dict(),
-                    }
-                    torch.save(
-                        d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//1000))
-                        )
+            if self.global_step % self.save_interval == 0:
+                d = {
+                    'model': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                }
+                torch.save(
+                    d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//1000))
+                    )
 
-                    
-                self.global_step += 1
-                        # clear lists to track next epoch
-                self.train_losses = []
-                self.valid_losses = []
-
-                    # and if it has, it will make a checkpoint of the current model
-                if self.global_step % 100 == 0:
-                    self.early_stopping(self.valid_loss, self.model)
-                    print(print_msg)
-
-                if self.early_stopping.early_stop:
-                    print("Early stopping")
-                    break
                 
+                    # clear lists to track next epoch
+            self.train_losses = []
+            self.valid_losses = []
+
+                # and if it has, it will make a checkpoint of the current model
+            if self.global_step % 100 == 0:
+                self.early_stopping(self.valid_loss, self.model)
+                print(print_msg)
+
+            if self.early_stopping.early_stop:
+                print("Early stopping")
+                break
+                
+            self.global_step += 1
 
 
 
