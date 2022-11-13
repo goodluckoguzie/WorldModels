@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-# from hparams import VAEHyperParams as hp
+from hparams import VAEHyperParams as hp
 # from models import VAE, vae_loss
 from torch.utils.data import DataLoader
 from data import *
@@ -91,10 +91,10 @@ class VAE_MODEL():
         # initializing the env
         self.config = config
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.extra = None
-        self.data_dir = None
-        self.extra_dir = None
-        self.ckpt_dir = None
+        # self.extra = None
+        # self.data_dir = None
+        # self.extra_dir = None
+        # self.ckpt_dir = None
         # rnn variables
         self.n_latents = None
         self.n_actions = None
@@ -119,11 +119,9 @@ class VAE_MODEL():
         # declaring the network
         global_step = 0
         self.model = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
-
-  
-        self.data_path = self.data_dir# if not self.extra else self.extra_dir
-
-        self.dataset = GameSceneDataset(self.data_path)
+        self.data_path = hp.data_dir# if not self.extra else self.extra_dir
+        self.ckpt_dir = hp.ckpt_dir
+        self.dataset = GameSceneDataset(self.data_path )
         self.loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True,num_workers=self.n_workers,)
         print("Train dataset lenght ",len(self.loader))
 
@@ -143,21 +141,21 @@ class VAE_MODEL():
         with open(config, "r") as ymlfile:
             config = yaml.safe_load(ymlfile)
 
-        if self.extra is None:
-            self.extra = config["extra"]
-            assert(self.extra is not None), f"Argument extra size cannot be None"
+        # if self.extra is None:
+        #     self.extra = config["extra"]
+        #     assert(self.extra is not None), f"Argument extra size cannot be None"
 
-        if self.data_dir is None:
-            self.data_dir = config["data_dir"]
-            assert(self.data_dir is not None), f"Argument data_dir  cannot be None"
+        # if self.data_dir is None:
+        #     self.data_dir = config["data_dir"]
+        #     assert(self.data_dir is not None), f"Argument data_dir  cannot be None"
 
-        if self.extra_dir is None:
-            self.extra_dir = config["extra_dir"]
-            assert(self.extra_dir is not None), f"Argument extra_dir cannot be None"
+        # if self.extra_dir is None:
+        #     self.extra_dir = config["extra_dir"]
+        #     assert(self.extra_dir is not None), f"Argument extra_dir cannot be None"
 
-        if self.ckpt_dir is None:
-            self.ckpt_dir = config["ckpt_dir"]
-            assert(self.ckpt_dir is not None), f"Argument ckpt_dir  cannot be None"
+        # if self.ckpt_dir is None:
+        #     self.ckpt_dir = config["ckpt_dir"]
+        #     assert(self.ckpt_dir is not None), f"Argument ckpt_dir  cannot be None"
 
         if self.n_latents is None:
             self.n_latents = config["n_latents"]
@@ -225,8 +223,7 @@ class VAE_MODEL():
     def plot(self, episode):
         self.Train_loss.append(self.train_loss)
         self.Valid_loss.append(self.valid_loss)
-        self.grad_norms.append(self.total_grad_norm/self.batch_size)
-        
+        self.grad_norms.append(self.total_grad_norm/self.batch_size)        
         if not os.path.isdir(os.path.join(self.save_path, "plots")):
             os.makedirs(os.path.join(self.save_path, "plots"))
 
@@ -241,13 +238,7 @@ class VAE_MODEL():
         self.writer.add_scalar("valid_loss / epoch", self.valid_loss, episode)
         self.writer.add_scalar("Average total grad norm / episode", (self.total_grad_norm/self.batch_size), episode)
 
-
-
-
-
     def train(self):
-
-
         def evaluate(self):
             self.model.eval()
             valid_losses = []
@@ -271,24 +262,9 @@ class VAE_MODEL():
 
         self.global_step = 0
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
-        data_path = self.data_dir 
-        dataset = GameSceneDataset(data_path)
-        self.loader = DataLoader(
-            dataset, batch_size=self.batch_size, shuffle=True,
-            num_workers=self.n_workers,
-        )
-
-        valid_loader = GameSceneDataset(data_path, training=False)
-        self.valid_loader = DataLoader(valid_loader, batch_size=self.test_batch, shuffle=False, drop_last=True)
-
-        self.ckpt_dir = os.path.join(self.ckpt_dir, 'vae')
-        sample_dir = os.path.join(self.ckpt_dir, 'samples')
-        os.makedirs(sample_dir, exist_ok=True)
-        # print(len(loader))
-        self.total_grad_norm = 0
         
         for idx in range(1, self.max_step + 1):        # while self.global_step < self.max_step:
-            # print("epochs",self.global_step)
+            # print("epochs",idx)
  
             self.Train_loss = []
             self.Valid_loss = []
@@ -304,11 +280,14 @@ class VAE_MODEL():
                 loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
                 self.optimizer.zero_grad()
                 loss.backward()
-                self.total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())/idx
+
+
                 self.optimizer.step()
                 self.train_losses.append(loss.item())
-            self.global_step += 1
 
+            self.global_step += 1
+            self.total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())/(self.global_step)
+            
             self.valid_losses,self.total_recon_loss, self.total_kld_loss = evaluate(self)
             # now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             # with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
@@ -337,7 +316,7 @@ class VAE_MODEL():
             self.valid_losses = []
 
                 # and if it has, it will make a checkpoint of the current model
-            if self.global_step % 50 == 0:
+            if self.global_step % self.save_interval == 0:
                 self.early_stopping(self.valid_loss, self.model)
                 print(print_msg)
 

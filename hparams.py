@@ -59,7 +59,7 @@ class RNNHyperParams:
     asize = 2 # action size
     rnn_hunits = 256
     log_interval = 1000
-    save_interval = 2000
+    save_interval = 5
 
     max_step = 10000
 
@@ -73,9 +73,6 @@ class VAEHyperParams:
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
-    # img_height = 96
-    # img_width = 96
-    # img_channels = 3
     n_hiddens = 256
     batch_size = 64 # 
     test_batch = 12
