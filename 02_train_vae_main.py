@@ -318,6 +318,9 @@ class VAE_MODEL():
                 # and if it has, it will make a checkpoint of the current model
             if self.global_step % self.save_interval == 0:
                 self.early_stopping(self.valid_loss, self.model)
+
+
+            if self.global_step % 50 == 0:
                 print(print_msg)
 
             if self.early_stopping.early_stop:
