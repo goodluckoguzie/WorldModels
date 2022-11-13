@@ -304,7 +304,7 @@ class VAE_MODEL():
                 loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
                 self.optimizer.zero_grad()
                 loss.backward()
-                total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())#/w
+                total_grad_norm += (torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu())/idx
                 self.optimizer.step()
                 self.train_losses.append(loss.item())
             self.global_step += 1
