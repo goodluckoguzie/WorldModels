@@ -370,7 +370,7 @@ if __name__ == '__main__':
     # config file for the model
     config = "./configs/VAE_model.yaml"
         # declaring the network
-    Agent = VAE_MODEL(config, run_name="VAE")
+    Agent = VAE_MODEL(config, run_name="VAE_runs")
 
 
     # print(config)
