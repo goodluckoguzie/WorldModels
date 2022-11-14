@@ -356,6 +356,7 @@ class RNN_MODEL():
             self.epoch_len = len(str(self.global_step))
             self.train_loss = np.mean(self.train_losses)/len(self.loader)
             self.valid_loss = self.valid_losses/len(self.valid_loader)
+            self.plot(self.global_step +1)
 
             print_msg = (f'[{self.global_step:>{self.epoch_len}}/{self.global_step:>{self.epoch_len}}] ' +
                         f'train_loss: {self.train_loss:.8f} ' +
