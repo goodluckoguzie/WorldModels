@@ -376,6 +376,10 @@ class RNN_MODEL():
                     d, os.path.join(self.ckpt_dir, '{:03d}k.pth.tar'.format(self.global_step//self.save_interval))
                 )
 
+                # and if it has, it will make a checkpoint of the current model
+            if self.global_step % self.save_interval == 0:
+                self.early_stopping(self.valid_loss, self.model)
+
 
             if self.global_step % 50 == 0:
                 print(print_msg)
@@ -383,6 +387,7 @@ class RNN_MODEL():
             if self.early_stopping.early_stop:
                 print("Early stopping")
                 break
+                
 
 if __name__ == '__main__':
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
