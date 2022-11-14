@@ -33,30 +33,36 @@ class GameSceneDataset(torch.utils.data.Dataset):
         return len(self.indices)
 
 class GameEpisodeDataset(torch.utils.data.Dataset):
-    def __init__(self, data_path, seq_len=32, seq_mode=True, training=True, test_ratio=0.01):
+    def __init__(self, data_path, seq_len=0, seq_mode=True, training=True, test_ratio=0.01):
         self.training = training
         self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_ep_*.npz')))
         np.random.seed(0)
-        # print("ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd ",self.fpaths)
+        # print("tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt ",self.fpaths)
 
         indices = np.arange(0, len(self.fpaths))
+        # print("tttttttttttttttttttttttttttttttindicesindicesindicesindicesindicesindicesindicesindicesttttttttttttttttttttttttttttttttttttttttttttttttttttttt ",indices)
 
         n_trainset = int(len(indices)*(1.0-test_ratio))
+
         self.train_indices = indices[:n_trainset]
+        # print("train_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indic ",self.train_indices)
+
         self.test_indices = indices[n_trainset:]
         # self.train_indices = np.random.choice(indices, int(len(indices)*(1.0-test_ratio)), replace=False)
         # self.test_indices = np.delete(indices, self.train_indices)
         self.indices = self.train_indices if training else self.test_indices
         self.seq_len = seq_len
         self.seq_mode = seq_mode
-        # import pdb; pdb.set_trace()
+        # print("seq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_mode ",seq_len)
 
     def __getitem__(self, idx):
         npz = np.load(self.fpaths[self.indices[idx]])
+        # print("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr", idx )
 
         obs = npz['obs'] # (T, H, W, C) np array
-        # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh ",obs.shape )
         actions = npz['action'] # (T, n_actions) np array
+        # print("8888888888888888888888888888888888888888888888888888888888888888888888888888888", obs )
+        # print("9999999999999999999999999999999999999999999999999999999999999999999999999", obs.shape )
 
         T, C = obs.shape
         # T, H, W, C = obs.shape

@@ -45,23 +45,20 @@ class RNNHyperParams:
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
     seed = 0
-    # img_height = 96
-    # img_width = 96
-    # img_channels = 3
 
     batch_size = 1 # actually batchsize * Seqlen
     test_batch = 1
-    seq_len = 32
-    n_sample = 64
+    seq_len = 10
+    n_sample = 47
 
     vsize = 47#128 # latent size of Vision
     msize = 128 # size of Memory
     asize = 2 # action size
     rnn_hunits = 256
-    log_interval = 1000
-    save_interval = 5
+    log_interval = 100
+    save_interval = 50
 
-    max_step = 10000
+    max_step = 100000
 
     n_workers = 0
 
