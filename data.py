@@ -32,12 +32,37 @@ class GameSceneDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.indices)
 
+
+
+class GameSceneDataset_new(torch.utils.data.Dataset):
+    def __init__(self, data_path, training=True, test_ratio=0.01):
+        self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_[0-9][0-9][0-9]_*.npz')))
+        np.random.seed(0)
+        indices = np.arange(0, len(self.fpaths))
+        n_trainset = int(len(indices)*(1.0-test_ratio))
+        self.train_indices = indices[:n_trainset]
+        self.test_indices = indices[n_trainset:]
+        # self.train_indices = np.random.choice(indices, int(len(indices)*(1.0-test_ratio)), replace=False)
+        # self.test_indices = np.delete(indices, self.train_indices)
+        self.indices = self.train_indices if training else self.test_indices
+        # import pdb; pdb.set_trace()
+
+    def __getitem__(self, idx):
+        npz = np.load(self.fpaths[self.indices[idx]])
+        obs = npz['obs']
+        action = npz['action']
+        # obs = transform(obs)
+        # obs = obs.permute(2, 0, 1) # (N, C, H, W)
+        return obs,action
+
+    def __len__(self):
+        return len(self.indices)
+
 class GameEpisodeDataset(torch.utils.data.Dataset):
-    def __init__(self, data_path, seq_len=0, seq_mode=True, training=True, test_ratio=0.01):
+    def __init__(self, data_path, seq_len=10, seq_mode=True, training=True, test_ratio=0.01):
         self.training = training
         self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_ep_*.npz')))
         np.random.seed(0)
-        # print("tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt ",self.fpaths)
 
         indices = np.arange(0, len(self.fpaths))
         # print("tttttttttttttttttttttttttttttttindicesindicesindicesindicesindicesindicesindicesindicesttttttttttttttttttttttttttttttttttttttttttttttttttttttt ",indices)
@@ -109,3 +134,61 @@ def collate_fn(data):
     obs = torch.stack(obs_lst, dim=0) # (B*N_seq*seq_len, C, H, W)
     # obs = obs.view([-1, seq_len, H, W, C]) # (B*N_seq, seq_len, C, H, W)
     return obs, torch.tensor(actions, dtype=torch.float)
+
+
+
+class GameEpisodeDataset_new(torch.utils.data.Dataset):
+    def __init__(self, data_path, seq_len=10, seq_mode=True, training=True, test_ratio=0.5):
+        self.training = training
+        self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_ep_*.npz')))
+        np.random.seed(0)
+
+        indices = np.arange(0, len(self.fpaths))
+        # print("tttttttttttttttttttttttttttttttindicesindicesindicesindicesindicesindicesindicesindicesttttttttttttttttttttttttttttttttttttttttttttttttttttttt ",indices)
+
+        n_trainset = int(len(indices)*(1.0-test_ratio))
+
+        self.train_indices = indices[:n_trainset]
+        # print("train_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indic ",self.train_indices)
+
+        self.test_indices = indices[n_trainset:]
+        # self.train_indices = np.random.choice(indices, int(len(indices)*(1.0-test_ratio)), replace=False)
+        # self.test_indices = np.delete(indices, self.train_indices)
+        self.indices = self.train_indices if training else self.test_indices
+        self.seq_len = seq_len
+        self.seq_mode = seq_mode
+        # print("seq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_mode ",seq_len)
+
+    def __getitem__(self, idx):
+        npz = np.load(self.fpaths[self.indices[idx]])
+        # print("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr", idx )
+
+        obs = npz['obs'] # (T, H, W, C) np array
+        actions = npz['action'] # (T, n_actions) np array
+        # print("8888888888888888888888888888888888888888888888888888888888888888888888888888888", obs )
+        # print("9999999999999999999999999999999999999999999999999999999999999999999999999", obs.shape )
+
+        # T, C = obs.shape
+        # # T, H, W, C = obs.shape
+        # n_seq = T // self.seq_len
+        # end_seq = n_seq * self.seq_len # T' = end of sequence
+        # # print("0000000000000000000000000000000000000000000000000000000000000000000 ",n_seq )
+        # # print("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",self.seq_len )
+        # # print("cccccccccccccccccccccccccccccccccccccccccccccccccccc",obs.shape)
+        # # print("dssssssssssssssssssssssssssssssssssssssssssssssssssss",actions.shape)        
+        # # print("end_seqend_seqend_seqend_seqend_seqend_seqend_seq",end_seq)          
+        # obs = obs[:end_seq].reshape([-1, self.seq_len, C]) # (N_seq, seq_len, H, W, C)
+        # actions = actions[:end_seq].reshape([-1, self.seq_len, actions.shape[-1]]) # 
+
+        # if args.seq_mode:
+        #     start_range = max_len-self.seq_len
+        #     for t in range(0, max_len-self.seq_len, self.seq_len):
+        #         obs[t:t+self.seq_len]
+        # else:
+        #     rand_start = np.random.randint(max_len-self.seq_len)
+        #     obs = obs[rand_start:rand_start+self.seq_len] # (T, H, W, C)
+        #     actions = actions[rand_start:rand_start+self.seq_len]
+        return obs, actions
+
+    def __len__(self):
+        return len(self.indices)
