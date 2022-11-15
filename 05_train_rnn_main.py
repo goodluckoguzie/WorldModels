@@ -144,10 +144,17 @@ class RNN_MODEL():
 
         self.ckpt_dir = hp.ckpt_dir#'ckpt'
         self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+
         self.vae_state = torch.load(self.ckpt)
         self.vae.load_state_dict(self.vae_state['model'])
         self.vae.eval()
-        print('Loaded vae ckpt {}'.format(self.ckpt))
+        print('Loaded vae ckpt {}'.format(self.ckpt))       
+   
+        # self.ckpt  = sorted(glob.glob(os.path.join(hp.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
+        # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
+        # print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+
+
 
         self.data_path = hp.data_dir 
         self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=1e-4)
@@ -378,7 +385,7 @@ class RNN_MODEL():
 
                 # and if it has, it will make a checkpoint of the current model
             if self.global_step % self.save_interval == 0:
-                self.early_stopping(self.valid_loss, self.model)
+                self.early_stopping(self.valid_loss, self.rnn)
 
 
             if self.global_step % 50 == 0:

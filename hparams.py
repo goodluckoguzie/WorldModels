@@ -12,7 +12,7 @@ class HyperParams:
 
 
     batch_size = 2 # actually batchsize * Seqlen
-    seq_len = 32
+    seq_len = 10
 
     test_batch = 1
     n_sample = 64
