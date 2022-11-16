@@ -60,8 +60,6 @@ class VariationalEncoder(nn.Module):
 
 
 
-
-
 class VAE(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VAE, self).__init__()
@@ -77,11 +75,13 @@ class VAE(nn.Module):
 def vae_loss(recon_x, x, mu, logvar):
     """ VAE loss function """
     recon_loss = nn.MSELoss(size_average=False)
-    BCE = recon_loss(recon_x, x)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    # BCE = recon_loss(recon_x, x)
+    BCE = ((x - recon_x)**2).sum()
+    KLD = (logvar**2 + mu**2 - torch.log(logvar) - 1/2).sum()
+
+    # KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
     return BCE + KLD, BCE, KLD
-
-
 
 
 
@@ -248,6 +248,8 @@ class VAE_MODEL():
             with torch.no_grad():
                 for idx, obs in enumerate(self.valid_loader):
                     x = obs.to(DEVICE)
+
+
                     # import pdb; pdb.set_trace()
                     x_hat, mu, logvar = self.model(x)
                     valid_loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
