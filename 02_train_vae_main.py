@@ -16,6 +16,7 @@ from UTILITY.early_stopping_for_vae import  EarlyStopping
 
 DEVICE = None
 
+
 class Decoder(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(Decoder, self).__init__()
@@ -60,6 +61,8 @@ class VariationalEncoder(nn.Module):
 
 
 
+
+
 class VAE(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VAE, self).__init__()
@@ -75,14 +78,9 @@ class VAE(nn.Module):
 def vae_loss(recon_x, x, mu, logvar):
     """ VAE loss function """
     recon_loss = nn.MSELoss(size_average=False)
-    # BCE = recon_loss(recon_x, x)
-    BCE = ((x - recon_x)**2).sum()
-    KLD = (logvar**2 + mu**2 - torch.log(logvar) - 1/2).sum()
-
-    # KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-
+    BCE = recon_loss(recon_x, x)
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD, BCE, KLD
-
 
 
 class VAE_MODEL():
@@ -119,6 +117,7 @@ class VAE_MODEL():
         # declaring the network
         global_step = 0
         self.model = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
+
         self.data_path = hp.data_dir# if not self.extra else self.extra_dir
         self.ckpt_dir = hp.ckpt_dir
         self.dataset = GameSceneDataset(self.data_path )
@@ -248,9 +247,7 @@ class VAE_MODEL():
             with torch.no_grad():
                 for idx, obs in enumerate(self.valid_loader):
                     x = obs.to(DEVICE)
-
-
-                    # import pdb; pdb.set_trace()
+                    x = x.view(x.size(0), -1)
                     x_hat, mu, logvar = self.model(x)
                     valid_loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
 
@@ -278,6 +275,8 @@ class VAE_MODEL():
             # for idx, obs in enumerate(tqdm(loader, total=len(loader))):
             for idx, obs in enumerate(self.loader):
                 x = obs.to(DEVICE)
+                x = x.view(x.size(0), -1)
+
                 x_hat, mu, logvar = self.model(x)
                 loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
                 self.optimizer.zero_grad()
