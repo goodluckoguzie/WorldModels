@@ -133,7 +133,9 @@ class VAE_MODEL():
         self.data_path = hp.data_dir# if not self.extra else self.extra_dir
         self.ckpt_dir = hp.ckpt_dir
         dataset = GameSceneDataset(self.data_path )
+        
 
+        
         self.dataset = normalised(dataset)
 
         self.loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True,num_workers=self.n_workers,)
