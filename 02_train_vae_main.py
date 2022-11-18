@@ -135,7 +135,7 @@ class VAE_MODEL():
         dataset = GameSceneDataset(self.data_path )
         
 
-        
+
         self.dataset = normalised(dataset)
 
         self.loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True,num_workers=self.n_workers,)
@@ -321,7 +321,7 @@ class VAE_MODEL():
                         f'valid_loss: {self.valid_loss:.8f}')
                    
             self.plot(self.global_step +1)
-            if self.global_step % 5 == 0:#self.save_interval == 0:
+            if self.global_step % self.save_interval == 0:
                 d = {
                     'model': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
@@ -338,7 +338,7 @@ class VAE_MODEL():
                 self.early_stopping(self.valid_loss, self.model)
 
 
-            if self.global_step % 5 == 0:
+            if self.global_step % 10 == 0:
                 print(print_msg)
 
             if self.early_stopping.early_stop:
