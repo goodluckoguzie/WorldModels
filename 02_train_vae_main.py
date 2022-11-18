@@ -29,7 +29,7 @@ class Decoder(nn.Module):
         z = F.relu(self.linear1(z))
         z = F.relu(self.linear2(z))
         z = self.linear3(z)
-        # z = torch.sigmoid(z)
+        z = torch.sigmoid(z)
         return z.reshape((-1, self.input_dims))
 
 
@@ -60,9 +60,6 @@ class VariationalEncoder(nn.Module):
         return z ,mu , sigma
 
 
-
-
-
 class VAE(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VAE, self).__init__()
@@ -74,13 +71,28 @@ class VAE(nn.Module):
         return self.decoder(z),mu , sigma
 
 
-
 def vae_loss(recon_x, x, mu, logvar):
     """ VAE loss function """
     recon_loss = nn.MSELoss(size_average=False)
     BCE = recon_loss(recon_x, x)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD, BCE, KLD
+
+NORMALISE_FACTOR_POS = 40.*2
+def normalised(sample, factor_pos=1./NORMALISE_FACTOR_POS,  constant_0=0., constant_1=0.5):
+    ret = np.array(sample)
+    ret += constant_0
+    for i in range(47):
+        ret[:, i] = ret[:, i] * factor_pos
+
+    # Add constant (0.5 to normalise) to make the data go from 0 to 1
+    ret += constant_1
+    return ret
+def denormalised(sample):
+    return normalised(sample=sample, factor_pos=NORMALISE_FACTOR_POS,  constant_0=-0.5, constant_1=-0.)
+
+
+
 
 
 class VAE_MODEL():
@@ -120,18 +132,22 @@ class VAE_MODEL():
 
         self.data_path = hp.data_dir# if not self.extra else self.extra_dir
         self.ckpt_dir = hp.ckpt_dir
-        self.dataset = GameSceneDataset(self.data_path )
+        dataset = GameSceneDataset(self.data_path )
+
+        self.dataset = normalised(dataset)
+
         self.loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True,num_workers=self.n_workers,)
         print("Train dataset lenght ",len(self.loader))
 
-        self.validset = GameSceneDataset(self.data_path, training=False)
+        validset = GameSceneDataset(self.data_path, training=False)
+        self.validset = normalised(validset)
+
         self.valid_loader = DataLoader(self.validset, batch_size=self.test_batch, shuffle=False, drop_last=True)
         print("valid dataset lenght ",len(self.valid_loader))
 
         self.ckpt_dir = os.path.join(self.ckpt_dir, 'vae')
         self.sample_dir = os.path.join(self.ckpt_dir, 'samples')
         os.makedirs(self.sample_dir, exist_ok=True)
-
 
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=6e-4)
@@ -276,7 +292,6 @@ class VAE_MODEL():
             for idx, obs in enumerate(self.loader):
                 x = obs.to(DEVICE)
                 x = x.view(x.size(0), -1)
-
                 x_hat, mu, logvar = self.model(x)
                 loss, recon_loss, kld = vae_loss(x_hat, x, mu, logvar)
                 self.optimizer.zero_grad()
@@ -304,7 +319,7 @@ class VAE_MODEL():
                         f'valid_loss: {self.valid_loss:.8f}')
                    
             self.plot(self.global_step +1)
-            if self.global_step % self.save_interval == 0:
+            if self.global_step % 5 == 0:#self.save_interval == 0:
                 d = {
                     'model': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
@@ -321,7 +336,7 @@ class VAE_MODEL():
                 self.early_stopping(self.valid_loss, self.model)
 
 
-            if self.global_step % 50 == 0:
+            if self.global_step % 5 == 0:
                 print(print_msg)
 
             if self.early_stopping.early_stop:

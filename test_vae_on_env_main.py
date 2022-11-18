@@ -117,7 +117,6 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 
-
 class Decoder(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(Decoder, self).__init__()
@@ -130,7 +129,7 @@ class Decoder(nn.Module):
         z = F.relu(self.linear1(z))
         z = F.relu(self.linear2(z))
         z = self.linear3(z)
-        # z = torch.sigmoid(z)
+        z = torch.sigmoid(z)
         return z.reshape((-1, self.input_dims))
 
 
@@ -161,9 +160,6 @@ class VariationalEncoder(nn.Module):
         return z ,mu , sigma
 
 
-
-
-
 class VAE(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VAE, self).__init__()
@@ -172,17 +168,7 @@ class VAE(nn.Module):
 
     def forward(self, x):
         z,mu , sigma = self.encoder(x)
-        return self.decoder(z),mu , sigma
-
-
-
-def vae_loss(recon_x, x, mu, logvar):
-    """ VAE loss function """
-    recon_loss = nn.MSELoss(size_average=False)
-    BCE = recon_loss(recon_x, x)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return BCE + KLD, BCE, KLD
-
+        return self.decoder(z),mu , sigma ,z
 
 
 
@@ -258,24 +244,28 @@ def transform_processed_observation_into_raw(sample):
         # print(human_num)
         humans.append(sample[human_num:human_num + 3])
     
-    # humans_obs = np.array(humans)
+    # print(goal_obs)
+    # print("goal_obs")
+    # print(humans)
+    # print("ddddddddddddddd")
 
     return goal_obs, humans
 
 
 
-
-
-
 def code_and_decode(model, data):
+    data = torch.from_numpy(data)
+
     data = data.view(-1, input_size)
-    # data = torch.from_numpy(data)
     data = Variable(data, requires_grad=False).to(device)
     with torch.no_grad():
         
-        output,_,_  = model(data)
+        output,_,_ ,z = model(data)
+        output = denormalised(z.cpu())
+        # print(output)
+        
         output = output.squeeze(0)
-        output = output.cpu().numpy()
+        # output = output.cpu().numpy()
         # print(output)
     return output 
 
@@ -330,6 +320,24 @@ def discrete_to_continuous_action(action:int):
         raise NotImplementedError
 
 
+
+NORMALISE_FACTOR_POS = 40.*2
+def normalised(sample, factor_pos=1./NORMALISE_FACTOR_POS,  constant_0=0., constant_1=0.5):
+    ret = np.array(sample)
+    ret += constant_0
+    for i in range(47):
+        ret[:, i] = ret[:, i] * factor_pos
+
+    # Add constant (0.5 to normalise) to make the data go from 0 to 1
+    ret += constant_1
+    return ret
+def denormalised(sample):
+    return normalised(sample=sample, factor_pos=NORMALISE_FACTOR_POS,  constant_0=-0.5, constant_1=-0.)
+
+
+
+
+
 def preprocess_observation(obs):
     """
     To convert dict observation to numpy observation
@@ -378,9 +386,6 @@ class Rollout():
                 action = discrete_to_continuous_action(action_)
                 obs = preprocess_observation(obs)
                 obs_ = obs
-
-
-
                 goal_obs, humans_obs = transform_processed_observation_into_raw(obs)
                 Human_list = []
                 world_image_new = (np.ones((int(RESOLUTION_Y),int(RESOLUTION_X),3))*255).astype(np.uint8)
@@ -395,9 +400,9 @@ class Rollout():
                 robot = Robot(id=1, x=0, y=0, theta=0, radius=0.3  )
                 robot.draw(world_image_new, PIXEL_TO_WORLD_X, PIXEL_TO_WORLD_Y,MAP_X,MAP_Y)
                 input_grey = cv2.cvtColor(world_image_new, cv2.COLOR_BGR2GRAY)
-
-
+                obs_ = normalised(obs_.unsqueeze(0))
                 #send feed the input of the vae with the obsevation (obs)
+                obs_ = obs_.squeeze(0)
                 output = code_and_decode(model, obs_)
                 output = torch.from_numpy(output)
 
