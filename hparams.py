@@ -70,6 +70,7 @@ class DQNHyperParams:
     seed = 0
 
     n_workers = 0
+
 class RNNHyperParams:
     vision = 'VAE'
     memory = 'RNN'
@@ -95,6 +96,35 @@ class RNNHyperParams:
     max_step = 100000
 
     n_workers = 0
+
+
+class DQNRNNHyperParams:
+    vision = 'VAE'
+    memory = 'RNN'
+    n_hiddens = 256
+    extra = False
+    data_dir = 'dqndatasets'
+    extra_dir = 'additional'
+    ckpt_dir = 'ckpt'
+    seed = 0
+
+    batch_size = 64 # actually batchsize * Seqlen
+    test_batch = 1
+    seq_len = 10
+    n_sample = 47
+
+    vsize = 47#128 # latent size of Vision
+    msize = 128 # size of Memory
+    asize = 2 # action size
+    rnn_hunits = 256
+    log_interval = 100
+    save_interval = 50
+
+    max_step = 100000
+
+    n_workers = 0
+
+
 
 class VAEHyperParams:
     vision = 'VAE'

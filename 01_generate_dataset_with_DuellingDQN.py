@@ -243,8 +243,8 @@ class DuelingDQNAgent:
 
 
     def get_action(self, current_state, epsilon):
-        # self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))
-        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
+        self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))
+            # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
 
         self.duelingDQN.eval()
 
@@ -292,7 +292,7 @@ def rollout():
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 5000# hp.n_rollout
+    max_ep = 1000# hp.n_rollout
     feat_dir = hp.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
