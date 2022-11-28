@@ -7,5 +7,5 @@ batch_size: 128
 save_path: "./MODEL/RNN"  # path to save the model files
 num_layers: 2
 save_freq: 50  # model would be saved after every save_freq epsidoes
-
+num_layers: 3
 run_name: RNN

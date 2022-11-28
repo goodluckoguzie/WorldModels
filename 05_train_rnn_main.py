@@ -102,6 +102,19 @@ class RNN(nn.Module):
         return y, None, None, next_hidden
 
 
+NORMALISE_FACTOR_POS = 40.*2
+def normalised(sample, factor_pos=1./NORMALISE_FACTOR_POS,  constant_0=0., constant_1=0.5):
+    ret = np.array(sample)
+    ret += constant_0
+    for i in range(47):
+        ret[:, i] = ret[:, i] * factor_pos
+
+    # Add constant (0.5 to normalise) to make the data go from 0 to 1
+    ret += constant_1
+    return ret
+def denormalised(sample):
+    return normalised(sample=sample, factor_pos=NORMALISE_FACTOR_POS,  constant_0=-0.5, constant_1=-0.)
+
 
 
 class RNN_MODEL():
@@ -159,13 +172,15 @@ class RNN_MODEL():
         self.data_path = hp.data_dir 
         self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=1e-4)
         dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len)
+
         self.loader = DataLoader(
             dataset, batch_size=1, shuffle=True, drop_last=True,
             num_workers=self.n_workers, collate_fn=collate_fn
         )
         testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False)
+
         self.valid_loader = DataLoader(
-            testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn
+            testset, batch_size=2, shuffle=False, drop_last=False, collate_fn=collate_fn
         )
 
         self.ckpt_dir = os.path.join(self.ckpt_dir, 'rnn')
@@ -301,9 +316,9 @@ class RNN_MODEL():
             l1 = nn.L1Loss()
             with torch.no_grad():
                 for idx, (obs, actions) in enumerate(self.valid_loader):
+                    obs = normalised(obs)
+                    obs = torch.from_numpy(obs)
                     obs, actions = obs.to(DEVICE), actions.to(DEVICE)
-
-
                     z,latent_mu, latent_var = self.vae(obs) # (B*T, vsize)
                     
                     # z = vae.reparam(latent_mu, latent_var) # (B*T, vsize)
@@ -331,13 +346,18 @@ class RNN_MODEL():
 
             for idx, (obs, actions) in enumerate(self.loader):
                 # for idx, (obs, actions) in t:
-                obs, actions = obs.to(DEVICE), actions.to(DEVICE)
 
 
                 with torch.no_grad():
+                    obs = normalised(obs)
+                    obs = torch.from_numpy(obs)
+                    obs, actions = obs.to(DEVICE), actions.to(DEVICE)
+
                     z,latent_mu, latent_var = self.vae(obs) # (B*T, vsize)
+
                     # z = latent_mu
                     z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
+
                 next_z = z[:, 1:, :]
                 z, actions = z[:, :-1, :], actions[:, :-1, :]      
             

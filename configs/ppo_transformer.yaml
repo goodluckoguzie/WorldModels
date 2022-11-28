@@ -1,0 +1,22 @@
+input_emb1: 8
+input_emb2: 13
+d_model: 128
+d_k: 128
+actor_mlp_hidden_layers: [128, 64, 7]
+critic_mlp_hidden_layers: [128, 64, 1]
+num_episodes : 100_000  # number of episodes to train
+gamma : 0.99  # discount factor
+gae_lambda : 0.95  # gae_lambda used in GAE equation for advantage calculation
+entropy_pen : 0.0  # entropy penalty
+n_epochs : 10  # no. of epochs of training on each episode
+batch_size : 32  # batch size for updating the parameters 
+ppo_update_freq : 1 # no. of episodes to use for performing an update
+policy_clip : 0.2  # policy_clip parameter in PPO
+render: False  # setting it to True would render after every "render_freq" episodes
+render_freq: 500  # if render is True, the episode will be rendered after every render_freq episodes
+actor_save_path: "./models/ppo_transformer/actor"  # path to save the actor files
+critic_save_path: "./models/ppo_transformer/critic"  # path to save the critic files
+save_path: "./models/ppo_transformer"
+save_freq: 50  # model would be saved after every save_freq epsidoes
+actor_lr: 0.0001  # learning rate 
+critic_lr: 0.0001  # learning rate 

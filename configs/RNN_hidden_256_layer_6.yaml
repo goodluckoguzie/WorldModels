@@ -11,3 +11,5 @@ num_layers: 6
 run_name: RNN_hidden_256_layer_6_win_slide_3
 train_window : 3 
 timestep : 300
+
+num_train_samples : 10
