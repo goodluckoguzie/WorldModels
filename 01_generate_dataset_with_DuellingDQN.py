@@ -244,7 +244,7 @@ class DuelingDQNAgent:
 
     def get_action(self, current_state, epsilon):
         # self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))
-            self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
+        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
 
         self.duelingDQN.eval()
 
