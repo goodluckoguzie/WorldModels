@@ -292,7 +292,7 @@ def rollout():
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 5000# hp.n_rollout
+    max_ep = 3000# hp.n_rollout
     feat_dir = hp.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
