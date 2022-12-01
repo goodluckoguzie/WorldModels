@@ -292,7 +292,7 @@ def rollout():
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 1000# hp.n_rollout
+    max_ep = 5000# hp.n_rollout
     feat_dir = hp.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
@@ -314,13 +314,12 @@ def rollout():
 
         for t in range(time_steps):       
             # env.render()
-
-            action_ = np.random.randint(0, 4)
-            action = agent.discrete_to_continuous_action(action_)
-
+            action, act_discrete = agent.get_action(obs, 0)
+            # action_ = np.random.randint(0, 4)
+            next_obs, reward, done, _ = env.step(action)
 
             # action = env.action_space.sample()
-            next_obs, reward, done, _ = env.step(action)
+            # next_obs, reward, done, _ = env.step(action)
             next_obs = preprocess_observation(next_obs)
             action = torch.from_numpy(action)
 
