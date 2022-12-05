@@ -91,6 +91,8 @@ def rollout():
 
     for ep in range(max_ep):
         obs_lst, action_lst, reward_lst, next_obs_lst, done_lst = [], [], [], [], []
+        obs = env.reset()
+
         obs = preprocess_observation(obs)   
         done = False
         t = 0
