@@ -1,7 +1,7 @@
 import numpy as np
 import os, sys, glob
 import gym
-from hparams import HyperParams as hp
+from hparams import WorldFrameHyperParams as hp
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -43,7 +43,6 @@ def discrete_to_continuous_action(action:int):
     else:
         raise NotImplementedError
 
-
 def preprocess_observation(obs):
     """
     To convert dict observation to numpy observation
@@ -58,7 +57,6 @@ def preprocess_observation(obs):
     return torch.from_numpy(observation)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 ####################################################Padding our Observation#############################################
 
@@ -78,15 +76,13 @@ def pad_tensor(t, episode_length, window_length=9, pad_function=torch.zeros):
 
 ###########################################End#############################################################################
 
-
 def rollout():
     time_steps = 300
 
-    # env = gym.make("CarRacing-v0")
     env = gym.make("SocNavEnv-v1")
     env.configure('./configs/env.yaml')
     env.set_padded_observations(True)
-
+    env = WorldFrameObservations(env)
     # seq_len = 300
     max_ep = 5000# hp.n_rollout
     feat_dir = hp.data_dir
@@ -95,25 +91,17 @@ def rollout():
 
     for ep in range(max_ep):
         obs_lst, action_lst, reward_lst, next_obs_lst, done_lst = [], [], [], [], []
-        obs = env.reset()
         obs = preprocess_observation(obs)   
-
         done = False
         t = 0
         for t in range(time_steps):       
-            # env.render()
+            env.render()
 
             action_ = np.random.randint(0, 4)
             action = discrete_to_continuous_action(action_)
-
-
-            # action = env.action_space.sample()
             next_obs, reward, done, _ = env.step(action)
             next_obs = preprocess_observation(next_obs)
             action = torch.from_numpy(action)
-
-
-            # print("obs",obs.shape)
             np.savez(
                 os.path.join(feat_dir, 'rollout_{:03d}_{:04d}'.format(ep,t)),
                 obs=obs,
@@ -122,7 +110,6 @@ def rollout():
                 next_obs=next_obs,
                 done=done,
             )
-
             
             obs_lst.append(obs)
 
@@ -132,7 +119,6 @@ def rollout():
             done_lst.append(done)
             obs = next_obs
             if done:
-
                 print("Episode [{}/{}] finished after {} timesteps".format(ep + 1, max_ep, t), flush=True)
                 obs = env.reset()
                 obs_lst = torch.stack(obs_lst, dim=0).squeeze(1)
@@ -156,7 +142,7 @@ def rollout():
                 reward_lst=torch.from_numpy(reward_lst)
                 break
 
-
+        
         np.savez(
             os.path.join(feat_dir, 'rollout_ep_{:03d}'.format(ep)),
             obs=np.stack(obs_lst, axis=0), # (T, C, H, W)
