@@ -45,7 +45,7 @@ class WorldFrameHyperParams:
     controller = 'A3C'
 
     extra = False
-    data_dir = 'datasetsworldframe'
+    data_dir = 'Datasetsworldframe'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
@@ -56,7 +56,7 @@ class WorldFrameHyperParams:
     test_batch = 1
     n_sample = 64
 
-    vsize = 47 # latent size of Vision
+    vsize = 53 # latent size of Vision
     msize = 128 # size of Memory
     asize = 2 # action size
     rnn_hunits = 256
@@ -80,7 +80,7 @@ class DQNHyperParams:
     controller = 'A3C'
 
     extra = False
-    data_dir = 'dqndatasets'
+    data_dir = 'dqnDatasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
@@ -115,7 +115,7 @@ class RNNHyperParams:
     memory = 'RNN'
     n_hiddens = 256
     extra = False
-    data_dir = 'datasets'
+    data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
     seed = 0
@@ -142,7 +142,7 @@ class DQNRNNHyperParams:
     memory = 'RNN'
     n_hiddens = 256
     extra = False
-    data_dir = 'dqndatasets'
+    data_dir = 'dqnDatasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
     seed = 0
@@ -169,7 +169,7 @@ class VAEHyperParams:
     vision = 'VAE'
 
     extra = False
-    data_dir = 'datasets'
+    data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
