@@ -6,7 +6,7 @@ class HyperParams:
     controller = 'A3C'
 
     extra = False
-    data_dir = 'datasets'
+    data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 

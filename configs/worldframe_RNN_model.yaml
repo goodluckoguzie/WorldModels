@@ -1,0 +1,18 @@
+
+extra: 'additional'
+data_dir: 'Datasetsworldframe'
+extra_dir: 'additional'
+ckpt_dir: 'ckpt'
+n_latents: 53
+n_hiddens: 256
+n_actions: 2
+batch_size: 1
+test_batch: 1
+n_sample: 64
+log_interval: 5000
+save_interval: 50
+max_step: 100_0000
+n_workers: 0
+run_name: RNN_MODEL
+seq_len: 20
+save_path: "./MODEL/Worldframe_RNN_MODEL"  # path to save the model files
