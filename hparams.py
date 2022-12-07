@@ -23,15 +23,15 @@ class RobotFrame_Datasets_Timestep_2:
     data_dir = 'RobotFrameDatasetsTimestep2'
     time_steps =  100
 
-class RobotFrame_Datasets_Timestep_2:
+class RobotFrame_Datasets_Timestep_1:
     data_dir = 'RobotFrameDatasetsTimestep1'
     time_steps =  200
 
-class RobotFrame_Datasets_Timestep_2:
+class RobotFrame_Datasets_Timestep_05:
     data_dir = 'RobotFrameDatasetsTimestep05'
     time_steps =  300
 
-class RobotFrame_Datasets_Timestep_2:
+class RobotFrame_Datasets_Timestep_0_25:
     data_dir = 'RobotFrameDatasetsTimestep025'
     time_steps =  600
 

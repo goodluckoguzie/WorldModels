@@ -2,6 +2,8 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import WorldFrameHyperParams as hp
+from hparams import RobotFrame_Datasets_Timestep_0_25 as data
+
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -77,15 +79,17 @@ def pad_tensor(t, episode_length, window_length=9, pad_function=torch.zeros):
 ###########################################End#############################################################################
 
 def rollout():
-    time_steps = 300
+    time_steps = data.time_steps
 
     env = gym.make("SocNavEnv-v1")
     env.configure('./configs/env.yaml')
+    env.configure('./configs/env_timestep_0_25.yaml')
+
     env.set_padded_observations(True)
     env = WorldFrameObservations(env)
     # seq_len = 300
     max_ep = 5000# hp.n_rollout
-    feat_dir = hp.data_dir
+    feat_dir = data.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
 
