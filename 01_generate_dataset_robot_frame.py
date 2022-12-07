@@ -2,6 +2,7 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import HyperParams as hp
+from hparams import WorldFrame_Datasets_Timestep_2 as data
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -82,14 +83,13 @@ def pad_tensor(t, episode_length, window_length=9, pad_function=torch.zeros):
 def rollout():
     time_steps = 300
 
-    # env = gym.make("CarRacing-v0")
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env.yaml')
+    env.configure('./configs/env_timestep_2.yaml')
     env.set_padded_observations(True)
 
     # seq_len = 300
     max_ep = 5000# hp.n_rollout
-    feat_dir = hp.data_dir
+    feat_dir = data.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
 
@@ -101,7 +101,7 @@ def rollout():
         done = False
         t = 0
         for t in range(time_steps):       
-            # env.render()
+            env.render()
 
             action_ = np.random.randint(0, 4)
             action = discrete_to_continuous_action(action_)

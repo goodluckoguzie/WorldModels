@@ -1,12 +1,41 @@
 
 
+
+
+class WorldFrame_Datasets_Timestep_2:
+    data_dir = 'WorldFrameDatasetsTimestep2'
+
+class WorldFrame_Datasets_Timestep_1:
+    data_dir = 'WorldFrameDatasetsTimestep1'
+
+class WorldFrame_Datasets_Timestep_0_5:
+    data_dir = 'WorldFrameDatasetsTimestep05'
+
+class WorldFrame_Datasets_Timestep_0_25:
+    data_dir = 'WorldFrameDatasetsTimestep025'
+
+class RobotFrame_Datasets_Timestep_2:
+    data_dir = 'RobotFrameDatasetsTimestep2'
+
+class RobotFrame_Datasets_Timestep_2:
+    data_dir = 'RobotFrameDatasetsTimestep1'
+
+class RobotFrame_Datasets_Timestep_2:
+    data_dir = 'RobotFrameDatasetsTimestep05'
+
+class RobotFrame_Datasets_Timestep_2:
+    data_dir = 'RobotFrameDatasetsTimestep025'
+
+
+
+
 class HyperParams:
     vision = 'VAE'
     memory = 'RNN'
     controller = 'A3C'
 
     extra = False
-    data_dir = 'Datasets'
+    # data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
@@ -45,7 +74,7 @@ class WorldFrameHyperParams:
     controller = 'A3C'
 
     extra = False
-    data_dir = 'Datasetsworldframe'
+    # data_dir = 'Datasetsworldframe'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
@@ -74,13 +103,14 @@ class WorldFrameHyperParams:
     seed = 0
 
     n_workers = 0
+
 class DQNHyperParams:
     vision = 'VAE'
     memory = 'RNN'
     controller = 'A3C'
 
     extra = False
-    data_dir = 'dqnDatasets'
+    # data_dir = 'dqnDatasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
@@ -115,7 +145,7 @@ class RNNHyperParams:
     memory = 'RNN'
     n_hiddens = 256
     extra = False
-    data_dir = 'Datasets'
+    # data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
     seed = 0
@@ -142,7 +172,7 @@ class DQNRNNHyperParams:
     memory = 'RNN'
     n_hiddens = 256
     extra = False
-    data_dir = 'dqnDatasets'
+    # data_dir = 'dqnDatasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
     seed = 0
@@ -169,7 +199,7 @@ class VAEHyperParams:
     vision = 'VAE'
 
     extra = False
-    data_dir = 'Datasets'
+    # data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
