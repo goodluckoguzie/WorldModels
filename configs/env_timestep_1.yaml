@@ -4,7 +4,7 @@ rendering:
 
 episode:
     episode_length: 200  # maximum steps in an episode
-    time_step:1 #1  # number of seconds that one step corresponds to
+    time_step: 1 #1  # number of seconds that one step corresponds to
 
 rewards:
     use_sngnn: 0.05  # use the SNGNN network as the reward function
