@@ -4,27 +4,36 @@
 
 class WorldFrame_Datasets_Timestep_2:
     data_dir = 'WorldFrameDatasetsTimestep2'
+    time_steps =  100
 
 class WorldFrame_Datasets_Timestep_1:
     data_dir = 'WorldFrameDatasetsTimestep1'
+    time_steps =  200
 
 class WorldFrame_Datasets_Timestep_0_5:
     data_dir = 'WorldFrameDatasetsTimestep05'
+    time_steps =  300
 
 class WorldFrame_Datasets_Timestep_0_25:
     data_dir = 'WorldFrameDatasetsTimestep025'
+    time_steps =  600
+
 
 class RobotFrame_Datasets_Timestep_2:
     data_dir = 'RobotFrameDatasetsTimestep2'
+    time_steps =  100
 
 class RobotFrame_Datasets_Timestep_2:
     data_dir = 'RobotFrameDatasetsTimestep1'
+    time_steps =  200
 
 class RobotFrame_Datasets_Timestep_2:
     data_dir = 'RobotFrameDatasetsTimestep05'
+    time_steps =  300
 
 class RobotFrame_Datasets_Timestep_2:
     data_dir = 'RobotFrameDatasetsTimestep025'
+    time_steps =  600
 
 
 
