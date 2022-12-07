@@ -39,7 +39,7 @@ class RobotFrame_Datasets_Timestep_1:
     RNN_runs = 'RobotFrameDatasetsTimestep1'
     ckpt_dir = 'RobotFrameDatasetsTimestep1'
 
-class RobotFrame_Datasets_Timestep_05:
+class RobotFrame_Datasets_Timestep_0_5:
     data_dir = 'RobotFrameDatasetsTimestep05'
     time_steps =  300
     RNN_runs = 'RobotFrameDatasetsTimestep05'
