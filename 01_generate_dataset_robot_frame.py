@@ -101,7 +101,7 @@ def rollout():
         done = False
         t = 0
         for t in range(time_steps):       
-            env.render()
+            # env.render()
 
             action_ = np.random.randint(0, 4)
             action = discrete_to_continuous_action(action_)
