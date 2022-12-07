@@ -2,7 +2,7 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import HyperParams as hp
-from hparams import WorldFrame_Datasets_Timestep_2 as data
+from hparams import RobotFrame_Datasets_Timestep_0_25 as data
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -85,7 +85,7 @@ def rollout():
 
 
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env_timestep_2.yaml')
+    env.configure('./configs/env_timestep_0_25.yaml')
 
 
     env.set_padded_observations(True)
