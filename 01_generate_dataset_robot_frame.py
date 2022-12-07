@@ -2,7 +2,7 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import HyperParams as hp
-from hparams import WorldFrame_Datasets_Timestep_1 as data
+from hparams import WorldFrame_Datasets_Timestep_0_5 as data
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -84,7 +84,7 @@ def rollout():
     time_steps = 300
 
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env_timestep_1.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     env.set_padded_observations(True)
 
     # seq_len = 300
@@ -101,7 +101,7 @@ def rollout():
         done = False
         t = 0
         for t in range(time_steps):       
-            # env.render()
+            env.render()
 
             action_ = np.random.randint(0, 4)
             action = discrete_to_continuous_action(action_)
