@@ -83,7 +83,7 @@ def rollout():
 
     env = gym.make("SocNavEnv-v1")
     env.configure('./configs/env.yaml')
-    env.configure('./configs/env_timestep_0_5.yaml')
+    env.configure('./configs/env_timestep_2.yaml')
 
     env.set_padded_observations(True)
     env = WorldFrameObservations(env)
