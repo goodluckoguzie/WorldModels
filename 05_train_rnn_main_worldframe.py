@@ -133,7 +133,7 @@ class RNN_MODEL():
         self.run_name = None
         # self.seq_len = None
         self.run_name = None
-        self.window = Seq_len.seq_4
+        self.window = Seq_len.seq_1
 
                 # setting values from config file
         self.configure(self.config)
@@ -149,7 +149,7 @@ class RNN_MODEL():
         self.ckpt_dir = data.ckpt_dir#'ckpt'
         self.rnnsave = data.rnnsave#'ckpt'
         self.data_path = data.data_dir 
-        self.seq_len = Seq_len.seq_len_4
+        self.seq_len = Seq_len.seq_len_1
         print(self.seq_len) 
         self.ckpt_dir = os.path.join(self.ckpt_dir, self.rnnsave + self.window)
 
@@ -405,7 +405,7 @@ class RNN_MODEL():
                 self.early_stopping(self.valid_loss, self.rnn)
 
 
-            if self.global_step % 1 == 0:
+            if self.global_step % 50 == 0:
                 print(print_msg)
 
             if self.early_stopping.early_stop:
