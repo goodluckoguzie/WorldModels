@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp 
-from hparams import WorldFrameHyperParams as HP
+from hparams import WorldFrame_Datasets_Timestep_2 as data
+from hparams import Seq_Len as Seq_len
+
 # from models import VAE, RNN
 from torch.utils.data import DataLoader
 from data import *
@@ -113,7 +115,7 @@ class RNN_MODEL():
         self.config = config
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.extra = None
-        self.data_dir = None
+        # self.data_dir = None
         self.extra_dir = None
         self.ckpt_dir = None
         # rnn variables
@@ -129,8 +131,9 @@ class RNN_MODEL():
         self.save_path = None
         self.n_workers = None
         self.run_name = None
-        self.seq_len = None
+        # self.seq_len = None
         self.run_name = None
+        self.window = Seq_len.seq_1
 
                 # setting values from config file
         self.configure(self.config)
@@ -143,8 +146,13 @@ class RNN_MODEL():
 
   
         # self.data_path = self.data_dir# if not self.extra else self.extra_dir
+        self.ckpt_dir = data.ckpt_dir#'ckpt'
+        self.rnnsave = data.rnnsave#'ckpt'
+        self.data_path = data.data_dir 
+        self.seq_len = Seq_len.seq_len_1
+        print(self.seq_len) 
+        self.ckpt_dir = os.path.join(self.ckpt_dir, self.rnnsave + self.window)
 
-        self.ckpt_dir = hp.ckpt_dir#'ckpt'
         # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
 
         # self.vae_state = torch.load(self.ckpt)
@@ -156,9 +164,6 @@ class RNN_MODEL():
         # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
         # print('Loaded rnn_state ckpt {}'.format(self.ckpt))
 
-
-
-        self.data_path = HP.data_dir 
         self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=1e-4)
         dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len)
 
@@ -172,7 +177,8 @@ class RNN_MODEL():
             testset, batch_size=2, shuffle=False, drop_last=False, collate_fn=collate_fn
         )
 
-        self.ckpt_dir = os.path.join(self.ckpt_dir, 'rnn')
+
+        # self.ckpt_dir = os.path.join(self.ckpt_dir, 'rnn')
         sample_dir = os.path.join(self.ckpt_dir, 'samples')
         os.makedirs(sample_dir, exist_ok=True)
 
@@ -187,13 +193,13 @@ class RNN_MODEL():
             assert(self.extra is not None), f"Argument seq_len size cannot be None"
 
 
-        if self.seq_len is None:
-            self.seq_len = config["seq_len"]
-            assert(self.seq_len is not None), f"Argument extra size cannot be None"
+        # if self.seq_len is None:
+        #     self.seq_len = config["seq_len"]
+        #     assert(self.seq_len is not None), f"Argument extra size cannot be None"
 
-        if self.data_dir is None:
-            self.data_dir = config["data_dir"]
-            assert(self.data_dir is not None), f"Argument data_dir  cannot be None"
+        # if self.data_dir is None:
+        #     self.data_dir = config["data_dir"]
+        #     assert(self.data_dir is not None), f"Argument data_dir  cannot be None"
 
         if self.extra_dir is None:
             self.extra_dir = config["extra_dir"]
@@ -255,11 +261,14 @@ class RNN_MODEL():
 
 
         # check vae dir exists, if not, create it
-        RNN_runs = 'WorldFrame_RNN_model_runs'
+        RNN_runs = data.RNN_runs#'WorldFrame_RNN_model_runs'
+        RNN_runs = RNN_runs 
+
         if not os.path.exists(RNN_runs):
             os.makedirs(RNN_runs)
         if self.run_name is not None:
-            self.writer = SummaryWriter('WorldFrame_RNN_model_runs/'+self.run_name)
+            # self.writer = SummaryWriter('WorldFrame_RNN_model_runs/'+self.run_name)
+            self.writer = SummaryWriter('RNN_model_runs/'+RNN_runs + self.window)
         else:
             self.writer = SummaryWriter()
 
@@ -366,12 +375,12 @@ class RNN_MODEL():
                 self.valid_losses = evaluate(self)
                 now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 with open(os.path.join(self.ckpt_dir, 'train.log'), 'a') as f:
-                    log = '{} || Step: {}, train_loss: {:.4f}, loss: {:.4f}\n'.format(now, self.global_step, loss.item(), self.valid_losses)
+                    log = '{} || Step: {}, train_loss: {:.4f}, valid_losses: {:.4f}\n'.format(now, self.global_step, loss.item(), self.valid_losses)
                     f.write(log)
 
             self.epoch_len = len(str(self.global_step))
-            self.train_loss = np.mean(self.train_losses)/len(self.loader)
-            self.valid_loss = self.valid_losses/len(self.valid_loader)
+            self.train_loss = np.mean(self.train_losses)#/len(self.loader)
+            self.valid_loss = self.valid_losses#/len(self.valid_loader)
             self.plot(self.global_step +1)
 
             print_msg = (f'[{self.global_step:>{self.epoch_len}}/{self.global_step:>{self.epoch_len}}] ' +
