@@ -18,7 +18,6 @@ class WorldFrame_Datasets_Timestep_2:
     rnnsave = 'WorldFrameDatasetsTimestep2'
 
 
-
 class WorldFrame_Datasets_Timestep_1:
     data_dir = 'WorldFrameDatasetsTimestep1'
     time_steps =  200

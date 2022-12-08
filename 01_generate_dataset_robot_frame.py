@@ -2,7 +2,7 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import HyperParams as hp
-from hparams import RobotFrame_Datasets_Timestep_2 as data
+from hparams import RobotFrame_Datasets_Timestep_0_25 as data
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -85,7 +85,7 @@ def rollout():
 
 
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env_timestep_2.yaml')
+    env.configure('./configs/env_timestep_0_25.yaml')
 
 
     env.set_padded_observations(True)
@@ -135,15 +135,16 @@ def rollout():
             done_lst.append(done)
             obs = next_obs
             if done:
-
                 print("Episode [{}/{}] finished after {} timesteps".format(ep + 1, max_ep, t), flush=True)
                 obs = env.reset()
                 obs_lst = torch.stack(obs_lst, dim=0).squeeze(1)
-                obs_lst = pad_tensor(obs_lst, episode_length=time_steps).cpu().detach().numpy()
-                obs_lst = torch.from_numpy(obs_lst) 
+                # print("9999999999999999999999999999999999999999999999999999999999999999999999999", obs_lst.shape )
+
+                # obs_lst = pad_tensor(obs_lst, episode_length=time_steps).cpu().detach().numpy()
+                # obs_lst = torch.from_numpy(obs_lst) 
                 next_obs_lst = torch.stack(next_obs_lst, dim=0).squeeze(1)
-                next_obs_lst = pad_tensor(next_obs_lst, episode_length=time_steps).cpu().detach().numpy()
-                next_obs_lst = torch.from_numpy(next_obs_lst) 
+                # next_obs_lst = pad_tensor(next_obs_lst, episode_length=time_steps).cpu().detach().numpy()
+                # next_obs_lst = torch.from_numpy(next_obs_lst) 
 
                 done_lst = [int(d) for d in done_lst]
                 done_lst = torch.tensor(done_lst).unsqueeze(-1)
@@ -151,13 +152,14 @@ def rollout():
                 done_lst=torch.from_numpy(done_lst)
                 
                 action_lst = torch.stack(action_lst, dim=0).squeeze(1)
-                action_lst = pad_tensor(action_lst, episode_length=time_steps).cpu().detach().numpy()
-                action_lst=torch.from_numpy(action_lst)
+                # action_lst = pad_tensor(action_lst, episode_length=time_steps).cpu().detach().numpy()
+                # action_lst=torch.from_numpy(action_lst)
                 
                 reward_lst = torch.tensor(reward_lst).unsqueeze(-1)
                 reward_lst = pad_tensor(reward_lst, episode_length=time_steps).cpu().detach().numpy()
                 reward_lst=torch.from_numpy(reward_lst)
                 break
+
 
 
         np.savez(
@@ -172,6 +174,7 @@ def rollout():
         
 
 if __name__ == '__main__':
+                # print("9999999999999999999999999999999999999999999999999999999999999999999999999", obs_lst.shape )
 
 
     np.random.seed(hp.seed)

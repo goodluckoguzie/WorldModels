@@ -10,6 +10,11 @@ from torchvision import transforms
 # ])
 
 class GameSceneDataset(torch.utils.data.Dataset):
+
+
+
+
+
     def __init__(self, data_path, training=True, test_ratio=0.01):
         self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_[0-9][0-9][0-9]_*.npz')))
         np.random.seed(0)
@@ -34,40 +39,43 @@ class GameSceneDataset(torch.utils.data.Dataset):
 
 
 
-class GameSceneDataset_new(torch.utils.data.Dataset):
-    def __init__(self, data_path, training=True, test_ratio=0.01):
-        self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_[0-9][0-9][0-9]_*.npz')))
-        np.random.seed(0)
-        indices = np.arange(0, len(self.fpaths))
-        n_trainset = int(len(indices)*(1.0-test_ratio))
-        self.train_indices = indices[:n_trainset]
-        self.test_indices = indices[n_trainset:]
-        # self.train_indices = np.random.choice(indices, int(len(indices)*(1.0-test_ratio)), replace=False)
-        # self.test_indices = np.delete(indices, self.train_indices)
-        self.indices = self.train_indices if training else self.test_indices
-        # import pdb; pdb.set_trace()
+# class GameSceneDataset_new(torch.utils.data.Dataset):
+#     def __init__(self, data_path, training=True, test_ratio=0.01):
+#         self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_[0-9][0-9][0-9]_*.npz')))
+#         np.random.seed(0)
+#         indices = np.arange(0, len(self.fpaths))
+#         n_trainset = int(len(indices)*(1.0-test_ratio))
+#         self.train_indices = indices[:n_trainset]
+#         self.test_indices = indices[n_trainset:]
+#         # self.train_indices = np.random.choice(indices, int(len(indices)*(1.0-test_ratio)), replace=False)
+#         # self.test_indices = np.delete(indices, self.train_indices)
+#         self.indices = self.train_indices if training else self.test_indices
+#         # import pdb; pdb.set_trace()
 
-    def __getitem__(self, idx):
-        npz = np.load(self.fpaths[self.indices[idx]])
-        obs = npz['obs']
-        action = npz['action']
-        reward = npz['reward']  # (T, n_actions) np array
+#     def __getitem__(self, idx):
+#         npz = np.load(self.fpaths[self.indices[idx]])
+#         obs = npz['obs']
+#         action = npz['action']
+#         reward = npz['reward']  # (T, n_actions) np array
 
-        # obs = transform(obs)
-        # obs = obs.permute(2, 0, 1) # (N, C, H, W)
-        return obs,action,reward
+#         # obs = transform(obs)
+#         # obs = obs.permute(2, 0, 1) # (N, C, H, W)
+#         return obs,action,reward
 
-    def __len__(self):
-        return len(self.indices)
+#     def __len__(self):
+#         return len(self.indices)
 
 
         
 
 class GameEpisodeDataset(torch.utils.data.Dataset):
-    def __init__(self, data_path, seq_len=20, seq_mode=True, training=True, test_ratio=0.01):
+
+    def __init__(self, data_path, seq_len=20, seq_mode=True, training=True, test_ratio=0.01,episode_length=None):
         self.training = training
+        self.episode_length = episode_length
         self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_ep_*.npz')))
         np.random.seed(0)
+        # print("ddddddddddddddddddddddddddddffffffffffffffffffffffffffffffffffff",self.episode_length)
 
         indices = np.arange(0, len(self.fpaths))
 
@@ -85,11 +93,41 @@ class GameEpisodeDataset(torch.utils.data.Dataset):
         # print("seq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_mode ",seq_len)
 
     def __getitem__(self, idx):
+
+
+        def pad_tensor(t, episode_length=self.episode_length, window_length=self.seq_len-1, pad_function=torch.zeros):
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+            pad_size = episode_length - t.size(0) + window_length
+            # Add window lenght - 1 infront of the number of obersavtion
+            begin_pad       = pad_function([window_length-1, t.size(1)]).to(device)
+            # pad the environment with lenght of the episode subtracted from  the total episode length
+            episode_end_pad = pad_function([pad_size,      t.size(1)]).to(device)
+            # print("paaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",episode_end_pad.shape)
+
+            return torch.cat([begin_pad,t.to(device),episode_end_pad], dim=0)
+
+
+
         npz = np.load(self.fpaths[self.indices[idx]])
         # print("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr", idx )
 
         obs = npz['obs'] # (T, H, W, C) np array
+        # print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111",obs.shape)
+
+        obs = torch.from_numpy(obs) 
+        # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",obs.shape)
+        obs = pad_tensor(obs ,window_length=(self.seq_len-1)).cpu().detach().numpy()
+        # obs = torch.from_numpy(obs) 
+
+
         actions = npz['action'] # (T, n_actions) np array
+        # print("2222222222222222222222222222222222222222222222222222222222222222",actions.shape)
+
+        actions = torch.from_numpy(actions) 
+
+        actions = pad_tensor(actions, window_length=(self.seq_len-1)).cpu().detach().numpy()
+        # actions=torch.from_numpy(actions)
         # print("8888888888888888888888888888888888888888888888888888888888888888888888888888888", obs )
         # print("9999999999999999999999999999999999999999999999999999999999999999999999999", obs.shape )
 
