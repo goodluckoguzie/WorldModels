@@ -2,7 +2,7 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import WorldFrameHyperParams as hp
-from hparams import WorldFrame_Datasets_Timestep_0_25 as data
+from hparams import WorldFrame_Datasets_Timestep_1 as data
 
 import sys
 sys.path.append('./gsoc22-socnavenv')
@@ -83,7 +83,7 @@ def rollout():
 
     env = gym.make("SocNavEnv-v1")
     # env.configure('./configs/env.yaml')
-    env.configure('./configs/env_timestep_0_25.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
 
     env.set_padded_observations(True)
     env = WorldFrameObservations(env)
