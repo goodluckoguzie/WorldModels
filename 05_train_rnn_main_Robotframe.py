@@ -190,7 +190,7 @@ class RNN_MODEL():
         testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False)
 
         self.valid_loader = DataLoader(
-            testset, batch_size=2, shuffle=False, drop_last=False, collate_fn=collate_fn
+            testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn
         )
 
   
@@ -327,8 +327,7 @@ class RNN_MODEL():
             self.total_loss = []
             l1 = nn.L1Loss()
             with torch.no_grad():
-                # for idx, (obs, actions) in enumerate(self.valid_loader):
-                for idx, (obs, actions) in enumerate(self.loader):
+                for idx, (obs, actions) in enumerate(self.valid_loader):
                     # obs = normalised(obs)
                     # obs = torch.from_numpy(obs)
                     obs, actions = obs.to(DEVICE), actions.to(DEVICE)
