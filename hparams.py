@@ -11,11 +11,11 @@ class Seq_Len:
 
 
 class WorldFrame_Datasets_Timestep_2:
-    data_dir = 'WorldFrameDatasetsTimestep2'
+    data_dir = 'WorldFrameDatasetsTimestep'
     time_steps =  100
-    RNN_runs = 'WorldFrameDatasetsTimestep2'
+    RNN_runs = 'WorldFrameDatasetsTimestep'
     ckpt_dir = 'ckpt'
-    rnnsave = 'WorldFrameDatasetsTimestep2'
+    rnnsave = 'WorldFrameDatasetsTimestep'
 
 
 
