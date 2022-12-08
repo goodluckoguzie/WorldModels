@@ -14,5 +14,5 @@ save_interval: 50
 max_step: 100_0000
 n_workers: 0
 run_name: RNN_MODEL
-seq_len: 2
+
 save_path: "./MODEL/Worldframe_RNN_MODEL"  # path to save the model files

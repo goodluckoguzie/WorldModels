@@ -312,7 +312,7 @@ class RNN_MODEL():
             self.total_loss = []
             l1 = nn.L1Loss()
             with torch.no_grad():
-                for idx, (obs, actions) in enumerate(self.loader):
+                for idx, (obs, actions) in enumerate(self.valid_loader):
                     # obs = torch.from_numpy(obs)
                     obs, actions = obs.to(DEVICE), actions.to(DEVICE)
                     # z,latent_mu, latent_var = self.vae(obs) # (B*T, vsize)
@@ -405,7 +405,7 @@ class RNN_MODEL():
                 self.early_stopping(self.valid_loss, self.rnn)
 
 
-            if self.global_step % 5 == 0:
+            if self.global_step % 50 == 0:
                 print(print_msg)
 
             if self.early_stopping.early_stop:
