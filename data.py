@@ -70,7 +70,6 @@ class GameEpisodeDataset(torch.utils.data.Dataset):
         np.random.seed(0)
 
         indices = np.arange(0, len(self.fpaths))
-        # print("tttttttttttttttttttttttttttttttindicesindicesindicesindicesindicesindicesindicesindicesttttttttttttttttttttttttttttttttttttttttttttttttttttttt ",indices)
 
         n_trainset = int(len(indices)*(1.0-test_ratio))
 
@@ -99,7 +98,7 @@ class GameEpisodeDataset(torch.utils.data.Dataset):
         n_seq = T // self.seq_len
         end_seq = n_seq * self.seq_len # T' = end of sequence
         # print("0000000000000000000000000000000000000000000000000000000000000000000 ",n_seq )
-        # print("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",self.seq_len )
+        print("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",self.seq_len )
         # print("cccccccccccccccccccccccccccccccccccccccccccccccccccc",obs.shape)
         # print("dssssssssssssssssssssssssssssssssssssssssssssssssssss",actions.shape)   
         #      
