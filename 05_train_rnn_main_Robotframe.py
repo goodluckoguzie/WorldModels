@@ -421,7 +421,7 @@ class RNN_MODEL():
                 self.early_stopping(self.valid_loss, self.rnn)
 
 
-            if self.global_step % 50 == 0:
+            if self.global_step % 1 == 0:
                 print(print_msg)
 
             if self.early_stopping.early_stop:
