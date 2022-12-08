@@ -327,7 +327,8 @@ class RNN_MODEL():
             self.total_loss = []
             l1 = nn.L1Loss()
             with torch.no_grad():
-                for idx, (obs, actions) in enumerate(self.valid_loader):
+                # for idx, (obs, actions) in enumerate(self.valid_loader):
+                for idx, (obs, actions) in enumerate(self.loader):
                     # obs = normalised(obs)
                     # obs = torch.from_numpy(obs)
                     obs, actions = obs.to(DEVICE), actions.to(DEVICE)
