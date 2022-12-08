@@ -101,7 +101,8 @@ class GameEpisodeDataset(torch.utils.data.Dataset):
         # print("0000000000000000000000000000000000000000000000000000000000000000000 ",n_seq )
         # print("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",self.seq_len )
         # print("cccccccccccccccccccccccccccccccccccccccccccccccccccc",obs.shape)
-        # print("dssssssssssssssssssssssssssssssssssssssssssssssssssss",actions.shape)        
+        # print("dssssssssssssssssssssssssssssssssssssssssssssssssssss",actions.shape)   
+        #      
         # print("end_seqend_seqend_seqend_seqend_seqend_seqend_seq",end_seq)          
         obs = obs[:end_seq].reshape([-1, self.seq_len, C]) # (N_seq, seq_len, H, W, C)
         actions = actions[:end_seq].reshape([-1, self.seq_len, actions.shape[-1]]) # 
