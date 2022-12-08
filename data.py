@@ -123,7 +123,7 @@ def collate_fn(data):
     # obs (B, N_seq, seq_len, H, W, C), actions (B, N_seq, seq_len, n_actions)
     obs, actions = zip(*data)
     obs, actions = np.array(obs), np.array(actions)
-    print("ssssssssssssssssssssssssssssssssssssssssss",obs.shape)
+    # print("ssssssssssssssssssssssssssssssssssssssssss",obs.shape)
 
     _,_, seq_len, C = obs.shape
 
