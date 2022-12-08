@@ -83,12 +83,12 @@ def rollout():
 
     env = gym.make("SocNavEnv-v1")
     env.configure('./configs/env.yaml')
-    env.configure('./configs/env_timestep_2.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
 
     env.set_padded_observations(True)
     env = WorldFrameObservations(env)
     # seq_len = 300
-    max_ep = 5000# hp.n_rollout
+    max_ep = 5#000# hp.n_rollout
     feat_dir = data.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
