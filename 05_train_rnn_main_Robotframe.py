@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp
-from hparams import RobotFrame_Datasets_Timestep_2 as data
+from hparams import RobotFrame_Datasets_Timestep_0_5 as data
 from hparams import Seq_Len as Seq_len
 
 # from models import VAE, RNN
@@ -145,7 +145,7 @@ class RNN_MODEL():
         self.run_name = None
         # self.seq_len = None
         self.run_name = None
-        self.window = Seq_len.seq_1
+        self.window = Seq_len.seq_4
 
                 # setting values from config file
         self.configure(self.config)
@@ -162,7 +162,7 @@ class RNN_MODEL():
         self.ckpt_dir = data.ckpt_dir#'ckpt'
         self.rnnsave = data.rnnsave#'ckpt'
         self.data_path = data.data_dir 
-        self.seq_len = Seq_len.seq_len_1
+        self.seq_len = Seq_len.seq_len_4
         print(self.seq_len) 
         self.ckpt_dir = os.path.join(self.ckpt_dir, self.rnnsave + self.window)
 
