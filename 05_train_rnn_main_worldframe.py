@@ -392,40 +392,40 @@ class RNN_MODEL():
             self.train_losses = []
             self.valid_losses = []
 
-            # if self.global_step % self.save_interval == 0:
-            #     d = {
-            #         'model': self.rnn.state_dict(),
-            #         'optimizer': self.optimizer.state_dict(),
-            #     }
-            #     torch.save(
-            #         d, os.path.join(self.ckpt_dir, '{:03d}worldframe.pth.tar'.format(self.global_step//self.save_interval))
-            #     )
+            if self.global_step % self.save_interval == 0:
+                d = {
+                    'model': self.rnn.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                }
+                torch.save(
+                    d, os.path.join(self.ckpt_dir, '{:03d}worldframe.pth.tar'.format(self.global_step//self.save_interval))
+                )
 
                 # and if it has, it will make a checkpoint of the current model
             if self.global_step % self.save_interval == 0:
                 self.early_stopping(self.valid_loss, self.rnn)
 
-                if self.global_step == 0:#is None:
-                    self.best_score = self.valid_loss
-                    d = {
-                        'model': self.rnn.state_dict(),
-                        'optimizer': self.optimizer.state_dict(),
-                    }
-                    torch.save(
-                        d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(self.global_step//self.save_interval))
-                    )                
-                elif self.valid_loss < self.best_score :
-                    d = {
-                        'model': self.rnn.state_dict(),
-                        'optimizer': self.optimizer.state_dict(),
-                    }
-                    torch.save(
-                        d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(self.global_step//self.save_interval))
-                    )      
-                    self.best_score = self.valid_loss 
+                # if self.global_step == 0:#is None:
+                #     self.best_score = self.valid_loss
+                #     d = {
+                #         'model': self.rnn.state_dict(),
+                #         'optimizer': self.optimizer.state_dict(),
+                #     }
+                #     torch.save(
+                #         d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(self.global_step//self.save_interval))
+                #     )                
+                # elif self.valid_loss < self.best_score :
+                #     d = {
+                #         'model': self.rnn.state_dict(),
+                #         'optimizer': self.optimizer.state_dict(),
+                #     }
+                #     torch.save(
+                #         d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(self.global_step//self.save_interval))
+                #     )      
+                #     self.best_score = self.valid_loss 
 
-                else:
-                    pass
+                # else:
+                #     pass
 
             if self.global_step % 50 == 0:
                 print(print_msg)
