@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp 
-from hparams import WorldFrame_Datasets_Timestep_1 as data
+from hparams import WorldFrame_Datasets_Timestep_2 as data
 from hparams import Seq_Len as Seq_len
 
 # from models import VAE, RNN
@@ -18,7 +18,7 @@ DEVICE = None
 
 from torch.utils.tensorboard import SummaryWriter
 import yaml
-from UTILITY.early_stopping_for_vae import  EarlyStopping
+from UTILITY.early_stopping_for_rnn import  EarlyStopping
 
 
 
@@ -133,7 +133,7 @@ class RNN_MODEL():
         self.run_name = None
         # self.seq_len = None
         self.run_name = None
-        self.window = Seq_len.seq_16
+        self.window = Seq_len.seq_1
 
                 # setting values from config file
         self.configure(self.config)
@@ -149,7 +149,9 @@ class RNN_MODEL():
         self.ckpt_dir = data.ckpt_dir#'ckpt'
         self.rnnsave = data.rnnsave#'ckpt'
         self.data_path = data.data_dir 
-        self.seq_len = Seq_len.seq_len_16
+        self.seq_len = Seq_len.seq_len_1
+        episode_length = data.time_steps
+
         print(self.seq_len) 
         self.ckpt_dir = os.path.join(self.ckpt_dir, self.rnnsave + self.window)
 
@@ -164,14 +166,13 @@ class RNN_MODEL():
         # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
         # print('Loaded rnn_state ckpt {}'.format(self.ckpt))
 
-        self.optimizer = torch.optim.Adam(self.rnn.parameters(), lr=1e-4)
-        dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len)
+        dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len,episode_length=episode_length)
 
         self.loader = DataLoader(
             dataset, batch_size=1, shuffle=True, drop_last=True,
             num_workers=self.n_workers, collate_fn=collate_fn
         )
-        testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False)
+        testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
 
         self.valid_loader = DataLoader(
             testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn
@@ -272,7 +273,7 @@ class RNN_MODEL():
             self.writer = SummaryWriter()
 
         self.early_stopping = EarlyStopping(patience=100, verbose=True)
-
+        self.best_score = 0
 
 
     def plot(self, episode):
@@ -378,8 +379,8 @@ class RNN_MODEL():
                     f.write(log)
 
             self.epoch_len = len(str(self.global_step))
-            self.train_loss = np.mean(self.train_losses)#/len(self.loader)
-            self.valid_loss = self.valid_losses#/len(self.valid_loader)
+            self.train_loss = np.mean(self.train_losses)/len(self.loader)
+            self.valid_loss = self.valid_losses/len(self.valid_loader)
             self.plot(self.global_step +1)
 
             print_msg = (f'[{self.global_step:>{self.epoch_len}}/{self.global_step:>{self.epoch_len}}] ' +
@@ -391,19 +392,40 @@ class RNN_MODEL():
             self.train_losses = []
             self.valid_losses = []
 
-            if self.global_step % self.save_interval == 0:
-                d = {
-                    'model': self.rnn.state_dict(),
-                    'optimizer': self.optimizer.state_dict(),
-                }
-                torch.save(
-                    d, os.path.join(self.ckpt_dir, '{:03d}worldframe.pth.tar'.format(self.global_step//self.save_interval))
-                )
+            # if self.global_step % self.save_interval == 0:
+            #     d = {
+            #         'model': self.rnn.state_dict(),
+            #         'optimizer': self.optimizer.state_dict(),
+            #     }
+            #     torch.save(
+            #         d, os.path.join(self.ckpt_dir, '{:03d}worldframe.pth.tar'.format(self.global_step//self.save_interval))
+            #     )
 
                 # and if it has, it will make a checkpoint of the current model
             if self.global_step % self.save_interval == 0:
                 self.early_stopping(self.valid_loss, self.rnn)
 
+                if self.global_step == 0:#is None:
+                    self.best_score = self.valid_loss
+                    d = {
+                        'model': self.rnn.state_dict(),
+                        'optimizer': self.optimizer.state_dict(),
+                    }
+                    torch.save(
+                        d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(self.global_step//self.save_interval))
+                    )                
+                elif self.valid_loss < self.best_score :
+                    d = {
+                        'model': self.rnn.state_dict(),
+                        'optimizer': self.optimizer.state_dict(),
+                    }
+                    torch.save(
+                        d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(self.global_step//self.save_interval))
+                    )      
+                    self.best_score = self.valid_loss 
+
+                else:
+                    pass
 
             if self.global_step % 50 == 0:
                 print(print_msg)
