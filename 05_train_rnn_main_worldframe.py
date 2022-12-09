@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp 
-from hparams import WorldFrame_Datasets_Timestep_2 as data
+from hparams import WorldFrame_Datasets_Timestep_1 as data
 from hparams import Seq_Len as Seq_len
 
 # from models import VAE, RNN
