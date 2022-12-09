@@ -145,7 +145,7 @@ class RNN_MODEL():
         self.run_name = None
         # self.seq_len = None
         self.run_name = None
-        self.window = Seq_len.seq_1
+        self.window = Seq_len.seq_4
 
                 # setting values from config file
         self.configure(self.config)
@@ -162,7 +162,7 @@ class RNN_MODEL():
         self.ckpt_dir = data.ckpt_dir#'ckpt'
         self.rnnsave = data.rnnsave#'ckpt'
         self.data_path = data.data_dir 
-        self.seq_len = Seq_len.seq_len_1
+        self.seq_len = Seq_len.seq_len_4
         episode_length = data.time_steps
 
         print(self.seq_len) 
