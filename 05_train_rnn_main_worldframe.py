@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp 
-from hparams import NonPrePaddedWorldFrame_Datasets_Timestep_0_5 as data
+from hparams import NonPrePaddedWorldFrame_Datasets_Timestep_0_25 as data
 from hparams import Seq_Len as Seq_len
 
 # from models import VAE, RNN
@@ -19,7 +19,7 @@ DEVICE = None
 from torch.utils.tensorboard import SummaryWriter
 import yaml
 from UTILITY.early_stopping_for_rnn import  EarlyStopping
-NonPrePadded
+
 
 
 class Decoder(nn.Module):
