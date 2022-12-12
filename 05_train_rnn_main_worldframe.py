@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp 
-from hparams import NonPrePaddedWorldFrame_Datasets_Timestep_0_25 as data
+from hparams import NonPrePaddedWorldFrame_Datasets_Timestep_0_5 as data
 from hparams import Seq_Len as Seq_len
 
 # from models import VAE, RNN
@@ -38,7 +38,7 @@ class Decoder(nn.Module):
         return z.reshape((-1, self.input_dims))
 
 
-
+NonPrePadded
 class VariationalEncoder(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VariationalEncoder, self).__init__()
@@ -72,7 +72,7 @@ class VAE(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VAE, self).__init__()
         self.encoder = VariationalEncoder(input_dims, hidden_dims, latent_dims)
-        self.decoder = Decoder(input_dims, hiddNonPrePaddeden_dims, latent_dims)
+        self.decoder = Decoder(input_dims, hidden_dims, latent_dims)
 
     def forward(self, x):
         z,mu , sigma = self.encoder(x)
