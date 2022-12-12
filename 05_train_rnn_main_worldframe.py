@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp 
-from hparams import WorldFrame_Datasets_Timestep_0_25 as data
+from hparams import NonPrePaddedWorldFrame_Datasets_Timestep_0_25 as data
 from hparams import Seq_Len as Seq_len
 
 # from models import VAE, RNN
@@ -165,19 +165,22 @@ class RNN_MODEL():
         # self.ckpt  = sorted(glob.glob(os.path.join(hp.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
         # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
         # print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+        # self.data_path = hp.data_dir 
 
-        dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len,episode_length=episode_length)
+        # dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len,episode_length=episode_length)
+        dataset = GameEpisodeDatasetNonPrePadded(self.data_path, seq_len=self.seq_len,episode_length=episode_length)
 
         self.loader = DataLoader(
             dataset, batch_size=1, shuffle=True, drop_last=True,
             num_workers=self.n_workers, collate_fn=collate_fn
         )
-        testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
+        # testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
+        #Non pre-padde observation
+        testset = GameEpisodeDatasetNonPrePadded(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
 
         self.valid_loader = DataLoader(
             testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn
         )
-
 
         # self.ckpt_dir = os.path.join(self.ckpt_dir, 'rnn')
         sample_dir = os.path.join(self.ckpt_dir, 'samples')

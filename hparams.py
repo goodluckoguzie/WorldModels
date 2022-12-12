@@ -9,6 +9,37 @@ class Seq_Len:
     seq_len_16 = 17
     seq_16 = 'window_16'
 
+class NonPrePaddedRobotFrame_Datasets_Timestep_0_5:
+    data_dir = 'RobotFrameDatasetsTimestep05'
+    time_steps =  300
+    RNN_runs = 'NonPrePaddedRobotFrameDatasetsTimestep05'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'NonPrePaddedRobotFrameDatasetsTimestep05'
+
+class NonPrePaddedRobotFrame_Datasets_Timestep_0_25:
+    data_dir = 'RobotFrameDatasetsTimestep025'
+    time_steps =  600
+    RNN_runs = 'NonPrePaddedRobotFrameDatasetsTimestep025'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'NonPrePaddedRobotFrameDatasetsTimestep025'
+
+class NonPrePaddedWorldFrame_Datasets_Timestep_0_5:
+    data_dir = 'WorldFrameDatasetsTimestep05'
+    time_steps =  300
+    RNN_runs = 'NonPrePaddedWorldFrameDatasetsTimestep05'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'NonPrePaddedWorldFrameDatasetsTimestep05'
+
+class NonPrePaddedWorldFrame_Datasets_Timestep_0_25:
+    data_dir = 'WorldFrameDatasetsTimestep025'
+    time_steps =  600
+    RNN_runs = 'NonPrePaddedWorldFrameDatasetsTimestep025'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'NonPrePaddedWorldFrameDatasetsTimestep025'
+
+
+
+
 
 class WorldFrame_Datasets_Timestep_2:
     data_dir = 'WorldFrameDatasetsTimestep2'
