@@ -38,7 +38,6 @@ class Decoder(nn.Module):
         return z.reshape((-1, self.input_dims))
 
 
-NonPrePadded
 class VariationalEncoder(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VariationalEncoder, self).__init__()
@@ -143,7 +142,6 @@ class RNN_MODEL():
 
 
         self.rnn = RNN(self.n_latents, self.n_actions, self.n_hiddens).to(DEVICE)
-
   
         # self.data_path = self.data_dir# if not self.extra else self.extra_dir
         self.ckpt_dir = data.ckpt_dir#'ckpt'
