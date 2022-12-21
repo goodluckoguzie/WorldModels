@@ -194,7 +194,7 @@ class DuelingDQNAgent:
         # self.vae.eval()
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
 
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'NonPrePaddedRobotFrameDatasetsTimestep05window_16', '*me.pth.tar')))[-1]
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'NonPrePaddedRobotFrameDatasetsTimestep05window_16', '008robotframe.pth.tar')))[-1]
         rnn_state = torch.load( self.ckpt , map_location={'cuda:0': str(device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
