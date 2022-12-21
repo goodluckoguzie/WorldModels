@@ -108,7 +108,7 @@ class HyperParams:
     controller = 'A3C'
 
     extra = False
-    # data_dir = 'Datasets'
+    data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
@@ -272,7 +272,7 @@ class VAEHyperParams:
     vision = 'VAE'
 
     extra = False
-    # data_dir = 'Datasets'
+    data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 

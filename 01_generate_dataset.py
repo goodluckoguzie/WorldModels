@@ -84,7 +84,7 @@ def rollout():
 
     # env = gym.make("CarRacing-v0")
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     env.set_padded_observations(True)
 
     # seq_len = 300
