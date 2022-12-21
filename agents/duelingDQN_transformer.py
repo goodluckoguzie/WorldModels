@@ -15,14 +15,12 @@ from torch.utils.tensorboard import SummaryWriter
 from agents.models import ExperienceReplay, Transformer, MLP
 
 class DuelingDQN_Transformer(nn.Module):
-    def __init__(self, input_emb1:int, input_emb2:int, d_model:int, d_k:int, mlp_hidden_layers:list, v_net_layers:list, a_net_layers:list) -> None:
+    def __init__(self, input_emb1:int, input_emb2:int, d_model:int, d_k:int, v_net_layers:list, a_net_layers:list) -> None:
         super().__init__()
         # sizes of the first layer in the value and advantage networks should be same as the output of the hidden layer network
-        assert(v_net_layers[0]==mlp_hidden_layers[-1] and a_net_layers[0]==mlp_hidden_layers[-1])
-        
-        self.transformer = Transformer(input_emb1, input_emb2, d_model, d_k, mlp_hidden_layers)
-        self.value_network = MLP(v_net_layers[0], v_net_layers[1:])
-        self.advantage_network = MLP(a_net_layers[0], a_net_layers[1:])
+        self.transformer = Transformer(input_emb1, input_emb2, d_model, d_k, None)
+        self.value_network = MLP(2*d_model, v_net_layers)
+        self.advantage_network = MLP(2*d_model, a_net_layers)
 
 
     def forward(self, inp1, inp2):
@@ -45,7 +43,6 @@ class DuelingDQN_Transformer_Agent:
         self.input_emb2 = None
         self.d_model = None
         self.d_k = None
-        self.mlp_hidden_layers = None
         self.v_net_layers = None
         self.a_net_layers = None
         self.buffer_size = None
@@ -74,13 +71,10 @@ class DuelingDQN_Transformer_Agent:
         self.configure(self.config)
 
         # declaring the network
-        self.duelingDQN = DuelingDQN_Transformer(self.input_emb1, self.input_emb2, self.d_model, self.d_k, self.mlp_hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
-        
-        # initializing using xavier initialization
-        self.duelingDQN.apply(self.xavier_init_weights)
-
+        self.duelingDQN = DuelingDQN_Transformer(self.input_emb1, self.input_emb2, self.d_model, self.d_k, self.v_net_layers, self.a_net_layers).to(self.device)
+        print(self.duelingDQN)
         #initializing the fixed targets
-        self.fixed_targets = DuelingDQN_Transformer(self.input_emb1, self.input_emb2, self.d_model, self.d_k, self.mlp_hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
+        self.fixed_targets = DuelingDQN_Transformer(self.input_emb1, self.input_emb2, self.d_model, self.d_k, self.v_net_layers, self.a_net_layers).to(self.device)
         self.fixed_targets.load_state_dict(self.duelingDQN.state_dict())
 
         # initalizing the replay buffer
@@ -113,10 +107,6 @@ class DuelingDQN_Transformer_Agent:
         if self.d_k is None:
             self.d_k = config["d_k"]
             assert(self.d_k is not None), f"Argument d_k cannot be None"
-
-        if self.mlp_hidden_layers is None:
-            self.mlp_hidden_layers = config["mlp_hidden_layers"]
-            assert(self.mlp_hidden_layers is not None), f"Argument mlp_hidden_layers cannot be None"
 
         if self.v_net_layers is None:
             self.v_net_layers = config["v_net_layers"]
@@ -208,31 +198,6 @@ class DuelingDQN_Transformer_Agent:
         entity_state = obs[:, self.env.observation_space["goal"].shape[0]:].reshape(obs.shape[0], -1, 13)
         
         return robot_state, entity_state
-    
-    def discrete_to_continuous_action(self, action:int):
-        """
-        Function to return a continuous space action for a given discrete action
-        """
-        if action == 0:
-            return np.array([0, 0.125], dtype=np.float32) 
-        
-        elif action == 1:
-            return np.array([0, -0.125], dtype=np.float32) 
-
-        elif action == 2:
-            return np.array([1, 0.125], dtype=np.float32) 
-        
-        elif action == 3:
-            return np.array([1, -0.125], dtype=np.float32) 
-
-        elif action == 4:
-            return np.array([1, 0], dtype=np.float32)
-
-        elif action == 5:
-            return np.array([-1, 0], dtype=np.float32)
-        
-        else:
-            raise NotImplementedError
 
     def get_action(self, current_state, epsilon):
 
@@ -242,13 +207,13 @@ class DuelingDQN_Transformer_Agent:
                 robot_state, entity_state = self.postprocess_observation(current_state)
                 q = self.duelingDQN(torch.from_numpy(robot_state).float().to(self.device), torch.from_numpy(entity_state).float().to(self.device))
                 action_discrete = torch.argmax(q.squeeze(0)).item()
-                action_continuous = self.discrete_to_continuous_action(action_discrete)
+                action_continuous = self.env.discrete_to_continuous_action(action_discrete)
                 return action_continuous, action_discrete
         
         else:
             # explore
-            act = np.random.randint(0, 6)
-            return self.discrete_to_continuous_action(act), act 
+            act = np.random.randint(0, 7)
+            return self.env.discrete_to_continuous_action(act), act 
     
     def save_model(self, path):
         torch.save(self.duelingDQN.state_dict(), path)
@@ -307,7 +272,7 @@ class DuelingDQN_Transformer_Agent:
         loss.backward()
 
         # gradient clipping
-        self.total_grad_norm += torch.nn.utils.clip_grad_norm_(self.duelingDQN.parameters(), max_norm=0.5).item()
+        self.total_grad_norm += torch.nn.utils.clip_grad_norm_(self.duelingDQN.parameters(), max_norm=0.5).cpu().item()
         self.optimizer.step()
 
     def plot(self, episode):

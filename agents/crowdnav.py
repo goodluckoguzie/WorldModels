@@ -273,31 +273,6 @@ class CrowdNavAgent:
             assert(self.il_episodes is not None), "Argument il_episodes cannot be None"
             
             
-    def discrete_to_continuous_action(self, action:int):
-        """
-        Function to return a continuous space action for a given discrete action
-        """
-        if action == 0:
-            return np.array([0, 0.125], dtype=np.float32) 
-        
-        elif action == 1:
-            return np.array([0, -0.125], dtype=np.float32) 
-
-        elif action == 2:
-            return np.array([1, 0.125], dtype=np.float32) 
-        
-        elif action == 3:
-            return np.array([1, -0.125], dtype=np.float32) 
-
-        elif action == 4:
-            return np.array([1, 0], dtype=np.float32)
-
-        elif action == 5:
-            return np.array([-1, 0], dtype=np.float32)
-        
-        else:
-            raise NotImplementedError
-
     def continuous_to_discrete_action(self, vel, self_state):
         vx = vel[0]
         vy = vel[1]
@@ -493,15 +468,15 @@ class CrowdNavAgent:
         
         # explore
         if probability < self.epsilon:
-            max_action = np.random.randint(0, 6)
+            max_action = np.random.randint(0, 7)
         # exploit
         else:
             self.action_values = []
             max_value = float('-inf')
             max_action = None
 
-            for action in range(0, 6):
-                action_continuous = self.discrete_to_continuous_action(action)
+            for action in range(0, 7):
+                action_continuous = self.env.discrete_to_continuous_action(action)
                 next_state, reward, done, info = self.env.one_step_lookahead(action_continuous)
                 next_self_state, next_entity_states = self.socnav_to_crowdnav(next_state)
                 batch_next_states = torch.cat([torch.Tensor([next_self_state + next_entity_state]).to(self.device)
@@ -620,7 +595,7 @@ class CrowdNavAgent:
                 # sampling action using current policy
                 if not imitation_learning:
                     action = self.get_action(ob)
-                    act_continuous = self.discrete_to_continuous_action(action)
+                    act_continuous = self.env.discrete_to_continuous_action(action)
                 else:
                     act_continuous = self.get_imitation_learning_action(ob)
                     action = act_continuous
@@ -734,18 +709,18 @@ class CrowdNavAgent:
         self.discomforts_crowdnav = []
 
 
-        print("Performing Imitation Learning")
-        self.episode_reward = 0
-        self.episode_loss = 0
-        self.total_grad_norm = 0
-        self.has_reached_goal = 0
-        self.has_collided = 0
-        self.steps = 0
-        self.discomfort_sngnn = 0
-        self.discomfort_crowdnav = 0
-        self.explore(self.il_episodes, imitation_learning=True)
-        self.update(imitation_learning=True)
-        print("Finished Imitation Learning")
+        # print("Performing Imitation Learning")
+        # self.episode_reward = 0
+        # self.episode_loss = 0
+        # self.total_grad_norm = 0
+        # self.has_reached_goal = 0
+        # self.has_collided = 0
+        # self.steps = 0
+        # self.discomfort_sngnn = 0
+        # self.discomfort_crowdnav = 0
+        # self.explore(self.il_episodes, imitation_learning=True)
+        # self.update(imitation_learning=True)
+        # print("Finished Imitation Learning")
 
         episode = 0
         while episode < self.num_episodes:
@@ -769,8 +744,8 @@ class CrowdNavAgent:
             self.steps /= self.k
             self.discomfort_sngnn /= self.k
             self.discomfort_crowdnav /= self.k
-            
-            self.update()
+            if self.batch_size <= len(self.experience_replay):
+                self.update()
             self.episode_loss /= self.num_batches
             self.total_grad_norm /= self.num_batches
             

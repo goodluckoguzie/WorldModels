@@ -8,15 +8,98 @@ import numpy as np
 import copy
 import random
 import torch.optim as optim
-import os
+import os ,glob
 import yaml
 import argparse
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
 import sys
-sys.path.append('./WorldModels')
-from RNN.RNN import LSTM,RNN
 
+
+
+
+
+class Decoder(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(Decoder, self).__init__()
+        self.linear1 = nn.Linear(latent_dims, hidden_dims)
+        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear3 = nn.Linear(hidden_dims, input_dims)
+
+        self.input_dims = input_dims
+    def forward(self, z):
+        z = F.relu(self.linear1(z))
+        z = F.relu(self.linear2(z))
+        z = self.linear3(z)
+        # z = torch.sigmoid(z)
+        return z.reshape((-1, self.input_dims))
+
+
+
+class VariationalEncoder(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(VariationalEncoder, self).__init__()
+        self.linear1 = nn.Linear(input_dims,  hidden_dims)
+        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear3 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear4 = nn.Linear(hidden_dims, latent_dims)
+        self.linear5 = nn.Linear(hidden_dims, latent_dims)
+
+        self.N = torch.distributions.Normal(0, 1)
+        self.N.loc = self.N.loc.cuda() # hack to get sampling on the GPU
+        self.N.scale = self.N.scale.cuda()
+        self.kl = 0
+
+    def forward(self, x):
+        x = torch.flatten(x, start_dim=1)
+        x = F.relu(self.linear1(x))
+        x = F.relu(self.linear2(x))
+        x = F.relu(self.linear3(x))
+        mu =  self.linear4(x)
+        sigma = torch.exp(self.linear5(x))
+        z = mu + sigma*self.N.sample(mu.shape)
+        self.kl = (sigma**2 + mu**2 - torch.log(sigma) - 1/2).sum()
+        return z ,mu , sigma
+
+
+
+
+
+class VAE(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(VAE, self).__init__()
+        self.encoder = VariationalEncoder(input_dims, hidden_dims, latent_dims)
+        self.decoder = Decoder(input_dims, hidden_dims, latent_dims)
+
+    def forward(self, x):
+        z,mu , sigma = self.encoder(x)
+        return self.decoder(z),mu , sigma
+
+    def vae_loss(recon_x, x, mu, logvar):
+        """ VAE loss function """
+        recon_loss = nn.MSELoss(size_average=False)
+        BCE = recon_loss(recon_x, x)
+        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        return BCE + KLD, BCE, KLD
+
+
+
+class RNN(nn.Module):
+    def __init__(self, n_latents, n_actions, n_hiddens):
+        super(RNN, self).__init__()
+        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        # target --> next latent (vision)
+        self.fc = nn.Linear(n_hiddens, n_latents)
+
+    def forward(self, states):
+        h, _ = self.rnn(states)
+        y = self.fc(h)
+        return y, None, None
+    
+    def infer(self, states, hidden):
+        h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
+        y = self.fc(h)
+        return y, None, None, next_hidden
 
 
 
@@ -44,7 +127,7 @@ class DuelingDQNAgent:
         self.env = env
         self.config = config
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+        
         # agent variables
         self.input_layer_size = None
         self.hidden_layers = None
@@ -64,6 +147,7 @@ class DuelingDQNAgent:
         self.render_freq = None
         self.save_freq = None
         self.run_name = None
+        # self.ckpt_dir = None
 
         # if variables are set using **kwargs, it would be considered and not the config entry
         for k, v in kwargs.items():
@@ -74,6 +158,58 @@ class DuelingDQNAgent:
         
         # setting values from config file
         self.configure(self.config)
+
+
+
+        sys.path.append('./WorldModels')
+        # from RNN.RNN import LSTM,RNN
+        from hparams import HyperParams as hp
+  
+        # self.data_path = self.data_dir# if not self.extra else self.extra_dir
+
+        self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        # self.vae_state = torch.load(self.ckpt)
+        # self.vae.load_state_dict(self.vae_state['model'])
+        # self.vae.eval()
+        # print('Loaded vae ckpt {}'.format(self.ckpt))
+
+
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        n_hiddens = 256
+        n_latents = 47
+        n_actions = 2
+
+        # print(os.getcwd())
+        self.vae = VAE(n_latents,n_hiddens,n_latents).to(device)
+
+
+        self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
+
+        # # self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '187k.pth.tar')))[-1]
+        # self.vae_state = torch.load(self.ckpt)
+        # self.vae.load_state_dict(self.vae_state['model'])
+        # self.vae.eval()
+        # print('Loaded vae ckpt {}'.format(self.ckpt))       
+
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'NonPrePaddedRobotFrameDatasetsTimestep05window_16', '*me.pth.tar')))[-1]
+        rnn_state = torch.load( self.ckpt , map_location={'cuda:0': str(device)})
+        self.rnn.load_state_dict(rnn_state['model'])
+        self.rnn.eval()
+
+        self.rnn_025 = RNN(n_latents, n_actions, n_hiddens).to(device)
+        ckpt_rnn_025  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'NonPrePaddedRobotFrameDatasetsTimestep025window_16', '*me.pth.tar')))[-1]
+        rnn_state_025 = torch.load( ckpt_rnn_025, map_location={'cuda:0': str(device)})
+        self.rnn_025.load_state_dict(rnn_state_025['model'])
+        self.rnn_025.eval()
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
+        # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
+        # self.rnn.load_state_dict(rnn_state['model'])
+        # self.rnn.eval()
+        print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+
 
         # declaring the network
         self.duelingDQN = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
@@ -186,33 +322,23 @@ class DuelingDQNAgent:
         observation = np.concatenate((observation, obs["plants"].flatten()) )
         return observation
     
-    def discrete_to_continuous_action(self, action:int):
+    def discrete_to_continuous_action(self ,action:int):
         """
         Function to return a continuous space action for a given discrete action
         """
         if action == 0:
-            return np.array([0, 0.25], dtype=np.float32) 
-        
+            return np.array([0, 1], dtype=np.float32) 
+        # Turning clockwise
         elif action == 1:
-            return np.array([0, -0.25], dtype=np.float32) 
-
+            return np.array([0, -1], dtype=np.float32) 
+        # # Move forward
         elif action == 2:
-            return np.array([1, 0.125], dtype=np.float32) 
-        
-        elif action == 3:
-            return np.array([1, -0.125], dtype=np.float32) 
-
-        elif action == 4:
             return np.array([1, 0], dtype=np.float32)
+        # stop the robot
+        elif action == 3:
+            return np.array([0, 0], dtype=np.float32)
+            # Turning clockwise with a reduced speed and rotation
 
-        elif action == 5:
-            return np.array([-1, 0], dtype=np.float32)
-        
-        elif action == 6:
-            return np.array([-0.8, +0.4], dtype=np.float32)
-
-        elif action == 7:
-            return np.array([-0.8, -0.4], dtype=np.float32)
         
         else:
             raise NotImplementedError
@@ -231,7 +357,7 @@ class DuelingDQNAgent:
         
         else:
             # explore
-            act = np.random.randint(0, 7)
+            act = np.random.randint(0, 4)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
@@ -314,8 +440,6 @@ class DuelingDQNAgent:
         self.writer.add_scalar("Steps to reach goal / episode", self.steps, episode)
         self.writer.flush()  
 
-
-
     def train(self):
         self.loss_fn = nn.MSELoss()
         self.optimizer = optim.Adam(self.duelingDQN.parameters(), lr=self.lr)
@@ -328,34 +452,28 @@ class DuelingDQNAgent:
         self.steps_to_reach = []
 
         self.average_reward = 0
-
-
-        
-        self.STEPS_TO_TAKE = 198
-        self.REWARD_INCREMENT = 0.0093
-        self.REWARD_THRESHOLD = 0
-        self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
-
-
         latents = 47
         actions = 2
         hiddens = 256
-        rnn = RNN(latents, actions, hiddens).to(self.device)
-        rnn = rnn.float()
-        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model1.pt'))
-        rnn.eval()
-        
-
+        # rnn = RNN(latents, actions, hiddens).to(self.device)
+        # rnn = rnn.float()
+        # rnn.load_state_dict(torch.load('./MODEL/model.pt'))
+        # rnn.eval()
+        hidden = [torch.zeros(1, 1,hiddens ).to(self.device) for _ in range(2)]
+        hiddenrnn_025 = [torch.zeros(1, 1,hiddens ).to(self.device) for _ in range(2)]
         # train loop
         for i in range(self.num_episodes):
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
 
+            # with torch.no_grad():
+            #     current_obs,_, _ = self.vae(torch.from_numpy(current_obs).unsqueeze(0).to(self.device))
+            current_obs = torch.from_numpy(current_obs)
 
-            # action = random.randint(0, 7)
-            # action = self.discrete_to_continuous_action(action)
-            # action = np.atleast_2d(action)
-            # action = torch.from_numpy(action).to(self.device)
+            action_ = np.random.randint(0, 4)
+            action = self.discrete_to_continuous_action(action_)
+            action = np.atleast_2d(action)
+            action = torch.from_numpy(action).to(self.device)
 
 
             done = False
@@ -365,55 +483,78 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
-            hidden = rnn.init_hidden()
-            hidden= hidden.unsqueeze(0).unsqueeze(0)
 
             
             while not done: 
 
 
-                # unsqueezed_action = action.unsqueeze(0)
-                z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
-                z = z.unsqueeze(0)
-                hidden= hidden[0]
+                unsqueezed_action = action.unsqueeze(0)
+                z = current_obs.to(self.device)
+                z = z.unsqueeze(0) #use when not using vae
+
+                with torch.no_grad():
+                    action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
 
 
+                    vision_action = torch.cat([z, action_continuous], dim=-1) #
+                    vision_action = vision_action.view(1, 1, -1)
+                    _, _, _, hidden =  self.rnn.infer(vision_action, hidden) #
 
-                # with torch.no_grad():
-                #     rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-                #     _,_, hidden = rnn(rnn_input)
-                
-                # print("z",z.shape)
-                # print("hidden",hidden.shape)
 
-                current_obs = torch.cat((z, hidden.to(self.device)),-1)
-                # current_obs = torch.cat((z.unsqueeze(0), hidden[0]),-1)
+########################################################################################################
+
+                    _, _, _, hiddenrnn_025 =  self.rnn_025.infer(vision_action, hiddenrnn_025) #
+
+#######################################################################################
+                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
+
+
+                current_obs = torch.cat((z.unsqueeze(0), hidden[0],hiddenrnn_025[0]),-1)
                 current_obs =  current_obs.squeeze(0).squeeze(0)
 
-                # # sampling an action from the current state
+                # sampling an action from the current state
                 action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
                 
 
-                # # taking a step in the environment
+                # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
 
                 # incrementing total steps
                 self.steps += 1
 
-                # # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
+                # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
                 next_obs = self.preprocess_observation(next_obs)
+                # with torch.no_grad():
+                #     next_obs,_, _ = self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
                 next_obs_ = next_obs
 
 
                 unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
-                next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
+                next_obs = torch.from_numpy(next_obs).unsqueeze(0)#use when not using vae
+                next_obs = next_obs#.unsqueeze(0).unsqueeze(0)
+                # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
+                # # rnn_input = torch.cat((z, action, reward_), -1).float()
+                # # out_full, hidden = mdrnn(rnn_input, hidden)
+                # with torch.no_grad():
+                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                #     # print("ddddddddddddddddddddddddddd",rnn_input.shape)
+                #     _,_, hidden = rnn(rnn_input.to(self.device))
 
                 with torch.no_grad():
-                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                    # print("ddddddddddddddddddddddddddd",rnn_input.shape)
-                    _,_, hidden = rnn(rnn_input.to(self.device))
-        
-                next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)),-1)
+                    action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
+
+                    vision_action = torch.cat([next_obs.to(self.device), action_continuous.to(self.device)], dim=-1) #
+
+                    # print("ssssssssssssssssssssssss",action_continuous.shape)
+                    # print("xxxxxxxxxxxxxxxxxxxxxxxx",z.shape)
+#####################################################################################################################################
+                    vision_action = vision_action.view(1, 1, -1)
+                    _, _, _, hidden =  self.rnn.infer(vision_action, hidden) #   
+                    _, _, _, hiddenrnn_025 =  self.rnn_025.infer(vision_action, hiddenrnn_025) #
+
+#########################################################################################################                 
+
+                next_obs = torch.cat((next_obs.unsqueeze(0).to(self.device), hidden[0].to(self.device), hiddenrnn_025[0].to(self.device)),-1)
 
 
                 
@@ -446,7 +587,7 @@ class DuelingDQNAgent:
 
                 # setting the current observation to the next observation
                 current_obs = next_obs_
-
+                current_obs = torch.from_numpy(current_obs) ## remove this when using vae
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
                     for p_target, p in zip(self.fixed_targets.parameters(), self.duelingDQN.parameters()):
@@ -455,14 +596,8 @@ class DuelingDQNAgent:
 
 
             # decaying epsilon
-            # if self.epsilon > self.min_epsilon:
-            #     self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
-
-            self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
-
-            if self.epsilon  > self.min_epsilon and self.episode_reward >= self.REWARD_THRESHOLD:    
-                self.epsilon = self.epsilon - self.EPSILON_DELTA    
-                self.REWARD_THRESHOLD = self.REWARD_THRESHOLD + self.REWARD_INCREMENT
+            if self.epsilon > self.min_epsilon:
+                self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
 
             # plotting using tensorboard
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
@@ -515,7 +650,7 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env.yaml")
+    env.configure("./configs/env_timestep_0_5.yaml")
     env.set_padded_observations(True)
 
 
@@ -525,8 +660,8 @@ if __name__ == "__main__":
     # rnn.eval()
 
     # config file for the model
-    config = "./configs/dqn_trained_rnn_duelingDQN_version.yaml"
-    input_layer_size = 303#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
-    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
+    config = "./configs/duelingDQNDoubleRNN.yaml"
+    input_layer_size = 559#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="worldmodelDoubleRNN")
     agent.train()
     

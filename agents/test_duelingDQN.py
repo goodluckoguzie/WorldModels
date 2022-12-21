@@ -181,30 +181,29 @@ class DuelingDQNAgent:
         """
         Function to return a continuous space action for a given discrete action
         """
-        # Turning anti-clockwise
         if action == 0:
             return np.array([0, 1], dtype=np.float32) 
         # Turning clockwise
         elif action == 1:
             return np.array([0, -1], dtype=np.float32) 
         # Turning anti-clockwise and moving forward
+        # elif action == 3:
+        #     return np.array([1, 0.5], dtype=np.float32) 
+        # # Turning clockwise and moving forward
+        # elif action == 4:
+        #     return np.array([1, -0.5], dtype=np.float32) 
+        # # Move forward
         elif action == 2:
-            return np.array([1, 0.5], dtype=np.float32) 
-        # Turning clockwise and moving forward
-        elif action == 3:
-            return np.array([1, -0.5], dtype=np.float32) 
-        # Move forward
-        elif action == 4:
             return np.array([1, 0], dtype=np.float32)
         # stop the robot
-        elif action == 5:
+        elif action == 3:
             return np.array([0, 0], dtype=np.float32)
             # Turning clockwise with a reduced speed and rotation
-        elif action == 6:
-            return np.array([0.8, -0.8], dtype=np.float32)
-            # Turning anti-clockwise with a reduced speed and rotation
-        elif action == 7:
-            return np.array([0.8, 0.8], dtype=np.float32)
+        # elif action == 7:
+        #     return np.array([0.5, 1], dtype=np.float32)
+        #     # Turning anti-clockwise with a reduced speed and rotation
+        # elif action == 8:
+        #     return np.array([0.5, -1], dtype=np.float32)
         
         else:
             raise NotImplementedError
@@ -405,7 +404,8 @@ class DuelingDQNAgent:
             # path = './models/duelingdqn/episode00026500.pt' # self.save_path 
             # /models/duelingdqn/episode00026500.pt
             # model = torch.load('load/from/path/episode00026500.pt')
-            self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn/episode00100000.pth'))
+            # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))
             # self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
     
         self.duelingDQN.eval()

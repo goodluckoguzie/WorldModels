@@ -186,24 +186,18 @@ class DuelingDQNAgent:
 
         self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 
-        # # self.ckpt_dir = hp.ckpt_dir#'ckpt'
-        # # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
-        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '187k.pth.tar')))[-1]
-        # self.vae_state = torch.load(self.ckpt)
-        # self.vae.load_state_dict(self.vae_state['model'])
-        # self.vae.eval()
-        # print('Loaded vae ckpt {}'.format(self.ckpt))       
-
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'NonPrePaddedRobotFrameDatasetsTimestep05window_16', '*me.pth.tar')))[-1]
-        rnn_state = torch.load( self.ckpt , map_location={'cuda:0': str(device)})
+        # self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '187k.pth.tar')))[-1]
+        self.vae_state = torch.load(self.ckpt)
+        self.vae.load_state_dict(self.vae_state['model'])
+        self.vae.eval()
+        print('Loaded vae ckpt {}'.format(self.ckpt))       
+   
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
+        rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
-
-
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
-        # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
-        # self.rnn.load_state_dict(rnn_state['model'])
-        # self.rnn.eval()
         print('Loaded rnn_state ckpt {}'.format(self.ckpt))
 
 
@@ -461,9 +455,8 @@ class DuelingDQNAgent:
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
 
-            # with torch.no_grad():
-            #     current_obs,_, _ = self.vae(torch.from_numpy(current_obs).unsqueeze(0).to(self.device))
-            current_obs = torch.from_numpy(current_obs)
+            with torch.no_grad():
+                current_obs,_, _ = self.vae(torch.from_numpy(current_obs).unsqueeze(0).to(self.device))
 
             action_ = np.random.randint(0, 4)
             action = self.discrete_to_continuous_action(action_)
@@ -485,11 +478,8 @@ class DuelingDQNAgent:
 
                 unsqueezed_action = action.unsqueeze(0)
                 z = current_obs.to(self.device)
-                z = z.unsqueeze(0) #use when not using vae
-
                 with torch.no_grad():
                     action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
-
 
                     vision_action = torch.cat([z, action_continuous], dim=-1) #
                     vision_action = vision_action.view(1, 1, -1)
@@ -512,13 +502,13 @@ class DuelingDQNAgent:
 
                 # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
                 next_obs = self.preprocess_observation(next_obs)
-                # with torch.no_grad():
-                #     next_obs,_, _ = self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
+                with torch.no_grad():
+                    next_obs,_, _ = self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
                 next_obs_ = next_obs
 
 
                 unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
-                next_obs = torch.from_numpy(next_obs).unsqueeze(0)#use when not using vae
+                # next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
                 next_obs = next_obs#.unsqueeze(0).unsqueeze(0)
                 # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
                 # # rnn_input = torch.cat((z, action, reward_), -1).float()
@@ -531,7 +521,7 @@ class DuelingDQNAgent:
                 with torch.no_grad():
                     action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
 
-                    vision_action = torch.cat([next_obs.to(self.device), action_continuous.to(self.device)], dim=-1) #
+                    vision_action = torch.cat([next_obs, action_continuous], dim=-1) #
 
                     # print("ssssssssssssssssssssssss",action_continuous.shape)
                     # print("xxxxxxxxxxxxxxxxxxxxxxxx",z.shape)
@@ -571,7 +561,7 @@ class DuelingDQNAgent:
 
                 # setting the current observation to the next observation
                 current_obs = next_obs_
-                current_obs = torch.from_numpy(current_obs) ## remove this when using vae
+
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
                     for p_target, p in zip(self.fixed_targets.parameters(), self.duelingDQN.parameters()):
@@ -634,7 +624,7 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_0_5.yaml")
+    env.configure("./configs/env.yaml")
     env.set_padded_observations(True)
 
 
