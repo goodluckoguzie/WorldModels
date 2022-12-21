@@ -207,7 +207,7 @@ n_actions = 2
 n_hiddens = 256
 n_latents = 53
 rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
-ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'WorldFrameDatasetsTimestep2window_1', '*me.pth.tar')))[-1]
+ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'NonPrePaddedWorldFrameDatasetsTimestep025window_16', '*me.pth.tar')))[-1]
 rnn_state = torch.load( ckpt, map_location={'cuda:0': str(device)})
 rnn.load_state_dict(rnn_state['model'])
 rnn.eval()
@@ -344,7 +344,7 @@ def discrete_to_continuous_action(action:int):
 
 
 
-window = 1
+window = 16
 def preprocess_observation(obs):
     """
     To convert dict observation to numpy observation
@@ -505,7 +505,7 @@ class Rollout():
 
                 # cv2.imshow("next state", world_image)
                 merged = cv2.merge([input_grey, next_timestep_grey, output_grey])
-                cv2.imshow("WorldFrame Datasets Timestep 2 window slide of 1", merged)
+                cv2.imshow("WorldFrame NonPrepadded Datasets Timestep 0.25 window slide of 8", merged)
                 
 
 

@@ -218,7 +218,7 @@ rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'rnn', '038k.pth.tar')))[-1]dqnrnn
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'rnn', '*me.pth.tar')))[-1]RobotFrameDatasetsTimestep05window_16
 
-ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'NonPrePaddedRobotFrameDatasetsTimestep05window_8', '*me.pth.tar')))[-1]
+ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'NonPrePaddedRobotFrameDatasetsTimestep05window_16', '*me.pth.tar')))[-1]
 rnn_state = torch.load( ckpt, map_location={'cuda:0': str(device)})
 rnn.load_state_dict(rnn_state['model'])
 rnn.eval()
@@ -367,7 +367,7 @@ def preprocess_observation(obs):
     observation = np.concatenate((observation, obs["tables"].flatten()) )
     observation = np.concatenate((observation, obs["plants"].flatten()) )
     return torch.from_numpy(observation)
-window =  1
+window =  16
 
 class Rollout():
     def __init__(self, data_dic, dir_name,mode, num_episodes_to_record):
@@ -499,7 +499,7 @@ class Rollout():
 
                 # cv2.imshow("input", world_image)
                 merged = cv2.merge([next_timestep_grey, next_timestep_grey, output_grey])
-                cv2.imshow("Robot Frame Dataset RNN output", merged)
+                cv2.imshow(" Robot Frame Non Prepadded Dataset  Timestep 0.25 window slide 8", merged)
         
                 obs = nxt_obs
                 z = []
