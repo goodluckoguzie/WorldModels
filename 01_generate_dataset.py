@@ -78,13 +78,14 @@ def pad_tensor(t, episode_length, window_length=9, pad_function=torch.zeros):
 
 ###########################################End#############################################################################
 
-
+    
+    
 def rollout():
     time_steps = 300
 
     # env = gym.make("CarRacing-v0")
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     env.set_padded_observations(True)
 
     # seq_len = 300

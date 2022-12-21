@@ -108,7 +108,7 @@ class HyperParams:
     controller = 'A3C'
 
     extra = False
-    # data_dir = 'Datasets'
+    data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
@@ -248,7 +248,9 @@ class DQNRNNHyperParams:
     # data_dir = 'dqnDatasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
-    seed = 0
+    seed = 0    
+
+    
 
     batch_size = 64 # actually batchsize * Seqlen
     test_batch = 1
@@ -272,7 +274,7 @@ class VAEHyperParams:
     vision = 'VAE'
 
     extra = False
-    # data_dir = 'Datasets'
+    data_dir = 'Datasets'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 
