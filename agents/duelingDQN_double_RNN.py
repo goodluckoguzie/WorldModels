@@ -650,7 +650,7 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_0_5.yaml")
+    env.configure("./configs/env_timestep_0_25.yaml")
     env.set_padded_observations(True)
 
 
@@ -662,6 +662,6 @@ if __name__ == "__main__":
     # config file for the model
     config = "./configs/duelingDQNDoubleRNN.yaml"
     input_layer_size = 559#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
-    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="worldmodelDoubleRNN")
+    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="DoubleRNN")
     agent.train()
     
