@@ -147,7 +147,7 @@ class RNN_MODEL():
         self.run_name = None
         # self.seq_len = None
         self.run_name = None
-        self.window = Seq_len.seq_8
+        self.window = Seq_len.seq_16
 
                 # setting values from config file
         self.configure(self.config)
@@ -164,7 +164,7 @@ class RNN_MODEL():
         self.ckpt_dir = data.ckpt_dir#'ckpt'
         self.rnnsave = data.rnnsave#'ckpt'
         self.data_path = data.data_dir 
-        self.seq_len = Seq_len.seq_len_8
+        self.seq_len = Seq_len.seq_len_16
         episode_length = data.time_steps
 
         print(self.seq_len) 
@@ -422,7 +422,7 @@ class RNN_MODEL():
                     'optimizer': self.optimizer.state_dict(),
                 }
                 torch.save(
-                    d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(self.global_step//self.save_interval))
+                    d, os.path.join(self.ckpt_dir, '{:03d}mainrobotframe.pth.tar'.format(self.global_step//self.save_interval))
                 )
 
                 # and if it has, it will make a checkpoint of the current model

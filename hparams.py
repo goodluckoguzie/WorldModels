@@ -12,16 +12,16 @@ class Seq_Len:
 class NonPrePaddedRobotFrame_Datasets_Timestep_0_5:
     data_dir = 'RobotFrameDatasetsTimestep05'
     time_steps =  300
-    RNN_runs = 'NonPrePaddedRobotFrameDatasetsTimestep05'
+    RNN_runs = 'mainNonPrePaddedRobotFrameDatasetsTimestep05'
     ckpt_dir = 'ckpt'
-    rnnsave = 'NonPrePaddedRobotFrameDatasetsTimestep05'
+    rnnsave = 'mainNonPrePaddedRobotFrameDatasetsTimestep05'
 
 class NonPrePaddedRobotFrame_Datasets_Timestep_0_25:
     data_dir = 'RobotFrameDatasetsTimestep025'
     time_steps =  600
-    RNN_runs = 'NonPrePaddedRobotFrameDatasetsTimestep025'
+    RNN_runs = 'mainNonPrePaddedRobotFrameDatasetsTimestep025'
     ckpt_dir = 'ckpt'
-    rnnsave = 'NonPrePaddedRobotFrameDatasetsTimestep025'
+    rnnsave = 'mainNonPrePaddedRobotFrameDatasetsTimestep025'
 
 class NonPrePaddedWorldFrame_Datasets_Timestep_0_5:
     data_dir = 'WorldFrameDatasetsTimestep05'

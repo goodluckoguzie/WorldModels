@@ -9,10 +9,10 @@ n_actions: 2
 batch_size: 1
 test_batch: 1
 n_sample: 64
-log_interval: 5000
+log_interval: 50
 save_interval: 50
-max_step: 100_0000
+max_step: 1000
 n_workers: 0
-run_name: RNN_MODEL
+run_name: RNN_MODEL_main_0_5
 
 save_path: "./MODEL/Robotframe_RNN_model_runs"  # path to save the model files
