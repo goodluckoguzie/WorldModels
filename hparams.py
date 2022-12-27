@@ -37,7 +37,19 @@ class NonPrePaddedWorldFrame_Datasets_Timestep_0_25:
     ckpt_dir = 'ckpt'
     rnnsave = 'NonPrePaddedWorldFrameDatasetsTimestep025'
 
+class NonPrePaddedRobotFrame_Datasets_Timestep_1:
+    data_dir = 'RobotFrameDatasetsTimestep1'
+    time_steps =  200
+    RNN_runs = 'mainNonPrePaddedRobotFrameDatasetsTimestep1'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'mainNonPrePaddedRobotFrameDatasetsTimestep1'
 
+class NonPrePaddedRobotFrame_Datasets_Timestep_2:
+    data_dir = 'RobotFrameDatasetsTimestep2'
+    time_steps =  100
+    RNN_runs = 'mainNonPrePaddedRobotFrameDatasetsTimestep2'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'mainNonPrePaddedRobotFrameDatasetsTimestep2'
 
 
 
