@@ -192,6 +192,7 @@ class RNN_MODEL():
             dataset, batch_size=1, shuffle=True, drop_last=True,
             num_workers=self.n_workers, collate_fn=collate_fn
         )
+        # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",len(self.loader))
         # testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
         #Non pre-padde observation
         testset = GameEpisodeDatasetNonPrePadded(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
@@ -200,6 +201,7 @@ class RNN_MODEL():
             testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn
         )
 
+        # print("ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",len(self.valid_loader))
 
   
         # self.ckpt_dir = os.path.join(self.ckpt_dir, 'rnn')
@@ -293,7 +295,7 @@ class RNN_MODEL():
         else:
             self.writer = SummaryWriter()
 
-        self.early_stopping = EarlyStopping(patience=100, verbose=True)
+        self.early_stopping = EarlyStopping(patience=3, verbose=True)
         self.best_score = 0
 
 
@@ -335,6 +337,7 @@ class RNN_MODEL():
             self.rnn.eval()
             self.total_loss = []
             l1 = nn.L1Loss()
+ 
             with torch.no_grad():
                 for idx, (obs, actions) in enumerate(self.valid_loader):
                     # obs = normalised(obs)
@@ -342,18 +345,24 @@ class RNN_MODEL():
                     obs, actions = obs.to(DEVICE), actions.to(DEVICE)
                     # z,latent_mu, latent_var = self.vae(obs) # (B*T, vsize)
                     z = obs
+                    # print("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll")
+                    # print("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",len(actions))
+                    # print("555555555555555555555555555555555555555555555555555555555555555555555555",self.n_latents)
+                    # print("6666666666666666666666666666666666666666666666666666666666666666666666666666666",len(obs))
                     
                     # z = vae.reparam(latent_mu, latent_var) # (B*T, vsize)
                     z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
+                    actions = actions.view(-1, self.seq_len, self.n_actions) # (B*n_seq, T, vsize)
 
                     next_z = z[:, 1:, :]
                     z, actions = z[:, :-1, :], actions[:, :-1, :]
+
+
                     states = torch.cat([z, actions], dim=-1) # (B, T, vsize+asize)
                     # states = torch.cat([GO_states, next_states[:,:-1,:]], dim=1)
                     x, _, _ = self.rnn(states)
                     
                     loss = self.l1(x, next_z)
-        
                     self.total_loss.append(loss.item())
             self.rnn.train()
             return np.mean(self.total_loss)
@@ -368,8 +377,6 @@ class RNN_MODEL():
 
             for idx, (obs, actions) in enumerate(self.loader):
                 # for idx, (obs, actions) in t:
-
-
                 with torch.no_grad():
                     # obs = normalised(obs)
                     # obs = torch.from_numpy(obs)
@@ -379,10 +386,10 @@ class RNN_MODEL():
 
                     # z = latent_mu
                     z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
+                    actions = actions.view(-1, self.seq_len, self.n_actions) # (B*n_seq, T, vsize)
 
                 next_z = z[:, 1:, :]
                 z, actions = z[:, :-1, :], actions[:, :-1, :]      
-
                 states = torch.cat([z, actions], dim=-1) # (B, T, vsize+asize)
                 x, _, _ = self.rnn(states)
 
@@ -403,8 +410,8 @@ class RNN_MODEL():
                     f.write(log)
 
             self.epoch_len = len(str(self.global_step))
-            self.train_loss = np.mean(self.train_losses)/len(self.loader)
-            self.valid_loss = self.valid_losses/len(self.valid_loader)
+            self.train_loss = np.mean(self.train_losses)#/len(self.loader)
+            self.valid_loss = self.valid_losses#/len(self.valid_loader)
             self.plot(self.global_step +1)
 
             print_msg = (f'[{self.global_step:>{self.epoch_len}}/{self.global_step:>{self.epoch_len}}] ' +
