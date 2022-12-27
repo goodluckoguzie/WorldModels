@@ -16,7 +16,6 @@ from agents.models import MLP, ExperienceReplay
 import sys
 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 
@@ -459,13 +458,6 @@ class DuelingDQNAgent:
         hidden = [torch.zeros(1, 1,hiddens ).to(self.device) for _ in range(2)]
         # train loop
         for i in range(self.num_episodes):
-            O = []
-            Actions_ = []
-            obs = [0] *47
-            Observation = deque([obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs] ,maxlen=16)
-            action_ = [0,0]
-            Actions = deque([action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_] ,maxlen=16)
-        
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
 
@@ -477,7 +469,8 @@ class DuelingDQNAgent:
             action = self.discrete_to_continuous_action(action_)
             action = np.atleast_2d(action)
             action = torch.from_numpy(action).to(self.device)
-            window=16
+
+
             done = False
             self.episode_reward = 0
             self.total_grad_norm = 0
@@ -490,7 +483,6 @@ class DuelingDQNAgent:
             while not done: 
 
 
-
                 unsqueezed_action = action.unsqueeze(0)
                 z = current_obs.to(self.device)
                 z = z.unsqueeze(0) #use when not using vae
@@ -498,28 +490,10 @@ class DuelingDQNAgent:
                 with torch.no_grad():
                     action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
 
-                    Observation.append(current_obs.squeeze(0).numpy())
-                    Actions.append(action.squeeze(0).cpu().numpy())
-                    # current = Observation[-1]
 
-
-                    for i in range(window):
-                        O.append(Observation[i])
-
-                        Actions_.append(Actions[i])
-                    O = np.array(O)
-                    Actions_= np.array(Actions_)
-                    # print("ddddddddddddddddddddddddd",O.shape)
-                    # print("ssssssssssssssssssssssssssssss",Actions_.shape)
-                    
-                    states = torch.cat([torch.from_numpy(O), torch.from_numpy(Actions_)], dim=-1) # (B, T, vsize+asize)
-                    states = states.unsqueeze(0).float() .to(device)
-
-  
-
-                    # vision_action = torch.cat([z, action_continuous], dim=-1) #
-                    # vision_action = vision_action.view(1, 1, -1)
-                    _, _, _, hidden =  self.rnn.infer(states, hidden) #
+                    vision_action = torch.cat([z, action_continuous], dim=-1) #
+                    vision_action = vision_action.view(1, 1, -1)
+                    _, _, _, hidden =  self.rnn.infer(vision_action, hidden) #
 
 
                 # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
@@ -561,34 +535,12 @@ class DuelingDQNAgent:
 
                     # print("ssssssssssssssssssssssss",action_continuous.shape)
                     # print("xxxxxxxxxxxxxxxxxxxxxxxx",z.shape)
-                    Observation.append(next_obs.squeeze(0).numpy())
-                    # Actions.append(torch.from_numpy(action_continuous).numpy())
-                    Actions.append(action_continuous.squeeze(0).cpu().numpy())
-
-                    # current = Observation[-1]
-
-                    O = []
-                    Actions_ = []#torch.zeros(9,47)
-                    for i in range(window):
-                        O.append(Observation[i])
-                        f = Actions[i]
-                        # print("22222222222222",f)
-
-                        Actions_.append(Actions[i])
-                    O = np.array(O)
-                    Actions_= np.array(Actions_)
-                    
-                    states = torch.cat([torch.from_numpy(O), torch.from_numpy(Actions_)], dim=-1) # (B, T, vsize+asize)
-                    states = states.unsqueeze(0).float() .to(device)
-
-
-                    # vision_action = vision_action.view(1, 1, -1)
-                    _, _, _, hidden =  self.rnn.infer(states, hidden) #                    
+                    vision_action = vision_action.view(1, 1, -1)
+                    _, _, _, hidden =  self.rnn.infer(vision_action, hidden) #                    
 
                 next_obs = torch.cat((next_obs.unsqueeze(0).to(self.device), hidden[0].to(self.device)),-1)
 
-                O = []
-                Actions_ = []#torch.zeros(9,47)
+
                 
                 # rendering if reqd
                 if self.render and ((i+1) % self.render_freq == 0):
