@@ -395,7 +395,7 @@ class DuelingDQNAgent:
                 self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
             
    
-    def eval(self, num_episodes=10, path=None):
+    def eval(self, num_episodes=50, path=None):
         if path is None:
             path = os.getcwd()
 
@@ -405,7 +405,9 @@ class DuelingDQNAgent:
             # /models/duelingdqn/episode00026500.pt
             # model = torch.load('load/from/path/episode00026500.pt')
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
-            self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))
+            # self.duelingDQN.load_state_dict(torch.load('./models/episode00015300.pth'))#time step 2
+            # self.duelingDQN.load_state_dict(torch.load('./models/episode00007050.pth'))#time step 1
+            self.duelingDQN.load_state_dict(torch.load('./models/episode00003100.pth'))#time step 0.5
             # self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
     
         self.duelingDQN.eval()
@@ -435,12 +437,12 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env.yaml")
+    env.configure("./configs/env_timestep_0_5.yaml")
     env.set_padded_observations(True)
 
     # config file for the model
     config = "./configs/duelingDQN.yaml"
     input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
-    agent.eval(num_episodes=10, path=None)
+    agent.eval(num_episodes=50, path=None)
     
