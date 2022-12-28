@@ -7,7 +7,7 @@ epsilon: 1.0  # initial value of epsilon
 epsilon_decay_rate: 0.015  # after each episode, epsilon would be updated as epsion -= (epsilon_decay_rate)*epsilon
 polyak_const: 0.995  # polyak constant for updating the target network
 min_epsilon: 0.015  # minimum value of epsilon after which decay won't occur
-render: False  # setting it to True would render after every "render_freq" episodes
+render: True  # setting it to True would render after every "render_freq" episodes
 render_freq: 50  # if render is True, the episode will be rendered after every render_freq episodes
 save_path: "./models/DoubleRNN_timestep_1_2_sgnn_newww"  # path to save the model files
 save_freq: 10  # model would be saved after every save_freq epsidoes

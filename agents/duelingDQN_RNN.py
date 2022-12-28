@@ -503,10 +503,10 @@ class DuelingDQNAgent:
                     # current = Observation[-1]
 
 
-                    for i in range(window):
-                        O.append(Observation[i])
+                    for a in range(window):
+                        O.append(Observation[a])
 
-                        Actions_.append(Actions[i])
+                        Actions_.append(Actions[a])
                     O = np.array(O)
                     Actions_= np.array(Actions_)
                     # print("ddddddddddddddddddddddddd",O.shape)
@@ -569,12 +569,12 @@ class DuelingDQNAgent:
 
                     O = []
                     Actions_ = []#torch.zeros(9,47)
-                    for i in range(window):
-                        O.append(Observation[i])
-                        f = Actions[i]
+                    for a in range(window):
+                        O.append(Observation[a])
+                        f = Actions[a]
                         # print("22222222222222",f)
 
-                        Actions_.append(Actions[i])
+                        Actions_.append(Actions[a])
                     O = np.array(O)
                     Actions_= np.array(Actions_)
                     
