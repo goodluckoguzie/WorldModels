@@ -195,7 +195,7 @@ class DuelingDQNAgent:
         # self.vae.eval()
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
 
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '*me.pth.tar')))[-1]
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep025window_16', '*me.pth.tar')))[-1]
         rnn_state = torch.load( self.ckpt , map_location={'cuda:0': str(device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
@@ -682,7 +682,7 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_1.yaml")
+    env.configure("./configs/env_timestep_0_25.yaml")
     env.set_padded_observations(True)
 
 
