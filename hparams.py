@@ -11,28 +11,28 @@ class Seq_Len:
 
 class NonPrePaddedRobotFrame_Datasets_Timestep_0_5:
     data_dir = 'RobotFrameDatasetsTimestep05'
-    time_steps =  300
+    time_steps =  400
     RNN_runs = 'mainNonPrePaddedRobotFrameDatasetsTimestep05'
     ckpt_dir = 'ckpt'
     rnnsave = 'mainNonPrePaddedRobotFrameDatasetsTimestep05'
 
 class NonPrePaddedRobotFrame_Datasets_Timestep_0_25:
     data_dir = 'RobotFrameDatasetsTimestep025'
-    time_steps =  600
+    time_steps =  800
     RNN_runs = 'mainNonPrePaddedRobotFrameDatasetsTimestep025'
     ckpt_dir = 'ckpt'
     rnnsave = 'mainNonPrePaddedRobotFrameDatasetsTimestep025'
 
 class NonPrePaddedWorldFrame_Datasets_Timestep_0_5:
     data_dir = 'WorldFrameDatasetsTimestep05'
-    time_steps =  300
+    time_steps =  400
     RNN_runs = 'NonPrePaddedWorldFrameDatasetsTimestep05'
     ckpt_dir = 'ckpt'
     rnnsave = 'NonPrePaddedWorldFrameDatasetsTimestep05'
 
 class NonPrePaddedWorldFrame_Datasets_Timestep_0_25:
     data_dir = 'WorldFrameDatasetsTimestep025'
-    time_steps =  600
+    time_steps =  800
     RNN_runs = 'NonPrePaddedWorldFrameDatasetsTimestep025'
     ckpt_dir = 'ckpt'
     rnnsave = 'NonPrePaddedWorldFrameDatasetsTimestep025'
@@ -70,14 +70,14 @@ class WorldFrame_Datasets_Timestep_1:
 
 class WorldFrame_Datasets_Timestep_0_5:
     data_dir = 'WorldFrameDatasetsTimestep05'
-    time_steps =  300
+    time_steps =  400
     RNN_runs = 'WorldFrameDatasetsTimestep05'
     ckpt_dir = 'ckpt'
     rnnsave = 'WorldFrameDatasetsTimestep05'
 
 class WorldFrame_Datasets_Timestep_0_25:
     data_dir = 'WorldFrameDatasetsTimestep025'
-    time_steps =  600
+    time_steps =  800
     RNN_runs = 'WorldFrameDatasetsTimestep025'
     ckpt_dir = 'ckpt'
     rnnsave = 'WorldFrameDatasetsTimestep025'
@@ -99,14 +99,14 @@ class RobotFrame_Datasets_Timestep_1:
 
 class RobotFrame_Datasets_Timestep_0_5:
     data_dir = 'RobotFrameDatasetsTimestep05'
-    time_steps =  300
+    time_steps =  400
     RNN_runs = 'RobotFrameDatasetsTimestep05'
     ckpt_dir = 'ckpt'
     rnnsave = 'RobotFrameDatasetsTimestep05'
 
 class RobotFrame_Datasets_Timestep_0_25:
     data_dir = 'RobotFrameDatasetsTimestep025'
-    time_steps =  600
+    time_steps =  800
     RNN_runs = 'RobotFrameDatasetsTimestep025'
     ckpt_dir = 'ckpt'
     rnnsave = 'RobotFrameDatasetsTimestep025'

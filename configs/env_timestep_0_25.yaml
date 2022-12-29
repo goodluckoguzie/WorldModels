@@ -3,7 +3,7 @@ rendering:
     milliseconds: 1  # delay parameter for waitKey()
 
 episode:
-    episode_length: 600  # maximum steps in an episode
+    episode_length: 800  # maximum steps in an episode
     time_step: 0.25 #1  # number of seconds that one step corresponds to
 
 rewards:
