@@ -1,6 +1,6 @@
 rendering:
     resolution_view: 1000 # size of the resized OpenCV window on rendering
-    milliseconds: 1  # delay parameter for waitKey()
+    milliseconds: 1 # delay parameter for waitKey()
 
 episode:
     episode_length: 400  # maximum steps in an episode
