@@ -106,7 +106,7 @@ def rollout():
         t = 0
         rew = 0
         for t in range(time_steps):       
-            env.render()
+            # env.render()
             # print("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
 
 
