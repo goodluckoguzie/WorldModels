@@ -2,7 +2,7 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import HyperParams as hp
-from hparams import RobotFrame_Datasets_Timestep_2 as data
+from hparams import RobotFrame_Datasets_Timestep_0_5 as data
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -85,13 +85,14 @@ def rollout():
 
 
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env_timestep_2.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
+    # env.configure('./configs/env.yaml')
 
 
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 100# hp.n_rollout
+    max_ep = 10000 #hp.n_rollout
     feat_dir = data.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
@@ -103,8 +104,11 @@ def rollout():
 
         done = False
         t = 0
+        rew = 0
         for t in range(time_steps):       
-            # env.render()
+            env.render()
+            # print("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+
 
             action_ = np.random.randint(0, 4)
             action = discrete_to_continuous_action(action_)
@@ -114,6 +118,10 @@ def rollout():
             next_obs, reward, done, _ = env.step(action)
             next_obs = preprocess_observation(next_obs)
             action = torch.from_numpy(action)
+            rew = rew + reward
+            # print("tttttttttttttttttttttttttttttttttttttttttttttttttttt",t)
+            # print("sdssssssssssssssssssssssssssssssssssssssssssssssssss",reward)
+            # print("ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg")
 
 
             # print("obs",obs.shape)
@@ -134,6 +142,7 @@ def rollout():
             next_obs_lst.append(next_obs)
             done_lst.append(done)
             obs = next_obs
+            # print("tooottttttttttttttttttttttttttttttttalllllllllllllllllllllllllllllllll",rew)
             if done:
                 print("Episode [{}/{}] finished after {} timesteps".format(ep + 1, max_ep, t), flush=True)
                 obs = env.reset()
