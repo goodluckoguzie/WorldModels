@@ -13,6 +13,6 @@ log_interval: 50
 save_interval: 50
 max_step: 1000
 n_workers: 0
-run_name: RNN_MODEL_main_0_5
+run_name: RNN_MODEL_main_0_5_main
 
 save_path: "./MODEL/Robotframe_RNN_model_runs"  # path to save the model files
