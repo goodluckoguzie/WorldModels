@@ -372,6 +372,8 @@ class DuelingDQNAgent:
                 if not os.path.isdir(self.save_path):
                     os.makedirs(self.save_path)
                 try:
+                    print("Error in saving model")
+
                     self.save_model(os.path.join(self.save_path, "episode"+ str(i+1).zfill(8) + ".pth"))
                 except:
                     print("Error in saving model")
