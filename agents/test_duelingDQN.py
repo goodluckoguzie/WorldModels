@@ -407,7 +407,7 @@ class DuelingDQNAgent:
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00015300.pth'))#time step 2
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00007050.pth'))#time step 1
-            self.duelingDQN.load_state_dict(torch.load('./models/episode00020650.pth'))#time step 0.5episode00001450
+            self.duelingDQN.load_state_dict(torch.load('./models/episode00037400.pth'))#time step 0.5episode00001450
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00001450.pth'))#time step 0.25episode
             # self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
     
@@ -438,7 +438,7 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_0_5.yaml")
+    env.configure("./configs/env_timestep_2.yaml")
     env.set_padded_observations(True)
 
     # config file for the model
