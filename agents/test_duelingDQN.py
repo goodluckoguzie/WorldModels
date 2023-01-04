@@ -438,7 +438,7 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_1.yaml")
+    env.configure("./configs/env_timestep_0_5.yaml")
     env.set_padded_observations(True)
 
     # config file for the model
