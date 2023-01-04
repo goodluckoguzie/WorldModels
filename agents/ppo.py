@@ -81,10 +81,10 @@ class PPOAgent:
         self.configure(self.config)
 
         # initializing model
-        self.model = PPO(self.input_layer_size, self.mlp_layers, self.policy_net_hidden_layers, self.value_net_hidden_layers)
+        self.model = PPO(self.input_layer_size, self.mlp_layers, self.policy_net_hidden_layers, self.value_net_hidden_layers).to(self.device)
 
         # old model
-        self.old_model = PPO(self.input_layer_size, self.mlp_layers, self.policy_net_hidden_layers, self.value_net_hidden_layers)
+        self.old_model = PPO(self.input_layer_size, self.mlp_layers, self.policy_net_hidden_layers, self.value_net_hidden_layers).to(self.device)
 
         # removing the old model from the computation graph
         for params in self.old_model.parameters():
@@ -191,22 +191,16 @@ class PPOAgent:
         Function to return a continuous space action for a given discrete action
         """
         if action == 0:
-            return np.array([0, 0.125], dtype=np.float32)
-        
+            return np.array([0, 1], dtype=np.float32) 
+        # Turning clockwise
         elif action == 1:
-            return np.array([0, -0.125], dtype=np.float32)
-
+            return np.array([0, -1], dtype=np.float32) 
+        # # Move forward
         elif action == 2:
-            return np.array([1, 0.125], dtype=np.float32) 
-        
-        elif action == 3:
-            return np.array([1, -0.125], dtype=np.float32) 
-
-        elif action == 4:
             return np.array([1, 0], dtype=np.float32)
-
-        elif action == 5:
-            return np.array([-1, 0], dtype=np.float32)
+        # stop the robot
+        elif action == 3:
+            return np.array([0, 0], dtype=np.float32)
         
         else:
             raise NotImplementedError
@@ -276,8 +270,9 @@ class PPOAgent:
 
             # Finding the ratio (pi_theta / pi_theta__old)
             ratios = torch.exp(logprobs - old_logprobs)
+            ratios = ratios.cpu() 
             # Finding Surrogate Loss
-            surr1 = ratios * advantage.detach()
+            surr1 = ratios* advantage.detach()
             surr2 = torch.clamp(ratios, 1-self.policy_clip, 1+self.policy_clip) * advantage.detach()
 
             # final loss of clipped objective PPO
@@ -311,7 +306,7 @@ class PPOAgent:
 
         np.save(os.path.join(self.save_path, "plots", "rewards"), np.array(self.rewards), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "losses"), np.array(self.episode_loss/self.n_epochs), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm/self.n_epochs), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array((self.total_grad_norm.cpu())/self.n_epochs), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "successes"), np.array(self.has_reached_goal), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "collisions"), np.array(self.has_collided), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "steps_to_reach"), np.array(self.steps), allow_pickle=True, fix_imports=True)
@@ -429,7 +424,7 @@ class PPOAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env.yaml")
+    env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
     input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
     agent = PPOAgent(env, config="./configs/ppo.yaml", input_layer_size=input_layer_size)

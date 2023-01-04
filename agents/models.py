@@ -12,7 +12,7 @@ import torch.optim as optim
 import argparse
 import yaml
 from torch.utils.data import Dataset
-
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 class MLP(nn.Module):
     """
     Class for a Multi Layered Perceptron. LeakyReLU activations would be applied between each layer.

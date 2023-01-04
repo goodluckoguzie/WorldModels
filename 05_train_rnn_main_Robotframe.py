@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp
-from hparams import NonPrePaddedRobotFrame_Datasets_Timestep_0_5 as data
+from hparams import NonPrePaddedRobotFrame_Datasets_Timestep_1 as data
 from hparams import Seq_Len as Seq_len
 
 
@@ -16,7 +16,6 @@ import os, sys
 from torch.nn import functional as F
 from datetime import datetime
 
-DEVICE = None
 
 from torch.utils.tensorboard import SummaryWriter
 import yaml
