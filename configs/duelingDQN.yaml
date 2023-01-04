@@ -1,4 +1,4 @@
-lr: 0.01  # learning rate
+lr: 0.001  # learning rate
 buffer_size: 200_000  # buffer size
 batch_size: 32  # batch size for sampling from the buffer
 gamma: 0.99  # discount factor
@@ -7,9 +7,9 @@ epsilon: 1.0  # initial value of epsilon
 epsilon_decay_rate: 0.00015 # after each episode, epsilon would be updated as epsion -= (epsilon_decay_rate)*epsilon
 polyak_const: 0.995  # polyak constant for updating the target network
 min_epsilon: 0.15  # minimum value of epsilon after which decay won't occur
-render: True  # setting it to True would render after every "render_freq" episodes
-render_freq: 50  # if render is True, the episode will be rendered after every render_freq episodes
-save_path: "./models/duelingdqn_TIMESTEP_one1_with_SNGNN=0_new_rewardfunction_v3dividby10"  # path to save the model files
+render: False  # setting it to True would render after every "render_freq" episodes
+render_freq: 500  # if render is True, the episode will be rendered after every render_freq episodes
+save_path: "./models/duelingdqn_TIMESTEP_1_with_SNGNN=0_new_rewardfunction_v3dividby10_main_v1"  # path to save the model files
 save_freq: 50  # model would be saved after every save_freq epsidoes
 hidden_layers: [512, 128]  # the hidden layers of the model. Input layer size will be fixed according to the observation shape
 v_net_layers: [128, 64, 4, 1]  # value network
