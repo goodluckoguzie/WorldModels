@@ -291,7 +291,7 @@ class RNN_MODEL():
             os.makedirs(RNN_runs)
         if self.run_name is not None:
             # self.writer = SummaryWriter('WorldFrame_RNN_model_runs/'+self.run_name)
-            self.writer = SummaryWriter('RNN_model_runs/'+RNN_runs  + self.window +self.window)
+            self.writer = SummaryWriter('RNN_model_runs/'+RNN_runs  + self.window + self.window + self.window)
         else:
             self.writer = SummaryWriter()
 
