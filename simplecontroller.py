@@ -28,6 +28,10 @@ import torch
 
 
 
+
+
+numberOfActions = 4
+
 def preprocess_observation(obs):
     """
     To convert dict observation to numpy observation
@@ -57,8 +61,9 @@ class NeuralNetwork(nn.Module):
     def forward(self, x):
         ot_n = self.mlp(x.float())
 
-        return torch.tanh(self.mean_l(ot_n))
-
+        # return  F.softmax(self.mean_l(ot_n).squeeze(0).squeeze(0).detach().to('cpu'), dim=0).numpy()   #   torch.tanh(self.mean_l(ot_n))
+        # return  F.softmax(self.mean_l(ot_n))   #   torch.tanh(self.mean_l(ot_n))
+        return F.softmax(self.mean_l(ot_n).squeeze(0).squeeze(0), dim=0)
 
 
 def sample_noise(neural_net):
@@ -72,6 +77,39 @@ def sample_noise(neural_net):
         nn_noise.append(noise)
     return np.array(nn_noise)
 
+
+def discrete_to_continuous_action(action:int):
+    """
+    Function to return a continuous space action for a given discrete action
+    """
+    if action == 0:
+        return np.array([0, 1], dtype=np.float32) 
+    # Turning clockwise
+    elif action == 1:
+        return np.array([0, -1], dtype=np.float32) 
+    # Turning anti-clockwise and moving forward
+    # elif action == 3:
+    #     return np.array([1, 0.5], dtype=np.float32) 
+    # # Turning clockwise and moving forward
+    # elif action == 4:
+    #     return np.array([1, -0.5], dtype=np.float32) 
+    # # Move forward
+    elif action == 2:
+        return np.array([1, 0], dtype=np.float32)
+    # stop the robot
+    elif action == 3:
+        return np.array([0, 0], dtype=np.float32)
+        # Turning clockwise with a reduced speed and rotation
+    # elif action == 7:
+    #     return np.array([0.5, 1], dtype=np.float32)
+    #     # Turning anti-clockwise with a reduced speed and rotation
+    # elif action == 8:
+    #     return np.array([0.5, -1], dtype=np.float32)
+    
+    else:
+        raise NotImplementedError
+
+
 def evaluate_neuralnet(nn, env):
     '''
     Evaluate an agent running it in the environment and computing the total reward
@@ -80,11 +118,22 @@ def evaluate_neuralnet(nn, env):
     game_reward = 0
 
     while True:
+
+
         # Output of the neural net
         net_output = nn(preprocess_observation(obs))
+        # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",action_)
+
         # net_output = nn(torch.tensor(preprocess_observation(obs)))   
         # the action is the value clipped returned by the nn
-        action = np.clip(net_output.data.cpu().numpy().squeeze(), -1, 1)
+        action_ = np.clip(net_output.data.cpu().numpy().squeeze(), -1, 1)
+        # print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",action_)
+
+        max_action = np.argmax(action_)
+        # print("sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",max_action)
+
+        action = discrete_to_continuous_action(max_action)
+
         new_obs, reward, done, _ = env.step(action)
         obs = new_obs
 
@@ -122,7 +171,7 @@ def worker(params_queue, output_queue):
     env.set_padded_observations(True)
 
     # actor = NeuralNetwork(env.observation_space.shape[0], env.action_space.shape[0])
-    actor = NeuralNetwork(47, 2)
+    actor = NeuralNetwork(47, 4)
 
     while True:
         # get the new actor's params
@@ -176,7 +225,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'ASY_ES_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'SIMPLEWORLDMODEL_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
@@ -186,7 +235,7 @@ if __name__ == '__main__':
     env.set_padded_observations(True)
 
     # Initialize the agent
-    actor = NeuralNetwork(47, 2)
+    actor = NeuralNetwork(47, 4)
     # Initialize the optimizer
     optimizer = optim.Adam(actor.parameters(), lr=LEARNING_RATE)
 
@@ -256,7 +305,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/simplecontroller.pt')
+            torch.save(actor.state_dict(), './models/worldsimplecontroller.pt')
 
 
     # quit the processes
