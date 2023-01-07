@@ -164,7 +164,7 @@ ENV_NAME = 'SocNavEnv-v1'
 STD_NOISE = 0.05
 BATCH_SIZE = 100
 LEARNING_RATE = 0.001
-MAX_ITERATIONS = 10000
+MAX_ITERATIONS = 100_000
 
 MAX_WORKERS = 4
 
@@ -255,9 +255,9 @@ if __name__ == '__main__':
 
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
-        if not best or batch_reward >= best:
+        if not best or np.mean(batch_reward) >= best:
             best = batch_reward
-            print("Saving new best with value {}...".format(batch_reward))
+            print("Saving new best with value {}...".format(np.mean(batch_reward)))
         
             torch.save(actor.state_dict(), './models/simplecontroller.pt')
 
