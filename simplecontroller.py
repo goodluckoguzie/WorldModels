@@ -178,7 +178,7 @@ if __name__ == '__main__':
     # Writer name
     writer_name = 'ASY_ES_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
-
+    best = 0.0
     # Create the test environment
     env = gym.make(ENV_NAME)
 
@@ -254,6 +254,13 @@ if __name__ == '__main__':
         optimizer.step()
 
         writer.add_scalar('loss', np.mean(th_update), n_iter)
+
+        if not best or batch_reward >= best:
+            best = batch_reward
+            print("Saving new best with value {}...".format(batch_reward))
+        
+            torch.save(actor.state_dict(), './models/simplecontroller.pt')
+
 
     # quit the processes
     for _ in range(MAX_WORKERS):
