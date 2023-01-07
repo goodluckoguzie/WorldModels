@@ -195,7 +195,8 @@ class DuelingDQNAgent:
         # self.vae.eval()
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
 
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep05window_16', '*me.pth.tar')))[-1]
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '*me.pth.tar')))[-1] 
+        
         rnn_state = torch.load( self.ckpt , map_location={'cuda:0': str(device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
@@ -205,7 +206,7 @@ class DuelingDQNAgent:
         # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
         # self.rnn.load_state_dict(rnn_state['model'])
         # self.rnn.eval()
-        print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+        # print('Loaded rnn_state ckpt {}'.format(self.ckpt))
 
 
         # declaring the network
@@ -557,7 +558,7 @@ class DuelingDQNAgent:
                 with torch.no_grad():
                     action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
 
-                    vision_action = torch.cat([next_obs.to(self.device), action_continuous.to(self.device)], dim=-1) #
+                    # vision_action = torch.cat([next_obs.to(self.device), action_continuous.to(self.device)], dim=-1) #
 
                     # print("ssssssssssssssssssssssss",action_continuous.shape)
                     # print("xxxxxxxxxxxxxxxxxxxxxxxx",z.shape)
@@ -682,7 +683,7 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_0_5.yaml")
+    env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
 
 
