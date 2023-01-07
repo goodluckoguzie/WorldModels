@@ -255,10 +255,7 @@ if __name__ == '__main__':
 
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
-        if not best or np.mean(batch_reward) >= best:
-            best = batch_reward
-            print("Saving new best with value {}...".format(np.mean(batch_reward)))
-        
+        if n_iter % 50 == 0:        
             torch.save(actor.state_dict(), './models/simplecontroller.pt')
 
 
