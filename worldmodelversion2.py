@@ -241,7 +241,7 @@ def worker(params_queue, output_queue):
     '''
 
     env = gym.make(ENV_NAME)
-    env.configure('./configs/env_timestep_1.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     env.set_padded_observations(True)
 
     # actor = NeuralNetwork(env.observation_space.shape[0], env.action_space.shape[0])
@@ -299,13 +299,13 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WORLDMODELRNNVERSION2_32_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'WORLDMODELRNNVERSION2_32_env_timestep_0_5{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
     env = gym.make(ENV_NAME)
 
-    env.configure('./configs/env_timestep_1.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     env.set_padded_observations(True)
 
     # Initialize the agent
@@ -385,7 +385,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WORLDMODELRNNVERSION2_32.pt')
+            torch.save(actor.state_dict(), './models/WORLDMODELRNNVERSION2_32env_timestep_0_5.pt')
 
 
     # quit the processes

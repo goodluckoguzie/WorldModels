@@ -152,6 +152,7 @@ def evaluate_noisy_net(noise, neural_net, env):
 
     # add the noise to each parameter of the NN
     for n, p in zip(noise, neural_net.parameters()):
+
         p.data += torch.FloatTensor(n * STD_NOISE)
 
     # evaluate the agent with the noise
@@ -167,7 +168,7 @@ def worker(params_queue, output_queue):
     '''
 
     env = gym.make(ENV_NAME)
-    env.configure('./configs/env_timestep_1.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     env.set_padded_observations(True)
 
     # actor = NeuralNetwork(env.observation_space.shape[0], env.action_space.shape[0])
@@ -215,7 +216,7 @@ BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 4
+MAX_WORKERS = 1
 
 val_test = True
 # VIDEOS_INTERVAL = 100
@@ -225,13 +226,13 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'SIMPLEWORLDMODEL_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'SIMPLEWORLDMODEL_env_timestep_0_5{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
     env = gym.make(ENV_NAME)
 
-    env.configure('./configs/env_timestep_1.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     env.set_padded_observations(True)
 
     # Initialize the agent
@@ -296,7 +297,12 @@ if __name__ == '__main__':
 
             upd_weights = upd_weights / (BATCH_SIZE*STD_NOISE)
             # put the updated weight on the gradient variable so that afterwards the optimizer will use it
+            # print("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",upd_weights)
+            # print("3333333333333333333333333333333333333333333333333333333333333333333",p.grad )
+
             p.grad = torch.FloatTensor( -upd_weights)
+            # print("22222222222222222222222222222222222222222222222222222222222",p.grad )
+
             th_update.append(np.mean(upd_weights))
 
         # Optimize the actor's NN
@@ -305,7 +311,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/worldsimplecontroller.pt')
+            torch.save(actor.state_dict(), './models/worldsimplecontrollerenv_timestep_0_5.pt')
 
 
     # quit the processes
