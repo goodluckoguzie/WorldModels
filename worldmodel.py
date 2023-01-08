@@ -91,10 +91,10 @@ class NeuralNetwork(nn.Module):
     def __init__(self, input_shape, n_actions):
         super(NeuralNetwork, self).__init__()
 
-        self.mlp = nn.Linear(input_shape, 32)
+        self.mlp = nn.Linear(input_shape, 150)
 
 
-        self.mean_l = nn.Linear(32, n_actions)
+        self.mean_l = nn.Linear(150, n_actions)
 
     def forward(self, x):
         x = x.to(device)
