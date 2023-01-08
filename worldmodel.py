@@ -91,10 +91,10 @@ class NeuralNetwork(nn.Module):
     def __init__(self, input_shape, n_actions):
         super(NeuralNetwork, self).__init__()
 
-        self.mlp = nn.Linear(input_shape, 150)
+        self.mlp = nn.Linear(input_shape, 32)
 
 
-        self.mean_l = nn.Linear(150, n_actions)
+        self.mean_l = nn.Linear(32, n_actions)
 
     def forward(self, x):
         x = x.to(device)
@@ -294,7 +294,7 @@ BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 1
+MAX_WORKERS = 4
 
 val_test = True
 # VIDEOS_INTERVAL = 100
@@ -304,7 +304,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WORLDMODELRNN_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'WORLDMODELRNN_32_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
@@ -390,7 +390,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WORLDMODELRNN.pt')
+            torch.save(actor.state_dict(), './models/WORLDMODELRNN_32.pt')
 
 
     # quit the processes
