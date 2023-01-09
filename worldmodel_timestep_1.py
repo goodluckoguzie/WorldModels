@@ -76,8 +76,8 @@ rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 
 ckpt_dir = hp.ckpt_dir#'ckpt'
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '*me.pth.tar')))[-1] 
-# ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
+ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+# ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep2window_16', '*me.pth.tar')))[-1] 
 
@@ -238,7 +238,7 @@ def worker(params_queue, output_queue):
     '''
 
     env = gym.make(ENV_NAME)
-    env.configure('./configs/env_timestep_0_5.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     # actor = NeuralNetwork(env.observation_space.shape[0], env.action_space.shape[0])
@@ -286,7 +286,7 @@ BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 8
+MAX_WORKERS = 4
 
 val_test = True
 # VIDEOS_INTERVAL = 100
@@ -296,13 +296,13 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WORLDMODEL_TIMESTEP_O_5_V1'
-    print('Name:', writer_name)
+    # writer_name = 'WORLDMODELRNNVERSION_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'WORLDMODEL_TIMESTEP_1_V1'
     best = 0.0
     # Create the test environment
     env = gym.make(ENV_NAME)
 
-    env.configure('./configs/env_timestep_0_5.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     # Initialize the agent
@@ -382,7 +382,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WORLDMODEL_timestep_0_5_V1.pt')
+            torch.save(actor.state_dict(), './models/WORLDMODEL_timestep_1_V1.pt')
 
 
     # quit the processes
