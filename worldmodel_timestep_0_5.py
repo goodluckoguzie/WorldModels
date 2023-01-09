@@ -296,7 +296,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WORLDMODEL_TIMESTEP_O_5_V1'
+    writer_name = 'WORLDMODEL_TIMESTEP_O_5_V2'
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
@@ -382,7 +382,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WORLDMODEL_timestep_0_5_V1.pt')
+            torch.save(actor.state_dict(), './models/WORLDMODEL_timestep_0_5_V2.pt')
 
 
     # quit the processes
