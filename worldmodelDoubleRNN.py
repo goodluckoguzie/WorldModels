@@ -293,7 +293,7 @@ BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 4
+MAX_WORKERS = 8
 
 val_test = True
 # VIDEOS_INTERVAL = 100
@@ -303,7 +303,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WorldModelDoubleRNN_v3'
+    writer_name = 'WorldModelDoubleRNN_v4'
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
@@ -389,7 +389,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WorldModelDoubleRNN_v3.pt')
+            torch.save(actor.state_dict(), './models/WorldModelDoubleRNN_v4.pt')
 
 
     # quit the processes
