@@ -37,7 +37,7 @@ n_latents = 47
 n_actions = 2
 window=16
 
-numberOfActions = 8
+numberOfActions = 4
 
 def preprocess_observation(obs):
     """
@@ -286,7 +286,7 @@ BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 8
+MAX_WORKERS = 4
 
 val_test = True
 # VIDEOS_INTERVAL = 100
