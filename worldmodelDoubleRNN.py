@@ -26,8 +26,8 @@ from socnavenv.wrappers import WorldFrameObservations
 import os
 import torch
 from collections import deque
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device( 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device( 'cpu')
 # device = torch.device( 'cpu')
 from hparams import HyperParams as hp
 
@@ -303,7 +303,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WorldModelDoubleRNN_v4'
+    writer_name = 'WorldModelDoubleRNN_GPU'
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
@@ -389,7 +389,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WorldModelDoubleRNN_v4.pt')
+            torch.save(actor.state_dict(), './models/WorldModelDoubleRNN_GPU.pt')
 
 
     # quit the processes
