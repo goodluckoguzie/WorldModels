@@ -29,7 +29,6 @@ from collections import deque
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # device = torch.device( 'cpu')
 # device = torch.device( 'cpu')
-from hparams import HyperParams as hp
 
 
 n_hiddens = 256
@@ -168,7 +167,7 @@ def evaluate_neuralnet(nn, env):
     # current_obs_latent  = current_obs
                 # hidden = rnn.init_hidden()
 
-    game_reward = 0
+    Reward = 0
     done = False
 
     while True:
@@ -203,14 +202,14 @@ def evaluate_neuralnet(nn, env):
             _, _, _, next_hidden =  rnn.infer(vision_action, next_hidden) #
 
         # next_state = torch.cat([next_latent_mu, next_hidden[0].squeeze(0)], dim=1)
-        game_reward += reward
+        Reward += reward
 
         # next_state = next_state.squeeze(0).squeeze(0).cpu()
         # state = state.squeeze(0).squeeze(0).cpu()
         if done:
             break
 
-    return game_reward
+    return Reward
 
 def evaluate_noisy_net(noise, neural_net, env):
 
@@ -289,7 +288,6 @@ MAX_ITERATIONS = 100_000
 MAX_WORKERS = 4
 
 val_test = True
-# VIDEOS_INTERVAL = 100
 
 now = datetime.datetime.now()
 date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
@@ -297,7 +295,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 if __name__ == '__main__':
     # Writer name
     # writer_name = 'WORLDMODELRNNVERSION_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
-    writer_name = 'WORLDMODEL_TIMESTEP_1_GPU_V2'
+    writer_name = 'WORLDMODEL_TIMESTEP_1_GPU_V1'
     best = 0.0
     # Create the test environment
     env = gym.make(ENV_NAME)
@@ -382,7 +380,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WORLDMODEL_timestep_1_GPU_V2.pt')
+            torch.save(actor.state_dict(), './models/WORLDMODEL_timestep_1_GPU_V1.pt')
 
 
     # quit the processes

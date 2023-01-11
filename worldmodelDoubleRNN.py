@@ -173,7 +173,7 @@ def evaluate_neuralnet(nn, env):
     # current_obs_latent  = current_obs
                 # hidden = rnn.init_hidden()
 
-    game_reward = 0
+    Reward = 0
     done = False
 
     while True:
@@ -210,14 +210,14 @@ def evaluate_neuralnet(nn, env):
             _, _, _, rnn_1next_hidden =  rnn_1.infer(vision_action, rnn_1next_hidden) #
 
         # next_state = torch.cat([next_latent_mu, next_hidden[0].squeeze(0)], dim=1)
-        game_reward += reward
+        Reward += reward
 
         # next_state = next_state.squeeze(0).squeeze(0).cpu()
         # state = state.squeeze(0).squeeze(0).cpu()
         if done:
             break
 
-    return game_reward
+    return Reward
 
 def evaluate_noisy_net(noise, neural_net, env):
 
@@ -245,7 +245,7 @@ def worker(params_queue, output_queue):
     '''
 
     env = gym.make(ENV_NAME)
-    env.configure('./configs/env_timestep_0_5.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     # actor = NeuralNetwork(env.observation_space.shape[0], env.action_space.shape[0])
@@ -303,13 +303,13 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WorldModelDoubleRNN_GPU_V2'
+    writer_name = 'WorldModelDoubleRNN_GPU_V1'
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
     env = gym.make(ENV_NAME)
 
-    env.configure('./configs/env_timestep_0_5.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     # Initialize the agent
@@ -389,7 +389,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WorldModelDoubleRNN_GPU_V2.pt')
+            torch.save(actor.state_dict(), './models/WorldModelDoubleRNN_GPU_V1.pt')
 
 
     # quit the processes
