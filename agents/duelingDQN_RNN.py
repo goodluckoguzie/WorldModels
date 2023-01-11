@@ -15,8 +15,8 @@ from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
 import sys
 
+from hparams import HyperParams as hp
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 
@@ -164,7 +164,6 @@ class DuelingDQNAgent:
 
         sys.path.append('./WorldModels')
         # from RNN.RNN import LSTM,RNN
-        from hparams import HyperParams as hp
   
         # self.data_path = self.data_dir# if not self.extra else self.extra_dir
 
@@ -187,26 +186,21 @@ class DuelingDQNAgent:
 
         self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 
-        # # self.ckpt_dir = hp.ckpt_dir#'ckpt'
-        # # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
-        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '187k.pth.tar')))[-1]
+        # self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
         # self.vae_state = torch.load(self.ckpt)
         # self.vae.load_state_dict(self.vae_state['model'])
         # self.vae.eval()
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
-
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '*me.pth.tar')))[-1] 
-        
-        rnn_state = torch.load( self.ckpt , map_location={'cuda:0': str(device)})
-        self.rnn.load_state_dict(rnn_state['model'])
-        self.rnn.eval()
-
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
-        # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
-        # self.rnn.load_state_dict(rnn_state['model'])
-        # self.rnn.eval()
-        # print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+        rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
+        self.rnn.load_state_dict(rnn_state['model'])
+        self.rnn.eval()
+        print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+
 
 
         # declaring the network
@@ -302,6 +296,10 @@ class DuelingDQNAgent:
             self.save_freq = config["save_freq"]
             assert(self.save_freq is not None), f"Argument save_freq cannot be None"
 
+        # if self.ckpt_dir is None:
+        #     self.ckpt_dir = config["ckpt_dir"]
+        #     assert(self.ckpt_dir is not None), f"Argument ckpt_dir  cannot be None"
+
 
     def xavier_init_weights(self, m):
         if type(m) == nn.Linear:
@@ -329,6 +327,12 @@ class DuelingDQNAgent:
         # Turning clockwise
         elif action == 1:
             return np.array([0, -1], dtype=np.float32) 
+        # Turning anti-clockwise and moving forward
+        # elif action == 3:
+        #     return np.array([1, 0.5], dtype=np.float32) 
+        # # Turning clockwise and moving forward
+        # elif action == 4:
+        #     return np.array([1, -0.5], dtype=np.float32) 
         # # Move forward
         elif action == 2:
             return np.array([1, 0], dtype=np.float32)
@@ -336,7 +340,11 @@ class DuelingDQNAgent:
         elif action == 3:
             return np.array([0, 0], dtype=np.float32)
             # Turning clockwise with a reduced speed and rotation
-
+        # elif action == 7:
+        #     return np.array([0.5, 1], dtype=np.float32)
+        #     # Turning anti-clockwise with a reduced speed and rotation
+        # elif action == 8:
+        #     return np.array([0.5, -1], dtype=np.float32)
         
         else:
             raise NotImplementedError
@@ -450,35 +458,37 @@ class DuelingDQNAgent:
         self.steps_to_reach = []
 
         self.average_reward = 0
-        latents = 47
-        actions = 2
+        # latents = 47
+        # actions = 2
         hiddens = 256
         # rnn = RNN(latents, actions, hiddens).to(self.device)
         # rnn = rnn.float()
-        # rnn.load_state_dict(torch.load('./MODEL/model.pt'))
+        # rnn.load_state_dict(torch.load('./MODEL/worldmodel.pt'))
         # rnn.eval()
-        hidden = [torch.zeros(1, 1,hiddens ).to(self.device) for _ in range(2)]
+
         # train loop
         for i in range(self.num_episodes):
-            O = []
-            Actions_ = []
-            obs = [0] *47
-            Observation = deque([obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs] ,maxlen=16)
-            action_ = [0,0]
-            Actions = deque([action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_] ,maxlen=16)
-        
             current_obs = self.env.reset()
-            current_obs = self.preprocess_observation(current_obs)
+            next_obs = self.preprocess_observation(current_obs) #obs
 
-            # with torch.no_grad():
-            #     current_obs,_, _ = self.vae(torch.from_numpy(current_obs).unsqueeze(0).to(self.device))
-            current_obs = torch.from_numpy(current_obs)
 
+            # action = random.randint(0, 7)
+            # action = self.discrete_to_continuous_action(action)
+            # action = np.atleast_2d(action)
+            # action = torch.from_numpy(action).to(self.device)
+
+            next_hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
             action_ = np.random.randint(0, 4)
-            action = self.discrete_to_continuous_action(action_)
-            action = np.atleast_2d(action)
-            action = torch.from_numpy(action).to(self.device)
-            window=16
+            action_continuous = self.discrete_to_continuous_action(action_)
+
+
+            # taking a step in the environment
+            # next_obs, reward, done, info = self.env.step(action_continuous)
+            # next_obs = self.preprocess_observation(next_obs)
+            # with torch.no_grad():
+            #     next_obs_latent,_, _ = self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
+
+
             done = False
             self.episode_reward = 0
             self.total_grad_norm = 0
@@ -490,106 +500,42 @@ class DuelingDQNAgent:
             
             while not done: 
 
+                current_obs = next_obs
+                # s = next_s
+                # hidden = next_hidden
+                # latent_mu = next_obs_latent
 
 
-                unsqueezed_action = action.unsqueeze(0)
-                z = current_obs.to(self.device)
-                z = z.unsqueeze(0) #use when not using vae
+                state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
 
-                with torch.no_grad():
-                    action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
-
-                    Observation.append(current_obs.squeeze(0).numpy())
-                    Actions.append(action.squeeze(0).cpu().numpy())
-                    # current = Observation[-1]
-
-
-                    for a in range(window):
-                        O.append(Observation[a])
-
-                        Actions_.append(Actions[a])
-                    O = np.array(O)
-                    Actions_= np.array(Actions_)
-                    # print("ddddddddddddddddddddddddd",O.shape)
-                    # print("ssssssssssssssssssssssssssssss",Actions_.shape)
-                    
-                    states = torch.cat([torch.from_numpy(O), torch.from_numpy(Actions_)], dim=-1) # (B, T, vsize+asize)
-                    states = states.unsqueeze(0).float() .to(device)
-
-  
-
-                    # vision_action = torch.cat([z, action_continuous], dim=-1) #
-                    # vision_action = vision_action.view(1, 1, -1)
-                    _, _, _, hidden =  self.rnn.infer(states, hidden) #
-
-
-                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
-                current_obs = torch.cat((z.unsqueeze(0), hidden[0]),-1)
-                current_obs =  current_obs.squeeze(0).squeeze(0)
+                # state = torch.cat([latent_mu, hidden[0].squeeze(0)], dim=1) #rnn nput
 
                 # sampling an action from the current state
-                action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
-                
+                action_continuous, action_discrete = self.get_action(state, self.epsilon)
+
 
                 # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
+                next_obs = self.preprocess_observation(next_obs)
+
+                # with torch.no_grad():
+                #     next_latent_mu,_, _ =  self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
+
+
+                # MDN-RNN about time t+1
+                with torch.no_grad():
+                    action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
+                    vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
+                    vision_action = vision_action.view(1, 1, -1)
+                    _, _, _, next_hidden =  self.rnn.infer(vision_action, next_hidden) #
+
+
+                next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1)
+
 
                 # incrementing total steps
                 self.steps += 1
 
-                # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
-                next_obs = self.preprocess_observation(next_obs)
-                # with torch.no_grad():
-                #     next_obs,_, _ = self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
-                next_obs_ = next_obs
-
-
-                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
-                next_obs = torch.from_numpy(next_obs).unsqueeze(0)#use when not using vae
-                next_obs = next_obs#.unsqueeze(0).unsqueeze(0)
-                # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
-                # # rnn_input = torch.cat((z, action, reward_), -1).float()
-                # # out_full, hidden = mdrnn(rnn_input, hidden)
-                # with torch.no_grad():
-                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                #     # print("ddddddddddddddddddddddddddd",rnn_input.shape)
-                #     _,_, hidden = rnn(rnn_input.to(self.device))
-
-                with torch.no_grad():
-                    action_continuous = torch.tensor(unsqueezed_action, dtype=torch.float).view(1, -1).to(self.device)
-
-                    # vision_action = torch.cat([next_obs.to(self.device), action_continuous.to(self.device)], dim=-1) #
-
-                    # print("ssssssssssssssssssssssss",action_continuous.shape)
-                    # print("xxxxxxxxxxxxxxxxxxxxxxxx",z.shape)
-                    Observation.append(next_obs.squeeze(0).numpy())
-                    # Actions.append(torch.from_numpy(action_continuous).numpy())
-                    Actions.append(action_continuous.squeeze(0).cpu().numpy())
-
-                    # current = Observation[-1]
-
-                    O = []
-                    Actions_ = []#torch.zeros(9,47)
-                    for a in range(window):
-                        O.append(Observation[a])
-                        f = Actions[a]
-                        # print("22222222222222",f)
-
-                        Actions_.append(Actions[a])
-                    O = np.array(O)
-                    Actions_= np.array(Actions_)
-                    
-                    states = torch.cat([torch.from_numpy(O), torch.from_numpy(Actions_)], dim=-1) # (B, T, vsize+asize)
-                    states = states.unsqueeze(0).float() .to(device)
-
-
-                    # vision_action = vision_action.view(1, 1, -1)
-                    _, _, _, hidden =  self.rnn.infer(states, hidden) #                    
-
-                next_obs = torch.cat((next_obs.unsqueeze(0).to(self.device), hidden[0].to(self.device)),-1)
-
-                O = []
-                Actions_ = []#torch.zeros(9,47)
                 
                 # rendering if reqd
                 if self.render and ((i+1) % self.render_freq == 0):
@@ -606,10 +552,12 @@ class DuelingDQNAgent:
                     self.has_collided = 1
                     self.steps = self.env.EPISODE_LENGTH
 
-                next_obs = next_obs.squeeze(0).squeeze(0).cpu()
-                current_obs = current_obs.squeeze(0).squeeze(0).cpu()
+                next_state = next_state.squeeze(0).squeeze(0).cpu()
+                state = state.squeeze(0).squeeze(0).cpu()
+
                 # storing the current state transition in the replay buffer. 
-                self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
+                # self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
+                self.experience_replay.insert((state.data, reward, action_discrete, next_state.data, done))
                 # print("currenttttttttttttttttttttttt",current_obs.shape)
                 # print("nxt_obbbbbbbbbbbbbbbbbbbbs",next_obs.shape)
 
@@ -618,9 +566,7 @@ class DuelingDQNAgent:
                 if len(self.experience_replay) > self.batch_size:
                     self.update()
 
-                # setting the current observation to the next observation
-                current_obs = next_obs_
-                current_obs = torch.from_numpy(current_obs) ## remove this when using vae
+ 
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
                     for p_target, p in zip(self.fixed_targets.parameters(), self.duelingDQN.parameters()):
@@ -651,40 +597,15 @@ class DuelingDQNAgent:
             else:
                 self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
             
-   
-    def eval(self, num_episodes, path=None):
-        if path is not None:
-            self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
-        
-        self.duelingDQN.eval()
-
-        total_reward = 0
-        successive_runs = 0
-        for i in range(num_episodes):
-            o = self.env.reset()
-            o = self.preprocess_observation(o)
-            done = False
-            while not done:
-                act_continuous, act_discrete = self.get_action(o, 0)
-                new_state, reward, done, info = self.env.step(act_continuous)
-                new_state = self.preprocess_observation(new_state)
-                total_reward += reward
-
-                self.env.render()
-
-                if info["REACHED_GOAL"]:
-                    successive_runs += 1
-
-                o = new_state
-
-        print(f"Total episodes run: {num_episodes}")
-        print(f"Total successive runs: {successive_runs}")
-        print(f"Average reward per episode: {total_reward/num_episodes}")
-
+  
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_1.yaml")
+    env.configure("./configs/env_timestep_0_5.yaml")
     env.set_padded_observations(True)
+
+
+
+
 
 
     # rnn = RNN(latents, actions, hiddens).to(self.device)
@@ -695,6 +616,7 @@ if __name__ == "__main__":
     # config file for the model
     config = "./configs/duelingDQNRNN.yaml"
     input_layer_size = 303#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
-    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="worldmodel")
+
+    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="WORLDMODEL")
     agent.train()
     
