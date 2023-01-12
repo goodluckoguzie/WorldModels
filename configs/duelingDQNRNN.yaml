@@ -9,7 +9,7 @@ polyak_const: 0.995  # polyak constant for updating the target network
 min_epsilon: 0.15  # minimum value of epsilon after which decay won't occur
 render: False  # setting it to True would render after every "render_freq" episodes
 render_freq: 500  # if render is True, the episode will be rendered after every render_freq episodes
-save_path: "./models/WORLDMODEL_DUELINGDQN_TIMESTEP_0_5_appendstateandactionandWITHOUTHIDDENSTATElayer_V1"  # path to save the model files
+save_path: "./models/WORLDMODEL_DUELINGDQN_TIMESTEP_0_5_appendstateandactionandWITHHIDDENSTATElayer_V1"  # path to save the model files
 save_freq: 500  # model would be saved after every save_freq epsidoes
 hidden_layers: [512, 128]  # the hidden layers of the model. Input layer size will be fixed according to the observation shape
 v_net_layers: [128, 64, 4, 1]  # value network
