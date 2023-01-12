@@ -518,33 +518,33 @@ class DuelingDQNAgent:
             action_ = np.random.randint(0, 4)
             action_continuous = self.discrete_to_continuous_action(action_)
 
-            with torch.no_grad():
-                z = []
-                Actions_ = []#torch.zeros(9,47)
-                for a in range(window):
-                    z.append(Observation[a])
-                    Actions_.append(Actions[a])
+            # with torch.no_grad():
+            #     z = []
+            #     Actions_ = []#torch.zeros(9,47)
+            #     for a in range(window):
+            #         z.append(Observation[a])
+            #         Actions_.append(Actions[a])
 
-                z = np.array(z)
-                Actions_= np.array(Actions_)
+            #     z = np.array(z)
+            #     Actions_= np.array(Actions_)
 
-                rnn_input = torch.cat([torch.from_numpy(z), torch.from_numpy(Actions_)], dim=-1) 
-                rnn_input = rnn_input.unsqueeze(0).float() .to(self.device)
+            #     rnn_input = torch.cat([torch.from_numpy(z), torch.from_numpy(Actions_)], dim=-1) 
+            #     rnn_input = rnn_input.unsqueeze(0).float() .to(self.device)
 
-                # states = states.unsqueeze(0).float() .to(device)
+            #     # states = states.unsqueeze(0).float() .to(device)
 
 
-                # action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
-                # vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
-                # vision_action = vision_action.view(1, 1, -1)
-                # _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
-                # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-                # print(next_hidden)
-                # # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-                predicted_state, _, _ =  self.rnn(rnn_input) 
-                predicted_state = predicted_state.squeeze(0)          
-                predicted_state = predicted_state[-1, :]
-
+            #     # action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
+            #     # vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
+            #     # vision_action = vision_action.view(1, 1, -1)
+            #     # _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
+            #     # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+            #     # print(next_hidden)
+            #     ################################################################## # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+            #     predicted_state, _, _ =  self.rnn(rnn_input) 
+            #     predicted_state = predicted_state.squeeze(0)          
+            #     predicted_state = predicted_state[-1, :]
+            #     ############################################################
             # taking a step in the environment
             # next_obs, reward, done, info = self.env.step(action_continuous)
             # next_obs = self.preprocess_observation(next_obs)
@@ -569,8 +569,8 @@ class DuelingDQNAgent:
                 # latent_mu = next_obs_latent
 
 
-                # state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
-                state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device),predicted_state.unsqueeze(0).to(self.device)], dim=1) #rnn nput
+                state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
+                # state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device),predicted_state.unsqueeze(0).to(self.device)], dim=1) #rnn nput
 
                 # state = torch.cat([latent_mu, hidden[0].squeeze(0)], dim=1) #rnn nput
 
@@ -607,18 +607,18 @@ class DuelingDQNAgent:
                     # action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
                     # vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
                     # vision_action = vision_action.view(1, 1, -1)
-                    # _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
+                    _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
                     # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
                     # print(next_hidden)
                     # # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-                    predicted_state, _, _ =  self.rnn(rnn_input) 
-                    predicted_state = predicted_state.squeeze(0)          
-                    predicted_state = predicted_state[-1, :]
+                    # predicted_state, _, _ =  self.rnn(rnn_input) 
+                    # predicted_state = predicted_state.squeeze(0)          
+                    # predicted_state = predicted_state[-1, :]
 
 
 
-                next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), predicted_state.unsqueeze(0).to(self.device)], dim=1)
-                # next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1)
+                # next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), predicted_state.unsqueeze(0).to(self.device)], dim=1)
+                next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1)
 
 
                 # incrementing total steps
