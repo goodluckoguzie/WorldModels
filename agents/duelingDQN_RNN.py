@@ -192,8 +192,8 @@ class DuelingDQNAgent:
         # self.vae.load_state_dict(self.vae_state['model'])
         # self.vae.eval()
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
         rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
@@ -543,8 +543,8 @@ class DuelingDQNAgent:
                 # latent_mu = next_obs_latent
 
 
-                # state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
-                state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), torch.from_numpy(current_obs).unsqueeze(0).to(self.device)], dim=1) #rnn nput
+                state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
+                # state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), torch.from_numpy(current_obs).unsqueeze(0).to(self.device)], dim=1) #rnn nput
 
                 # state = torch.cat([latent_mu, hidden[0].squeeze(0)], dim=1) #rnn nput
 
@@ -581,18 +581,18 @@ class DuelingDQNAgent:
                     # action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
                     # vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
                     # vision_action = vision_action.view(1, 1, -1)
-                    # _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
+                    _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
                     # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
                     # print(next_hidden)
-                    # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-                    predicted_state, _, _ =  self.rnn(rnn_input) 
-                    predicted_state = predicted_state.squeeze(0)          
-                    predicted_state = predicted_state[-1, :]
+                    # # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+                    # predicted_state, _, _ =  self.rnn(rnn_input) 
+                    # predicted_state = predicted_state.squeeze(0)          
+                    # predicted_state = predicted_state[-1, :]
 
 
 
-                next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), predicted_state.unsqueeze(0).to(self.device)], dim=1)
-                # next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1)
+                # next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), predicted_state.unsqueeze(0).to(self.device)], dim=1)
+                next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1)
 
 
                 # incrementing total steps
@@ -677,8 +677,8 @@ if __name__ == "__main__":
 
     # config file for the model
     config = "./configs/duelingDQNRNN.yaml"
-    # input_layer_size = 303#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
-    input_layer_size = 94#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    input_layer_size = 303#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    # input_layer_size = 94#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
 
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="WORLDMODEL")
     agent.train()
