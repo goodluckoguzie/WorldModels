@@ -1,4 +1,14 @@
-import torch
+ while s < total_episodes:
+        obs = trainer.reset()
+        img = custom_env_render(obs, True)
+        action = torch.zeros(1, actions).to(device)
+        reward_ = torch.zeros(1, 1).to(device)
+        hidden = [torch.zeros(1, hiddens).to(device) for _ in range(2)]
+        
+        rnn_state = torch.load('MDN_RNN.pt')
+        prev_action = None
+        for t in range(time_steps): 
+            _, mu, log_var = vae(img.unsqueeze(0).to(device))import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import deque
@@ -471,7 +481,7 @@ class DuelingDQNAgent:
             current_obs = self.env.reset()
             next_obs = self.preprocess_observation(current_obs) #obs
 
-            hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
+            next_hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
             action_ = np.random.randint(0, 4)
             action_continuous = self.discrete_to_continuous_action(action_)
 
@@ -483,27 +493,13 @@ class DuelingDQNAgent:
             self.has_collided = 0
             self.steps = 0
 
-            latent_mu = torch.from_numpy(next_obs)#.unsqueeze(0)
+            next_latent_mu = torch.from_numpy(next_obs)#.unsqueeze(0)
 
             while not done: 
 
-                # obs = next_obs
-                # hidden = next_hidden
-                # latent_mu = next_latent_mu
-                
-                                # MDN-RNN about time t+1
-                with torch.no_grad():
-                    action = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
-
-                    vision_action = torch.cat([latent_mu.unsqueeze(0).to(self.device), action.to(self.device)], dim=-1) #
-                    vision_action = vision_action.view(1, 1, -1)
-                    _, _, _, hidden = self.rnn.infer(vision_action, hidden) #
-
-                # next_state = torch.cat([next_latent_mu.unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
-
-
-
-
+                obs = next_obs
+                hidden = next_hidden
+                latent_mu = next_latent_mu
 
                 state = torch.cat([latent_mu.unsqueeze(0).to(self.device), hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
 
@@ -512,10 +508,6 @@ class DuelingDQNAgent:
 
                 # taking a step in the environment               
                 next_obs, reward, done, info = self.env.step(action_continuous)
-
-
-
-
                 next_obs = self.preprocess_observation(next_obs)
                 next_latent_mu = torch.from_numpy(next_obs)
 
@@ -557,7 +549,8 @@ class DuelingDQNAgent:
                 self.experience_replay.insert((state.data, reward, action_discrete, next_state.data, done))
                 # print("currenttttttttttttttttttttttt",current_obs.shape)
                 # print("nxt_obbbbbbbbbbbbbbbbbbbbs",next_obs.shape)
-                latent_mu = next_latent_mu
+
+
                 # sampling a mini-batch of state transitions if the replay buffer has sufficent examples
                 if len(self.experience_replay) > self.batch_size:
                     self.update()
@@ -617,3 +610,37 @@ if __name__ == "__main__":
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="WORLDMODEL")
     agent.train()
     
+
+            sigma = log_var.exp()
+            eps = torch.randn_like(sigma)
+            z = eps.mul(sigma).add_(mu)
+            mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
+
+            rnn_input = torch.cat((z, action, reward_), -1)
+            out_full, hidden = mdrnn(rnn_input, hidden)
+            
+            c_in = torch.cat((z, hidden[1]),-1)
+            controller.to(device)
+            action = controller(c_in)
+            action = action.detach().to('cpu')
+            action = prevent_opposite_action(action, prev_action)
+            prob = F.softmax(action.squeeze(0)/0.7, dim=0).numpy()
+            action_dir = np.random.choice(code2dir, p=prob)
+            
+            obs, reward, done, info = trainer.step(action_dir)
+            reward = custom_reward(obs)
+            prev_action = action_dir
+            action = dir2code[action_dir]
+            img = custom_env_render(obs)
+            reward = torch.Tensor([[reward * (1-int(done))]])
+            #reward = torch.where(reward > 0 , 1, 0)
+            action = action.unsqueeze(0).to(device)
+            cumulative += reward
+            if done:
+                obs = trainer.reset()
+                break
+        
+        cumulative_ += cumulative
+        s+=1
+    cumulative_ = cumulative / s
+    return float(cumulative_)
