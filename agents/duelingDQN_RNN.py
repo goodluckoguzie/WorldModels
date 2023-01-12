@@ -468,89 +468,12 @@ class DuelingDQNAgent:
 
         # train loop
         for i in range(self.num_episodes):
-
-#             window = 16
-#     ##################################################################################################################
-
-#             from collections import deque
-#             import torch
-
-#             if window == 16:
-
-#                 obs = [0] *47
-#                 Observation = deque([obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs] ,maxlen=16)
-#                 action_ = [0,0]
-#                 Actions = deque([action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_] ,maxlen=16)
-
-#             elif window == 8:
-
-#                 obs = [0] *47
-#                 Observation = deque([obs,obs,obs,obs,obs,obs,obs,obs] ,maxlen=8)
-#                 action_ = [0,0]
-#                 Actions = deque([action_,action_,action_,action_,action_,action_,action_,action_] ,maxlen=8)
-
-#             elif window == 4:
-
-#                 obs = [0] *47
-#                 Observation = deque([obs,obs,obs,obs] ,maxlen=4)
-#                 action_ = [0,0]
-#                 Actions = deque([action_,action_,action_,action_] ,maxlen=4)
-
-#             elif window == 1:
-
-#                 obs = [0] *47
-#                 Observation = deque([obs] ,maxlen=1)
-#                 action_ = [0,0]
-#                 Actions = deque([action_] ,maxlen=1)
-# # 
-
-#############################################################################################################################################################
             current_obs = self.env.reset()
             next_obs = self.preprocess_observation(current_obs) #obs
-
-
-            # action = random.randint(0, 7)
-            # action = self.discrete_to_continuous_action(action)
-            # action = np.atleast_2d(action)
-            # action = torch.from_numpy(action).to(self.device)
 
             next_hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
             action_ = np.random.randint(0, 4)
             action_continuous = self.discrete_to_continuous_action(action_)
-
-            # with torch.no_grad():
-            #     z = []
-            #     Actions_ = []#torch.zeros(9,47)
-            #     for a in range(window):
-            #         z.append(Observation[a])
-            #         Actions_.append(Actions[a])
-
-            #     z = np.array(z)
-            #     Actions_= np.array(Actions_)
-
-            #     rnn_input = torch.cat([torch.from_numpy(z), torch.from_numpy(Actions_)], dim=-1) 
-            #     rnn_input = rnn_input.unsqueeze(0).float() .to(self.device)
-
-            #     # states = states.unsqueeze(0).float() .to(device)
-
-
-            #     # action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
-            #     # vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
-            #     # vision_action = vision_action.view(1, 1, -1)
-            #     # _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
-            #     # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-            #     # print(next_hidden)
-            #     ################################################################## # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-            #     predicted_state, _, _ =  self.rnn(rnn_input) 
-            #     predicted_state = predicted_state.squeeze(0)          
-            #     predicted_state = predicted_state[-1, :]
-            #     ############################################################
-            # taking a step in the environment
-            # next_obs, reward, done, info = self.env.step(action_continuous)
-            # next_obs = self.preprocess_observation(next_obs)
-            # with torch.no_grad():
-            #     next_obs_latent,_, _ = self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
-
 
             done = False
             self.episode_reward = 0
@@ -560,78 +483,33 @@ class DuelingDQNAgent:
             self.has_collided = 0
             self.steps = 0
 
-            
+            next_latent_mu = torch.from_numpy(next_obs)#.unsqueeze(0)
+
             while not done: 
 
-                current_obs = next_obs
-                # s = next_s
-                # hidden = next_hidden
-                # latent_mu = next_obs_latent
+                obs = next_obs
+                hidden = next_hidden
+                latent_mu = next_latent_mu
 
-                action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
-                rnn_input = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
-                rnn_input = rnn_input.view(1, 1, -1)
-
-                _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden)               
-
-                state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), next_hidden[1].squeeze(0).to(self.device)], dim=1) #rnn nput
-                # state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device),predicted_state.unsqueeze(0).to(self.device)], dim=1) #rnn nput
-
-                # state = torch.cat([latent_mu, hidden[0].squeeze(0)], dim=1) #rnn nput
+                state = torch.cat([latent_mu.unsqueeze(0).to(self.device), hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
 
                 # sampling an action from the current state
                 action_continuous, action_discrete = self.get_action(state, self.epsilon)
 
-
-                # taking a step in the environment                    # vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
-
+                # taking a step in the environment               
                 next_obs, reward, done, info = self.env.step(action_continuous)
                 next_obs = self.preprocess_observation(next_obs)
-                # Observation.append(next_obs)
-                # Actions.append(torch.from_numpy(action_continuous).numpy())
-                # with torch.no_grad():
-                #     next_latent_mu,_, _ =  self.vae(torch.from_numpy(next_obs).unsqueeze(0).to(self.device))
-
+                next_latent_mu = torch.from_numpy(next_obs)
 
                 # MDN-RNN about time t+1
-                # with torch.no_grad():
-                #     z = []
-                #     Actions_ = []#torch.zeros(9,47)
-                #     for a in range(window):
-                #         z.append(Observation[a])
-                #         Actions_.append(Actions[a])
+                with torch.no_grad():
+                    action = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
 
-                #     z = np.array(z)
-                #     Actions_= np.array(Actions_)
+                    vision_action = torch.cat([next_latent_mu.unsqueeze(0).to(self.device), action.to(self.device)], dim=-1) #
+                    vision_action = vision_action.view(1, 1, -1)
+                    _, _, _, next_hidden = self.rnn.infer(vision_action, hidden) #
 
-                #     rnn_input = torch.cat([torch.from_numpy(z), torch.from_numpy(Actions_)], dim=-1) 
-                #     rnn_input = rnn_input.unsqueeze(0).float() .to(self.device)
-
-                #     # states = states.unsqueeze(0).float() .to(device)
-
-
-                    # action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
-                    # vision_action = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
-                    # vision_action = vision_action.view(1, 1, -1)
-                    # _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden) #
-                    # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-                    # print(next_hidden)
-                    # # print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-                    # predicted_state, _, _ =  self.rnn(rnn_input) 
-                    # predicted_state = predicted_state.squeeze(0)          
-                    # predicted_state = predicted_state[-1, :]
-
-
-                action_continuous = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
-                rnn_input = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), action_continuous.to(self.device)], dim=-1) #
-                rnn_input = rnn_input.view(1, 1, -1)
-
-                _, _, _, next_hidden =  self.rnn.infer(rnn_input, next_hidden)               
-
-                next_state = torch.cat([torch.from_numpy(current_obs).unsqueeze(0).to(self.device), next_hidden[1].squeeze(0).to(self.device)], dim=1) #rnn nput
-
-                # next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), predicted_state.unsqueeze(0).to(self.device)], dim=1)
-                # next_state = torch.cat([torch.from_numpy(next_obs).unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1)
+                next_state = torch.cat([next_latent_mu.unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
 
 
                 # incrementing total steps
