@@ -565,9 +565,9 @@ class DuelingDQNAgent:
                 with torch.no_grad():
                     z = []
                     Actions_ = []#torch.zeros(9,47)
-                    for i in range(window):
-                        z.append(Observation[i])
-                        Actions_.append(Actions[i])
+                    for a in range(window):
+                        z.append(Observation[a])
+                        Actions_.append(Actions[a])
 
                     z = np.array(z)
                     Actions_= np.array(Actions_)
