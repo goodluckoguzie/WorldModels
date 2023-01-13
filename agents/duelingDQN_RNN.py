@@ -192,6 +192,7 @@ class DuelingDQNAgent:
         # self.vae.load_state_dict(self.vae_state['model'])
         # self.vae.eval()
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
         self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
@@ -471,7 +472,7 @@ class DuelingDQNAgent:
             current_obs = self.env.reset()
             next_obs = self.preprocess_observation(current_obs) #obs
 
-            hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
+            next_hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
             action_ = np.random.randint(0, 4)
             action_continuous = self.discrete_to_continuous_action(action_)
 
@@ -488,24 +489,24 @@ class DuelingDQNAgent:
             while not done: 
 
                 # obs = next_obs
-                # hidden = next_hidden
+                hidden = next_hidden
                 # latent_mu = next_latent_mu
                 
                                 # MDN-RNN about time t+1
                 with torch.no_grad():
                     action = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
 
+
                     vision_action = torch.cat([latent_mu.unsqueeze(0).to(self.device), action.to(self.device)], dim=-1) #
                     vision_action = vision_action.view(1, 1, -1)
-                    _, _, _, hidden = self.rnn.infer(vision_action, hidden) #
+                    predictedstate, _, _, hidden = self.rnn.infer(vision_action, hidden) #
 
                 # next_state = torch.cat([next_latent_mu.unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
 
 
 
-
-
                 state = torch.cat([latent_mu.unsqueeze(0).to(self.device), hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
+                # state = torch.cat([latent_mu.unsqueeze(0).to(self.device), predictedstate.squeeze(0).to(self.device)], dim=1) #rnn nput
 
                 # sampling an action from the current state
                 action_continuous, action_discrete = self.get_action(state, self.epsilon)
@@ -525,9 +526,10 @@ class DuelingDQNAgent:
 
                     vision_action = torch.cat([next_latent_mu.unsqueeze(0).to(self.device), action.to(self.device)], dim=-1) #
                     vision_action = vision_action.view(1, 1, -1)
-                    _, _, _, next_hidden = self.rnn.infer(vision_action, hidden) #
+                    predictedstate, _, _, next_hidden = self.rnn.infer(vision_action, hidden) #
 
                 next_state = torch.cat([next_latent_mu.unsqueeze(0).to(self.device), next_hidden[0].squeeze(0).to(self.device)], dim=1) #rnn nput
+                # next_state = torch.cat([next_latent_mu.unsqueeze(0).to(self.device), predictedstate.squeeze(0).to(self.device)], dim=1) #rnn nput
 
 
                 # incrementing total steps
@@ -596,7 +598,7 @@ class DuelingDQNAgent:
   
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_0_5.yaml")
+    env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
 
 

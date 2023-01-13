@@ -144,30 +144,20 @@ class A2CAgent:
             probs = Categorical(dist)
             return probs.sample().cpu().detach().item()
     
-    def discrete_to_continuous_action(self, action:int):
-            """
-            Function to return a continuous space action for a given discrete action
-            """
-            if action == 0:
-                return np.array([0, 0.125], dtype=np.float32)
-            
-            elif action == 1:
-                return np.array([0, -0.125], dtype=np.float32)
-
-            elif action == 2:
-                return np.array([1, 0.125], dtype=np.float32) 
-            
-            elif action == 3:
-                return np.array([1, -0.125], dtype=np.float32) 
-
-            elif action == 4:
-                return np.array([1, 0], dtype=np.float32)
-
-            elif action == 5:
-                return np.array([-1, 0], dtype=np.float32)
-            
-            else:
-                raise NotImplementedError
+    def discrete_to_continuous_action(self ,action:int):
+        if action == 0:
+            return np.array([0, 1], dtype=np.float32) 
+        # Turning clockwise
+        elif action == 1:
+            return np.array([0, -1], dtype=np.float32) 
+        # # Move forward
+        elif action == 2:
+            return np.array([1, 0], dtype=np.float32)
+        # stop the robot
+        elif action == 3:
+            return np.array([0, 0], dtype=np.float32)
+        else:
+            raise NotImplementedError
 
     def save_model(self, path):
         torch.save(self.model.state_dict(), path)
@@ -180,8 +170,7 @@ class A2CAgent:
         dones = torch.FloatTensor(np.array([sars[4] for sars in self.trajectory])).view(-1, 1).to(self.device)
             
         # compute discounted rewards
-        discounted_rewards = [torch.sum(torch.FloatTensor([self.gamma**i for i in range(rewards[j:].size(0))])\
-            * rewards[j:]) for j in range(rewards.size(0))]  # sorry, not the most readable code.
+        discounted_rewards = [torch.sum(torch.FloatTensor([self.gamma**i for i in range(rewards[j:].size(0))]).to(self.device) * rewards[j:].to(self.device)) for j in range(rewards.size(0))]  # sorry, not the most readable code.
         value_targets = rewards.view(-1, 1) + torch.FloatTensor(discounted_rewards).view(-1, 1).to(self.device)
         
         logits, values = self.model.forward(states)
@@ -224,7 +213,7 @@ class A2CAgent:
 
         np.save(os.path.join(self.save_path, "plots", "rewards"), np.array(self.rewards), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "losses"), np.array(self.episode_loss), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm.cpu()), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "successes"), np.array(self.has_reached_goal), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "collisions"), np.array(self.has_collided), allow_pickle=True, fix_imports=True)
         np.save(os.path.join(self.save_path, "plots", "steps_to_reach"), np.array(self.steps), allow_pickle=True, fix_imports=True)
@@ -341,7 +330,7 @@ class A2CAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env.yaml")
+    env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
     # config file for the model
     config = "./configs/a2c.yaml"
