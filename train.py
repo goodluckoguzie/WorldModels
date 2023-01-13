@@ -106,6 +106,16 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
 
+    elif args["agent"].lower() == "duelingdqnTemprnn":
+        if args["type"].lower() == "mlp":
+            from agents.duelingDQN_RNN_temp import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+
 
 
     elif args["agent"].lower() == "duelingdqnrnnversion":
@@ -165,6 +175,26 @@ if __name__ == "__main__":
     elif args["agent"].lower() == "a2c":
         if args["type"].lower() == "mlp":
             from agents.a2c import A2CAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = A2CAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = A2CAgent(env, args["config"])
+            agent.train()
+        
+        elif args["type"].lower() == "transformer":
+            from agents.a2c_transformer import A2C_Transformer_Agent
+            if args["kwargs"] is not None:
+                agent = A2C_Transformer_Agent(env, args["config"], **args["kwargs"])
+            else:
+                agent = A2C_Transformer_Agent(env, args["config"])
+            agent.train()
+        
+        else: raise NotImplementedError()
+
+    elif args["agent"].lower() == "a2crnn":
+        if args["type"].lower() == "mlp":
+            from agents.a2cRNN import A2CAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = A2CAgent(env, args["config"], **args["kwargs"])
