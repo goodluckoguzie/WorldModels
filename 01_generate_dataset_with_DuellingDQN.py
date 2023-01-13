@@ -31,21 +31,22 @@ time_steps = 300
 import numpy as np
 import os, sys, glob
 import gym
-from hparams import DQNHyperParams as hp
+from hparams import HyperParams as hp
+from hparams import DQN_RobotFrame_Datasets_Timestep_1 as data
 import sys
-parser = argparse.ArgumentParser("total_episodes asigning")
-parser.add_argument('--episodes', type=int,
-                    help="Number of episodes.")
+# parser = argparse.ArgumentParser("total_episodes asigning")
+# parser.add_argument('--episodes', type=int,
+#                     help="Number of episodes.")
 
 # parser.add_argument('--testepisodes', type=int,
 #                     help="Number of episodes.") 
-args = parser.parse_args()
+# args = parser.parse_args()
 
-rollout_dir = 'Data/'
-if not os.path.exists(rollout_dir):
-    os.makedirs(rollout_dir)
+# # rollout_dir = 'Data/'
+# if not os.path.exists(rollout_dir):
+#     os.makedirs(rollout_dir)
 
-total_episodes = args.episodes
+# total_episodes = args.episodes
 
 class DuelingDQN(nn.Module):
     def __init__(self, input_size, hidden_layers:list, v_net_layers:list, a_net_layers:list) -> None:
@@ -244,7 +245,7 @@ class DuelingDQNAgent:
 
     def get_action(self, current_state, epsilon):
         # self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))
-        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
+        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_TIMESTEP_1_BASELINE_V1/episode00051650.pth'))
 
         self.duelingDQN.eval()
 
@@ -264,11 +265,6 @@ def preprocess_observation(obs):
     assert(type(obs) == dict)
     observation = np.array([], dtype=np.float32)
     observation = np.concatenate((observation, obs["goal"].flatten()) )
-    # print("sddddddddddddddddd")
-    # print(observation.shape)
-    # print("hhhhhhhhhhhhhhhhhhhh")
-    # print(observation.shape)
-    # print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
     observation = np.concatenate((observation, obs["humans"].flatten()) )
     observation = np.concatenate((observation, obs["laptops"].flatten()) )
     observation = np.concatenate((observation, obs["tables"].flatten()) )
@@ -278,32 +274,41 @@ def preprocess_observation(obs):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def pad_tensor( tensor, pad):
-    pad_size = pad - tensor.size(0)
-    return torch.cat([tensor.to(device), torch.zeros([pad_size, tensor.size(1)]).to(device)], dim=0)
+####################################################Padding our Observation#############################################
 
+
+# def pad_tensor( tensor, pad):
+#     pad_size = pad - tensor.size(0)
+#     # print("tensor.size(0)",tensor.size())
+#     return torch.cat([tensor.to(device), torch.zeros([pad_size, tensor.size(1)]).to(device)], dim=0)
+def pad_tensor(t, episode_length, window_length=9, pad_function=torch.zeros):
+    pad_size = episode_length - t.size(0) + window_length
+    # Add window lenght - 1 infront of the number of obersavtion
+    begin_pad       = pad_function([window_length-1, t.size(1)]).to(device)
+    # pad the environment with lenght of the episode subtracted from  the total episode length
+    episode_end_pad = pad_function([pad_size,      t.size(1)]).to(device)
+
+    return torch.cat([begin_pad,t.to(device),episode_end_pad], dim=0)
+
+###########################################End#############################################################################
 
 def rollout():
-    time_steps = 300
+    time_steps = data.time_steps
 
-    # env = gym.make("CarRacing-v0")
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
+    # env.configure('./configs/env.yaml')
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 3000# hp.n_rollout
-    feat_dir = hp.data_dir
+    max_ep = 5000 #hp.n_rollout
+    feat_dir = data.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
 
     for ep in range(max_ep):
         obs_lst, action_lst, reward_lst, next_obs_lst, done_lst = [], [], [], [], []
         obs = env.reset()
-        # action_ = np.random.randint(0, 4)
-        # action = discrete_to_continuous_action(action_)
-        # action = env.action_space.sample()
-        # obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)   
 
         done = False
@@ -315,17 +320,11 @@ def rollout():
         for t in range(time_steps):       
             # env.render()
             action, act_discrete = agent.get_action(obs, 0)
-            # action_ = np.random.randint(0, 4)
             next_obs, reward, done, _ = env.step(action)
-
-            # action = env.action_space.sample()
-            # next_obs, reward, done, _ = env.step(action)
             next_obs = preprocess_observation(next_obs)
             action = torch.from_numpy(action)
 
 
-            # print("next_obs",next_obs.shape)
-            # print("obs",obs.shape)
             np.savez(
                 os.path.join(feat_dir, 'rollout_{:03d}_{:04d}'.format(ep,t)),
                 obs=obs,
@@ -342,36 +341,32 @@ def rollout():
             next_obs_lst.append(next_obs)
             done_lst.append(done)
             obs = next_obs
+            # print("tooottttttttttttttttttttttttttttttttalllllllllllllllllllllllllllllllll",rew)
             if done:
                 print("Episode [{}/{}] finished after {} timesteps".format(ep + 1, max_ep, t), flush=True)
                 obs = env.reset()
                 obs_lst = torch.stack(obs_lst, dim=0).squeeze(1)
-                obs_lst = pad_tensor(obs_lst, pad=time_steps).cpu().detach().numpy()
-                # obs_sequence = utility.normalised(obs_sequence) #normilised our dataset 
-                obs_lst = torch.from_numpy(obs_lst) 
-                # print(len(obs_lst))
+                # print("9999999999999999999999999999999999999999999999999999999999999999999999999", obs_lst.shape )
 
-
+                # obs_lst = pad_tensor(obs_lst, episode_length=time_steps).cpu().detach().numpy()
+                # obs_lst = torch.from_numpy(obs_lst) 
                 next_obs_lst = torch.stack(next_obs_lst, dim=0).squeeze(1)
-                next_obs_lst = pad_tensor(next_obs_lst, pad=time_steps).cpu().detach().numpy()
-                # obs_sequence = utility.normalised(obs_sequence) #normilised our dataset 
-                next_obs_lst = torch.from_numpy(next_obs_lst) 
+                # next_obs_lst = pad_tensor(next_obs_lst, episode_length=time_steps).cpu().detach().numpy()
+                # next_obs_lst = torch.from_numpy(next_obs_lst) 
 
                 done_lst = [int(d) for d in done_lst]
                 done_lst = torch.tensor(done_lst).unsqueeze(-1)
-                done_lst = pad_tensor(done_lst, pad=time_steps).cpu().detach().numpy()
-                done_lst=torch.from_numpy(done_lst)
+                # done_lst = pad_tensor(done_lst, episode_length=time_steps).cpu().detach().numpy()
+                # done_lst=torch.from_numpy(done_lst)
                 
                 action_lst = torch.stack(action_lst, dim=0).squeeze(1)
-                action_lst = pad_tensor(action_lst, pad=time_steps).cpu().detach().numpy()
-                action_lst=torch.from_numpy(action_lst)
+                # action_lst = pad_tensor(action_lst, episode_length=time_steps).cpu().detach().numpy()
+                # action_lst=torch.from_numpy(action_lst)
                 
                 reward_lst = torch.tensor(reward_lst).unsqueeze(-1)
-                reward_lst = pad_tensor(reward_lst, pad=time_steps).cpu().detach().numpy()
-                reward_lst=torch.from_numpy(reward_lst)
-                # print(reward_lst)
+                # reward_lst = pad_tensor(reward_lst, episode_length=time_steps).cpu().detach().numpy()
+                # reward_lst=torch.from_numpy(reward_lst)
                 break
-
 
         np.savez(
             os.path.join(feat_dir, 'rollout_ep_{:03d}'.format(ep)),
@@ -384,17 +379,10 @@ def rollout():
         
 
 if __name__ == "__main__":
-    # env = gym.make("SocNavEnv-v1")
-
-
-    # env.configure('./configs/env.yaml')
-
-
-
 
 
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env.yaml")
+    env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
 
     # config file for the model

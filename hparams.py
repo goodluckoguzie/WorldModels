@@ -111,7 +111,19 @@ class RobotFrame_Datasets_Timestep_0_25:
     ckpt_dir = 'ckpt'
     rnnsave = 'RobotFrameDatasetsTimestep025'
 
+class DQN_RobotFrame_Datasets_Timestep_1:
+    data_dir = 'DQN_RobotFrameDatasetsTimestep1'
+    time_steps =  200
+    RNN_runs = 'DQN_RobotFrameDatasetsTimestep1'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'DQN_RobotFrameDatasetsTimestep1'
 
+class DQN_RobotFrame_Datasets_Timestep_0_5:
+    data_dir = 'DQN_RobotFrameDatasetsTimestep05'
+    time_steps =  400
+    RNN_runs = 'DQN_RobotFrameDatasetsTimestep05'
+    ckpt_dir = 'ckpt'
+    rnnsave = 'DQN_RobotFrameDatasetsTimestep05'
 
 
 class HyperParams:
