@@ -27,8 +27,8 @@ from socnavenv.wrappers import WorldFrameObservations
 import os
 import torch
 from collections import deque
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device( 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device( 'cpu')
 from hparams import HyperParams as hp
 
 
@@ -288,7 +288,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WORLDMODELRNN_32_env_timestep_1DQN11_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'WORLDMODELRNN_32_env_GPUUUU1_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
@@ -374,7 +374,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WORLDMODELRNN_32env_timestep_11111DQN.pt')
+            torch.save(actor.state_dict(), './models/WORLDMODELRNN_32env_timestGPUUUUUUU.pt')
 
 
     # quit the processes
