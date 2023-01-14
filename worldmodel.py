@@ -27,8 +27,8 @@ from socnavenv.wrappers import WorldFrameObservations
 import os
 import torch
 from collections import deque
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device( 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device( 'cpu')
 from hparams import HyperParams as hp
 
 
@@ -74,8 +74,10 @@ rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 
 
 ckpt_dir = hp.ckpt_dir#'ckpt'
-# ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '*me.pth.tar')))[-1] 
-ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
+# ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+
+ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1]
+# ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep2window_16', '*me.pth.tar')))[-1] 
 
@@ -155,22 +157,18 @@ def evaluate_neuralnet(nn, env):
     '''
     Evaluate an agent running it in the environment and computing the total reward
     '''
-    O = []
-    Actions_ = []
-    obs = [0] *47
-    Observation = deque([obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs,obs] ,maxlen=16)
-    action_ = [0,0]
-    Actions = deque([action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_,action_] ,maxlen=16)
+
     hidden = [torch.zeros(1, 1,n_hiddens ).to(device) for _ in range(2)]
 
 
 
     obs = env.reset()
+    obs = preprocess_observation(obs)
+
     game_reward = 0
 
     while True:
-        z = preprocess_observation(obs)
-        current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0).to(device), hidden[0]),-1)
+        current_obs = torch.cat((obs.unsqueeze(0).unsqueeze(0).to(device), hidden[0]),-1)
         current_obs =  current_obs.squeeze(0).squeeze(0)
         nn = nn.to(device)
         action_distribution = nn(current_obs).to(device)
@@ -182,37 +180,21 @@ def evaluate_neuralnet(nn, env):
         max_action = np.argmax(action_)
         action = discrete_to_continuous_action(max_action)
 
+        next_obs, reward, done, _ = env.step(action)
+        next_obs = preprocess_observation(next_obs)
+
+        game_reward += reward
 
         with torch.no_grad():
-        
-            O = []
-            Actions_ = []
+            action = torch.tensor(action, dtype=torch.float).view(1, -1).to(device)
+
+
+            vision_action = torch.cat([next_obs.unsqueeze(0).to(device), action.to(device)], dim=-1) #
+            vision_action = vision_action.view(1, 1, -1)
+            _, _, _, hidden = rnn.infer(vision_action, hidden)
             
-            Observation.append(z.squeeze(0).numpy())
-            Actions.append(action)
-            # current = Observation[-1]
-            for a in range(window):
-                O.append(Observation[a])
 
-                Actions_.append(Actions[a])
-            O = np.array(O)
-            Actions_= np.array(Actions_)
-
-            
-            states = torch.cat([torch.from_numpy(O), torch.from_numpy(Actions_)], dim=-1) # (B, T, vsize+asize)
-            states = states.unsqueeze(0).float() .to(device)
-
-
-
-            # vision_action = torch.cat([z, action_continuous], dim=-1) #
-            # vision_action = vision_action.view(1, 1, -1)
-            _, _, _, hidden =  rnn.infer(states, hidden) #
-
-        new_obs, reward, done, _ = env.step(action)
-        Observation.append(preprocess_observation(new_obs).squeeze(0).numpy())
-        # Actions.append(torch.from_numpy(action_continuous).numpy())
-        Actions.append(action)
-        obs = new_obs
+        obs = next_obs
 
 
         game_reward += reward
@@ -248,7 +230,7 @@ def worker(params_queue, output_queue):
     '''
 
     env = gym.make(ENV_NAME)
-    env.configure('./configs/env_timestep_0_5.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     # actor = NeuralNetwork(env.observation_space.shape[0], env.action_space.shape[0])
@@ -296,7 +278,7 @@ BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 1
+MAX_WORKERS = 8
 
 val_test = True
 # VIDEOS_INTERVAL = 100
@@ -306,13 +288,13 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WORLDMODELRNN_32_env_timestep_0_5_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'WORLDMODELRNN_32_env_timestep_1DQN11_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
     env = gym.make(ENV_NAME)
 
-    env.configure('./configs/env_timestep_0_5.yaml')
+    env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     # Initialize the agent
@@ -392,7 +374,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/WORLDMODELRNN_32env_timestep_0_5.pt')
+            torch.save(actor.state_dict(), './models/WORLDMODELRNN_32env_timestep_11111DQN.pt')
 
 
     # quit the processes
