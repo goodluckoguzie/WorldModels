@@ -483,18 +483,21 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
+            prev_action_ = action_
+            prev_action_continuous = action_continuous
 
             latent_mu = torch.from_numpy(next_obs)#.unsqueeze(0)
 
             while not done: 
 
+                
                 # obs = next_obs
                 hidden = next_hidden
                 # latent_mu = next_latent_mu
                 
                                 # MDN-RNN about time t+1
                 with torch.no_grad():
-                    action = torch.tensor(action_continuous, dtype=torch.float).view(1, -1).to(self.device)
+                    action = torch.tensor(prev_action_continuous, dtype=torch.float).view(1, -1).to(self.device)
 
 
                     vision_action = torch.cat([latent_mu.unsqueeze(0).to(self.device), action.to(self.device)], dim=-1) #
@@ -556,11 +559,15 @@ class DuelingDQNAgent:
 
                 # storing the current state transition in the replay buffer. 
                 # self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
-                self.experience_replay.insert((state.data, reward, action_discrete, next_state.data, done))
+                self.experience_replay.insert((state.data, reward, prev_action_, next_state.data, done))
                 # print("currenttttttttttttttttttttttt",current_obs.shape)
                 # print("nxt_obbbbbbbbbbbbbbbbbbbbs",next_obs.shape)
                 latent_mu = next_latent_mu
+                prev_action_ = action_discrete
+                prev_action_continuous = action_continuous
                 # sampling a mini-batch of state transitions if the replay buffer has sufficent examples
+                # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",len(self.experience_replay) )
+                # print("111111111111111111111111111111111111111111111111111111111111",self.batch_size )
                 if len(self.experience_replay) > self.batch_size:
                     self.update()
 
