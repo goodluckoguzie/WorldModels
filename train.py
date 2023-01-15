@@ -106,27 +106,27 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
 
-    elif args["agent"].lower() == "duelingdqnTemprnn":
-        if args["type"].lower() == "mlp":
-            from agents.duelingDQN_RNN_temp import DuelingDQNAgent
-            env.set_padded_observations(True)
-            if args["kwargs"] is not None:
-                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
-            else:
-                agent = DuelingDQNAgent(env, args["config"])
-            agent.train()
+    # elif args["agent"].lower() == "duelingdqnTemprnn":
+    #     if args["type"].lower() == "mlp":
+    #         from agents.duelingDQN_RNN_temp import DuelingDQNAgent
+    #         env.set_padded_observations(True)
+    #         if args["kwargs"] is not None:
+    #             agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+    #         else:
+    #             agent = DuelingDQNAgent(env, args["config"])
+    #         agent.train()
 
 
 
-    elif args["agent"].lower() == "duelingdqnrnnversion":
-        if args["type"].lower() == "mlp":
-            from agents.duelingDQN_RNN_version import DuelingDQNAgent
-            env.set_padded_observations(True)
-            if args["kwargs"] is not None:
-                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
-            else:
-                agent = DuelingDQNAgent(env, args["config"])
-            agent.train()
+    # elif args["agent"].lower() == "duelingdqnrnnversion":
+    #     if args["type"].lower() == "mlp":
+    #         from agents.duelingDQN_RNN_version import DuelingDQNAgent
+    #         env.set_padded_observations(True)
+    #         if args["kwargs"] is not None:
+    #             agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+    #         else:
+    #             agent = DuelingDQNAgent(env, args["config"])
+    #         agent.train()
 
     elif args["agent"].lower() == "dnqtrainedrnnduelingdqn":
         if args["type"].lower() == "mlp":
@@ -139,36 +139,36 @@ if __name__ == "__main__":
             agent.train()
 
 
-    elif args["agent"].lower() == "dnqtrainedrnnduelingdqnversion":
-        if args["type"].lower() == "mlp":
-            from agents.dqn_trained_rnn_duelingDQN_version import DuelingDQNAgent
-            env.set_padded_observations(True)
-            if args["kwargs"] is not None:
-                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
-            else:
-                agent = DuelingDQNAgent(env, args["config"])
-            agent.train()
+    # elif args["agent"].lower() == "dnqtrainedrnnduelingdqnversion":
+    #     if args["type"].lower() == "mlp":
+    #         from agents.dqn_trained_rnn_duelingDQN_version import DuelingDQNAgent
+    #         env.set_padded_observations(True)
+    #         if args["kwargs"] is not None:
+    #             agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+    #         else:
+    #             agent = DuelingDQNAgent(env, args["config"])
+    #         agent.train()
 
-    elif args["agent"].lower() == "dnqtrainedrnnduelingdqnversionrewardbased":
-        if args["type"].lower() == "mlp":
-            from agents.dqn_trained_rnn_duelingDQN_version_Reward_Based_Epsilon_Decay import DuelingDQNAgent
-            env.set_padded_observations(True)
-            if args["kwargs"] is not None:
-                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
-            else:
-                agent = DuelingDQNAgent(env, args["config"])
-            agent.train()
+    # elif args["agent"].lower() == "dnqtrainedrnnduelingdqnversionrewardbased":
+    #     if args["type"].lower() == "mlp":
+    #         from agents.dqn_trained_rnn_duelingDQN_version_Reward_Based_Epsilon_Decay import DuelingDQNAgent
+    #         env.set_padded_observations(True)
+    #         if args["kwargs"] is not None:
+    #             agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+    #         else:
+    #             agent = DuelingDQNAgent(env, args["config"])
+    #         agent.train()
 
 
-    elif args["agent"].lower() == "duelingdqnrewardbased":
-        if args["type"].lower() == "mlp":
-            from agents.duelingDQN_Reward_Based_Epsilon_Decay import DuelingDQNAgent
-            env.set_padded_observations(True)
-            if args["kwargs"] is not None:
-                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
-            else:
-                agent = DuelingDQNAgent(env, args["config"])
-            agent.train()
+    # elif args["agent"].lower() == "duelingdqnrewardbased":
+    #     if args["type"].lower() == "mlp":
+    #         from agents.duelingDQN_Reward_Based_Epsilon_Decay import DuelingDQNAgent
+    #         env.set_padded_observations(True)
+    #         if args["kwargs"] is not None:
+    #             agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+    #         else:
+    #             agent = DuelingDQNAgent(env, args["config"])
+    #         agent.train()
 # ##############################################################################################################################
 
     
