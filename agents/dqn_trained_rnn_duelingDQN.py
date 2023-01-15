@@ -106,9 +106,9 @@ class DuelingDQNAgent:
         self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 
         ckpt_dir = hp.ckpt_dir  # 'ckpt'
-        # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '*me.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
 
-        ckpt = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1]
+        # ckpt = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1]
         # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
         # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep2window_16', '*me.pth.tar')))[-1]
@@ -411,8 +411,8 @@ class DuelingDQNAgent:
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
 
-            action = random.randint(0, 3)
-            action = self.discrete_to_continuous_action(action)
+            action_ = random.randint(0, 3)
+            action= self.discrete_to_continuous_action(action_)
             # action = np.atleast_2d(action)
             action = torch.from_numpy(action).to(self.device)
             hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
@@ -424,13 +424,14 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
-            unsqueezed_action = action.unsqueeze(0)
+            unsqueezed_action = action#.unsqueeze(0)
 
             while not done:
 
                 # unsqueezed_action = action.unsqueeze(0)
                 z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
                 unsqueezed_z = z#.unsqueeze(0)
+                unsqueezed_action = unsqueezed_action.unsqueeze(0).to(self.device)
 
                 with torch.no_grad():
                     rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
@@ -493,6 +494,7 @@ class DuelingDQNAgent:
 
                 # setting the current observation to the next observation
                 current_obs = next_obs_
+                unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
 
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
