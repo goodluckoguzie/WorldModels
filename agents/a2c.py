@@ -265,7 +265,6 @@ class A2CAgent:
                 next_state, reward, done, info = self.env.step(action_continuous)
                 next_state = self.preprocess_observation(next_state)
                 # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",current_state.shape)
-                print("111111111111111111111111111111",action)
                 self.trajectory.append([current_state, action, reward, next_state, done])
                 self.episode_reward += reward
                 current_state = next_state
