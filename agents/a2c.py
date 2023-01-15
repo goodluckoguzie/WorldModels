@@ -138,8 +138,6 @@ class A2CAgent:
 
     def get_action(self, state):
         with torch.no_grad():
-            print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",state.shape)
-
             state = torch.FloatTensor(state).to(self.device)
             logits, _ = self.model.forward(state)
             dist = F.softmax(logits, dim=0)
