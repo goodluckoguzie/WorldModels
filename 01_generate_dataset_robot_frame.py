@@ -68,14 +68,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     pad_size = pad - tensor.size(0)
 #     # print("tensor.size(0)",tensor.size())
 #     return torch.cat([tensor.to(device), torch.zeros([pad_size, tensor.size(1)]).to(device)], dim=0)
-def pad_tensor(t, episode_length, window_length=9, pad_function=torch.zeros):
+def pad_tensor(t, episode_length, window_length=16, pad_function=torch.zeros):
     pad_size = episode_length - t.size(0) + window_length
     # Add window lenght - 1 infront of the number of obersavtion
-    begin_pad       = pad_function([window_length-1, t.size(1)]).to(device)
+    # begin_pad       = pad_function([window_length-1, t.size(1)]).to(device)
     # pad the environment with lenght of the episode subtracted from  the total episode length
     episode_end_pad = pad_function([pad_size,      t.size(1)]).to(device)
 
-    return torch.cat([begin_pad,t.to(device),episode_end_pad], dim=0)
+    # return torch.cat([begin_pad,t.to(device),episode_end_pad], dim=0)
+    return torch.cat([t.to(device),episode_end_pad], dim=0)
 
 ###########################################End#############################################################################
 
@@ -92,7 +93,8 @@ def rollout():
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 30000 #hp.n_rollout
+    max_ep = 5000
+    #hp.n_rollout
     feat_dir = data.data_dir
 
     os.makedirs(feat_dir, exist_ok=True)
@@ -104,8 +106,8 @@ def rollout():
 
         done = False
         t = 0
-        rew = 0
-        for t in range(time_steps):       
+        # rew = 0
+        for t in range(time_steps+10):       
             # env.render()
             # print("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
 
@@ -118,7 +120,10 @@ def rollout():
             next_obs, reward, done, _ = env.step(action)
             next_obs = preprocess_observation(next_obs)
             action = torch.from_numpy(action)
-            rew = rew + reward
+            # reward = np.atleast_2d(reward)
+
+            # reward = torch.from_numpy(reward)
+            # rew = rew + reward
             # print("tttttttttttttttttttttttttttttttttttttttttttttttttttt",t)
             # print("sdssssssssssssssssssssssssssssssssssssssssssssssssss",reward)
             # print("ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg")
@@ -157,16 +162,20 @@ def rollout():
 
                 done_lst = [int(d) for d in done_lst]
                 done_lst = torch.tensor(done_lst).unsqueeze(-1)
-                done_lst = pad_tensor(done_lst, episode_length=time_steps).cpu().detach().numpy()
-                done_lst=torch.from_numpy(done_lst)
+                # done_lst = pad_tensor(done_lst, episode_length=time_steps).cpu().detach().numpy()
+                # done_lst=torch.from_numpy(done_lst)
                 
                 action_lst = torch.stack(action_lst, dim=0).squeeze(1)
+                # print("4444444444444444444444444444444444444444444444444444444444444444444444",action_lst.shape)
+
                 # action_lst = pad_tensor(action_lst, episode_length=time_steps).cpu().detach().numpy()
                 # action_lst=torch.from_numpy(action_lst)
                 
                 reward_lst = torch.tensor(reward_lst).unsqueeze(-1)
-                reward_lst = pad_tensor(reward_lst, episode_length=time_steps).cpu().detach().numpy()
-                reward_lst=torch.from_numpy(reward_lst)
+                # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",reward_lst.shape)
+
+                # reward_lst = pad_tensor(reward_lst, episode_length=time_steps).cpu().detach().numpy()
+                # reward_lst=torch.from_numpy(reward_lst)
                 break
 
 
