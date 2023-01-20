@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp
 # from hparams import NonPrePaddedRobotFrame_Datasets_Timestep_1 as data
-from hparams import RobotFrame_Datasets_Timestep_0_5 as data
+from hparams import RobotFrame_Datasets_Timestep_0_25 as data
 from hparams import Seq_Len as Seq_len
 
 
@@ -295,7 +295,7 @@ class RNN_MODEL():
         else:
             self.writer = SummaryWriter()
 
-        self.early_stopping = EarlyStopping(patience=3, verbose=True)
+        self.early_stopping = EarlyStopping(patience=20, verbose=True)
         self.best_score = 0
 
 
@@ -363,7 +363,8 @@ class RNN_MODEL():
                     x, _, _ = self.rnn(states)
                     
                     loss = self.l1(x, next_z)
-                    self.total_loss.append(loss.item())
+
+            self.total_loss.append(loss.item())
             self.rnn.train()
             return np.mean(self.total_loss)
 
@@ -423,7 +424,7 @@ class RNN_MODEL():
             self.train_losses = []
             self.valid_losses = []
 
-            if self.global_step % self.save_interval == 0:
+            if self.global_step % 5 == 0:
                 d = {
                     'model': self.rnn.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
@@ -433,7 +434,7 @@ class RNN_MODEL():
                 )
 
                 # and if it has, it will make a checkpoint of the current model
-            if self.global_step % self.save_interval == 0:
+            if self.global_step % 1 == 0:
                 self.early_stopping(self.valid_loss, self.rnn)
 
                 # if self.global_step == 0:#is None:
