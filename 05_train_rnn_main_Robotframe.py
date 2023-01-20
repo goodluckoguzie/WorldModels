@@ -149,8 +149,8 @@ class RNN_MODEL():
         self.run_name = None
         # self.window = Seq_len.seq_16
         # self.window = Seq_len.seq_8
-        self.window = Seq_len.seq_4
-        # self.window = Seq_len.seq_1
+        # self.window = Seq_len.seq_4
+        self.window = Seq_len.seq_1
 
                 # setting values from config file
         self.configure(self.config)
@@ -169,8 +169,8 @@ class RNN_MODEL():
         self.data_path = data.data_dir 
         # self.seq_len = Seq_len.seq_len_16
         # self.seq_len = Seq_len.seq_len_8
-        self.seq_len = Seq_len.seq_len_4
-        # self.seq_len = Seq_len.seq_len_1
+        # self.seq_len = Seq_len.seq_len_4
+        self.seq_len = Seq_len.seq_len_1
         episode_length = data.time_steps
 
         print(self.seq_len) 
