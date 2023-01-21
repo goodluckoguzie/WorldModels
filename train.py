@@ -96,6 +96,16 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
 
+    elif args["agent"].lower() == "doublesteprnn":
+        if args["type"].lower() == "mlp":
+            from agents.duelingDQN_Double_step_RNN import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+
     elif args["agent"].lower() == "duelingdqndoublernn":
         if args["type"].lower() == "mlp":
             from agents.duelingDQN_double_RNN import DuelingDQNAgent
@@ -138,7 +148,19 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
 
+    elif args["agent"].lower() == "rewardduelingdqn":
+        if args["type"].lower() == "mlp":
+            from agents.duelingDQN_with_Reward_RNN import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
 
+
+
+            
     # elif args["agent"].lower() == "dnqtrainedrnnduelingdqnversion":
     #     if args["type"].lower() == "mlp":
     #         from agents.dqn_trained_rnn_duelingDQN_version import DuelingDQNAgent
