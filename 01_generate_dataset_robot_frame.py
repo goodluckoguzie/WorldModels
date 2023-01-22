@@ -2,7 +2,7 @@ import numpy as np
 import os, sys, glob
 import gym
 from hparams import HyperParams as hp
-from hparams import RobotFrame_Datasets_Timestep_2 as data
+from hparams import RobotFrame_Datasets_Timestep_0_5 as data
 import sys
 sys.path.append('./gsoc22-socnavenv')
 import random
@@ -28,7 +28,8 @@ def discrete_to_continuous_action(action:int):
     # # Turning clockwise and moving forward
     # elif action == 4:
     #     return np.array([1, -0.5], dtype=np.float32) 
-    # # Move forward
+    # # Move forward        plt.xlim(0, 1000)
+        plt.ylim(0.00001, 0.0007)
     elif action == 2:
         return np.array([1, 0], dtype=np.float32)
     # stop the robot
@@ -86,14 +87,14 @@ def rollout():
 
 
     env = gym.make("SocNavEnv-v1")
-    env.configure('./configs/env_timestep_2.yaml')
+    env.configure('./configs/env_timestep_0_5.yaml')
     # env.configure('./configs/env.yaml')
 
 
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 5000
+    max_ep = 20_000
     #hp.n_rollout
     feat_dir = data.data_dir
 
