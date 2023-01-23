@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp
 # from hparams import NonPrePaddedRobotFrame_Datasets_Timestep_1 as data
-from hparams import RobotFrame_Datasets_Timestep_2 as data
+from hparams import RobotFrame_Datasets_Timestep_1 as data
 from hparams import Seq_Len as Seq_len
 
 
@@ -90,11 +90,13 @@ class VAE(nn.Module):
 
 
 class RNN(nn.Module):
-    def __init__(self, n_latents, n_actions, n_hiddens):
+    def __init__(self, n_latents, n_actions,n_reward, n_hiddens):
         super(RNN, self).__init__()
-        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        # self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        self.rnn = nn.LSTM(n_latents+n_actions+n_reward, n_hiddens, batch_first=True)
         # target --> next latent (vision)
-        self.fc = nn.Linear(n_hiddens, n_latents)
+        # self.fc = nn.Linear(n_hiddens, n_latents)
+        self.fc = nn.Linear(n_hiddens, n_reward)
 
     def forward(self, states):
         h, _ = self.rnn(states)
@@ -148,19 +150,17 @@ class RNN_MODEL():
         # self.seq_len = None
         self.run_name = None
         self.window = Seq_len.seq_16
-        # self.window = Seq_len.seq_8
-        # self.window = Seq_len.seq_4
-        # self.window = Seq_len.seq_1
 
                 # setting values from config file
         self.configure(self.config)
         # declaring the network
         global_step = 0
         self.vae = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
+        self.n_reward = 1 
 
-
-        self.rnn = RNN(self.n_latents, self.n_actions, self.n_hiddens).to(DEVICE)
-
+        # self.rnn = RNN(self.n_latents, self.n_actions, self.n_hiddens).to(DEVICE)
+        self.rnn = RNN(self.n_latents, self.n_actions,self.n_reward , self.n_hiddens).to(DEVICE)
+        self.rnn   = self.rnn.float() 
   
         # self.data_path = hp.data_dir# if not self.extra else self.extra_dir
 
@@ -168,9 +168,6 @@ class RNN_MODEL():
         self.rnnsave = data.rnnsave#'ckpt'
         self.data_path = data.data_dir 
         self.seq_len = Seq_len.seq_len_16
-        # self.seq_len = Seq_len.seq_len_8
-        # self.seq_len = Seq_len.seq_len_4
-        # self.seq_len = Seq_len.seq_len_1
         episode_length = data.time_steps
 
         print(self.seq_len) 
@@ -192,19 +189,19 @@ class RNN_MODEL():
         # self.data_path = hp.data_dir 
 
         # dataset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len,episode_length=episode_length)
-        dataset = GameEpisodeDatasetNonPrePadded(self.data_path, seq_len=self.seq_len,episode_length=episode_length)
+        dataset = REWARDGameEpisodeDatasetNonPrePadded(self.data_path, seq_len=self.seq_len,episode_length=episode_length)
 
         self.loader = DataLoader(
             dataset, batch_size=1, shuffle=True, drop_last=True,
-            num_workers=self.n_workers, collate_fn=collate_fn
+            num_workers=self.n_workers, collate_fn=rewardcollate_fn
         )
         # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",len(self.loader))
         # testset = GameEpisodeDataset(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
         #Non pre-padde observation
-        testset = GameEpisodeDatasetNonPrePadded(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
+        testset = REWARDGameEpisodeDatasetNonPrePadded(self.data_path, seq_len=self.seq_len, training=False,episode_length=episode_length)
 
         self.valid_loader = DataLoader(
-            testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=collate_fn
+            testset, batch_size=1, shuffle=False, drop_last=False, collate_fn=rewardcollate_fn
         )
 
         # print("ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",len(self.valid_loader))
@@ -297,11 +294,11 @@ class RNN_MODEL():
             os.makedirs(RNN_runs)
         if self.run_name is not None:
             # self.writer = SummaryWriter('WorldFrame_RNN_model_runs/'+self.run_name)
-            self.writer = SummaryWriter('RNN_model_runs/'+RNN_runs  + self.window + self.window + self.window)
+            self.writer = SummaryWriter('RNN_model_runs/'+RNN_runs  + self.window + "reward_rnn")
         else:
             self.writer = SummaryWriter()
 
-        self.early_stopping = EarlyStopping(patience=20, verbose=True)
+        self.early_stopping = EarlyStopping(patience=100, verbose=True)
         self.best_score = 0
 
 
@@ -345,32 +342,25 @@ class RNN_MODEL():
             l1 = nn.L1Loss()
  
             with torch.no_grad():
-                for idx, (obs, actions) in enumerate(self.valid_loader):
+                for idx, (obs, actions , rewards) in enumerate(self.valid_loader):
                     # obs = normalised(obs)
                     # obs = torch.from_numpy(obs)
-                    obs, actions = obs.to(DEVICE), actions.to(DEVICE)
+                    obs, actions, rewards = obs.to(DEVICE), actions.to(DEVICE), rewards.to(DEVICE)
                     # z,latent_mu, latent_var = self.vae(obs) # (B*T, vsize)
-                    z = obs
-                    # print("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll")
-                    # print("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",len(actions))
-                    # print("555555555555555555555555555555555555555555555555555555555555555555555555",self.n_latents)
-                    # print("6666666666666666666666666666666666666666666666666666666666666666666666666666666",len(obs))
-                    
+                    z = obs                    
                     # z = vae.reparam(latent_mu, latent_var) # (B*T, vsize)
                     z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
                     actions = actions.view(-1, self.seq_len, self.n_actions) # (B*n_seq, T, vsize)
+                    rewards = rewards.view(-1, self.seq_len, 1) # (B*n_seq, T, vsize)
+                    next_rewards = rewards[:, 1:, :]
+                    z, actions ,rew = z[:, :-1, :], actions[:, :-1, :],rewards[:, :-1, :]
 
-                    next_z = z[:, 1:, :]
-                    z, actions = z[:, :-1, :], actions[:, :-1, :]
 
-
-                    states = torch.cat([z, actions], dim=-1) # (B, T, vsize+asize)
-                    # states = torch.cat([GO_states, next_states[:,:-1,:]], dim=1)
-                    x, _, _ = self.rnn(states)
+                    states = torch.cat([z, actions,rew], dim=-1) # (B, T, vsize+asize)
+                    x, _, _ = self.rnn(states.float() )
                     
-                    loss = self.l1(x, next_z)
-
-            self.total_loss.append(loss.item())
+                    loss = self.l1(x, next_rewards)
+                    self.total_loss.append(loss.item())
             self.rnn.train()
             return np.mean(self.total_loss)
 
@@ -382,25 +372,25 @@ class RNN_MODEL():
             self.valid_losses = []
             self.total_grad_norm = 0  
 
-            for idx, (obs, actions) in enumerate(self.loader):
+            for idx, (obs, actions,rewards) in enumerate(self.loader):
                 # for idx, (obs, actions) in t:
                 with torch.no_grad():
                     # obs = normalised(obs)
                     # obs = torch.from_numpy(obs)
-                    obs, actions = obs.to(DEVICE), actions.to(DEVICE)
+                    obs, actions, rewards = obs.to(DEVICE), actions.to(DEVICE), rewards.to(DEVICE)
 
                     z = obs
-
-                    # z = latent_mu
                     z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
                     actions = actions.view(-1, self.seq_len, self.n_actions) # (B*n_seq, T, vsize)
+                    rewards = rewards.view(-1, self.seq_len, 1) # (B*n_seq, T, vsize)
 
-                next_z = z[:, 1:, :]
-                z, actions = z[:, :-1, :], actions[:, :-1, :]      
-                states = torch.cat([z, actions], dim=-1) # (B, T, vsize+asize)
-                x, _, _ = self.rnn(states)
+                    next_rewards = rewards[:, 1:, :]
+                    z, actions ,rew = z[:, :-1, :], actions[:, :-1, :],rewards[:, :-1, :]
 
-                loss = self.l1(x, next_z)
+
+                states = torch.cat([z, actions,rew], dim=-1) # (B, T, vsize+asize)
+                x, _, _ = self.rnn(states.float() )
+                loss = self.l1(x, next_rewards)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -430,13 +420,14 @@ class RNN_MODEL():
             self.train_losses = []
             self.valid_losses = []
 
-            if self.global_step % 5 == 0:
+            if self.global_step % 10 == 0:
                 d = {
                     'model': self.rnn.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
                 }
+                
                 torch.save(
-                    d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(15))
+                    d, os.path.join(self.ckpt_dir, '{:03d}rnnreward.pth.tar'.format(15))
                 )
 
                 # and if it has, it will make a checkpoint of the current model
@@ -466,7 +457,7 @@ class RNN_MODEL():
                 #     pass
 
 
-            if self.global_step % 50 == 0:
+            if self.global_step % 10 == 0:
                 print(print_msg)
 
             if self.early_stopping.early_stop:
@@ -479,7 +470,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # config file for the model
-    config = "./configs/Robotframe_RNN_model.yaml"
+    config = "./configs/Robotframe_RNN_model_reward.yaml"
         # declaring the network
     # Agent =RNN_MODEL(config, run_name="Robotframe_RNN_model_runs")
     Agent =RNN_MODEL(config, run_name="RNN_model_runs")
