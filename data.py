@@ -186,7 +186,7 @@ def collate_fn(data):
         #     obs_lst.append(transform(obs[i][j]))
     obs = torch.stack(obs_lst, dim=0) # (B*N_seq*seq_len, C, H, W)
 
-    obs_lst = []
+    # obs_lst = []
     for i in range(len(actions)): # batch loop
         # print(obs[i])
         actions_lst.append(torch.from_numpy(actions[i]))
@@ -196,6 +196,57 @@ def collate_fn(data):
     actions = torch.stack(actions_lst, dim=0) # (B*N_seq*seq_len, C, H, W)
     # obs = obs.view([-1, seq_len, H, W, C]) # (B*N_seq, seq_len, C, H, W)
     return obs, actions #torch.tensor(actions, dtype=torch.float)
+
+
+
+
+def rewardcollate_fn(data):
+    # obs (B, N_seq, seq_len, H, W, C), actions (B, N_seq, seq_len, n_actions)
+    obs, actions , rewards = zip(*data)
+    obs, actions , rewards = np.array(obs), np.array(actions) ,  np.array(rewards)
+    # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",obs)
+
+    # print("ssssssssssssssssssssssssssssssssssssssssss",obs.shape)
+    # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",actions.shape)
+
+    _,_, seq_len, C = obs.shape
+
+    obs = obs.reshape([-1, C]) # (B*N_seq*seq_len, H, W, C)
+    actions = actions.reshape([-1, actions.shape[-1]]) # (B*N_seq*seq_len, H, W, C)
+    rewards = rewards.reshape([-1, rewards.shape[-1]]) # (B*N_seq*seq_len, H, W, C)
+    # actions = actions.reshape([-1, seq_len, actions.shape[-1]]) # (B*n_seq, n_actions)
+    # print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",obs.shape)
+
+    obs_lst = []   
+    actions_lst = []
+    for i in range(len(obs)): # batch loop
+        # print(obs[i])
+        obs_lst.append(torch.from_numpy(obs[i]))
+        # obs_lst.append(transform(obs[i]))
+        # for j in range(len(obs[i])): # sequence loop
+        #     obs_lst.append(transform(obs[i][j]))
+    obs = torch.stack(obs_lst, dim=0) # (B*N_seq*seq_len, C, H, W)
+
+    # obs_lst = []
+    for i in range(len(actions)): # batch loop
+        # print(obs[i])
+        actions_lst.append(torch.from_numpy(actions[i]))
+        # obs_lst.append(transform(obs[i]))
+        # for j in range(len(obs[i])): # sequence loop
+        #     obs_lst.append(transform(obs[i][j]))
+    actions = torch.stack(actions_lst, dim=0) # (B*N_seq*seq_len, C, H, W)
+    # obs = obs.view([-1, seq_len, H, W, C]) # (B*N_seq, seq_len, C, H, W)
+    rewards_lst = []
+    for i in range(len(rewards)): # batch loop
+        # print(obs[i])
+        rewards_lst.append(torch.from_numpy(rewards[i]))
+        # obs_lst.append(transform(obs[i]))
+        # for j in range(len(obs[i])): # sequence loop
+        #     obs_lst.append(transform(obs[i][j]))
+    rewards = torch.stack(rewards_lst, dim=0) # (B*N_seq*seq_len, C, H, W)
+    
+    return obs, actions , rewards #torch.tensor(actions, dtype=torch.float)
+
 
 
 class GameEpisodeDatasetNonPrePadded(torch.utils.data.Dataset):
@@ -290,6 +341,120 @@ class GameEpisodeDatasetNonPrePadded(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.indices)
+
+
+
+
+
+
+class REWARDGameEpisodeDatasetNonPrePadded(torch.utils.data.Dataset):
+    def __init__(self, data_path, seq_len=20, seq_mode=True, training=True, test_ratio=0.01,episode_length=None):
+        self.training = training
+        self.episode_length = episode_length
+        self.fpaths = sorted(glob.glob(os.path.join(data_path, 'rollout_ep_*.npz')))
+        np.random.seed(0)
+        # print("ddddddddddddddddddddddddddddffffffffffffffffffffffffffffffffffff",self.episode_length)
+
+        indices = np.arange(0, len(self.fpaths))
+
+        n_trainset = int(len(indices)*(1.0-test_ratio))
+
+        self.train_indices = indices[:n_trainset]
+        # print("train_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indicestrain_indic ",self.train_indices)
+
+        self.test_indices = indices[n_trainset:]
+        # self.train_indices = np.random.choice(indices, int(len(indices)*(1.0-test_ratio)), replace=False)
+        # self.test_indices = np.delete(indices, self.train_indices)
+        self.indices = self.train_indices if training else self.test_indices
+        self.seq_len = seq_len
+        self.seq_mode = seq_mode
+        # print("seq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_modeseq_mode ",seq_len)
+
+    def __getitem__(self, idx):
+
+
+        def pad_tensor(t, episode_length=self.episode_length, window_length=self.seq_len-1, pad_function=torch.zeros):
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            # print("tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",t.shape)
+
+            pad_size = episode_length - t.size(0) + window_length
+            # Add window lenght - 1 infront of the number of obersavtion
+            # begin_pad       = pad_function([window_length-1, t.size(1)]).to(device)
+            # pad the environment with lenght of the episode subtracted from  the total episode length
+            episode_end_pad = pad_function([pad_size,      t.size(1)]).to(device)
+            # print("paaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",episode_end_pad.shape)
+
+            return torch.cat([t.to(device),episode_end_pad], dim=0)
+
+
+
+        npz = np.load(self.fpaths[self.indices[idx]])
+        # print("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr", idx )
+
+        obs = npz['obs'] # (T, H, W, C) np array
+        # print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111",obs.shape)
+
+        obs = torch.from_numpy(obs) 
+        # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",obs.shape)
+        obs = pad_tensor(obs ,window_length=(self.seq_len-1)).cpu().detach().numpy()
+        # obs = torch.from_numpy(obs) 
+        # print("222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222",obs.shape)
+
+
+        actions = npz['action'] # (T, n_actions) np array
+        # print("333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333",actions.shape)
+
+        actions = torch.from_numpy(actions) 
+
+        actions = pad_tensor(actions, window_length=(self.seq_len-1)).cpu().detach().numpy()
+
+        rewards = npz['reward'] # (T, n_actions) np array
+        # print("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo",actions.shape)
+
+        rewards = torch.from_numpy(rewards) 
+        # print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",rewards.shape)
+
+        rewards = pad_tensor(rewards, window_length=(self.seq_len-1)).cpu().detach().numpy()
+        # print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",rewards.shape)
+
+        # actions=torch.from_numpy(actions)
+        # print("8888888888888888888888888888888888888888888888888888888888888888888888888888888", obs )
+        # print("4444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444", self.seq_len)
+        k,h = actions.shape
+        T, C = obs.shape
+        # print("sssssssssssssssssssssssssssssssssssssssss",k)
+        # T, H, W, C = obs.shape
+        n_seq = T // self.seq_len
+        end_seq = n_seq * self.seq_len # T' = end of sequence
+        # print("0000000000000000000000000000000000000000000000000000000000000000000 ",C )
+        # print("444444444444444444443333333333333333333333333333333333333333333333 ",h )
+        # print("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",self.seq_len )
+        # print("cccccccccccccccccccccccccccccccccccccccccccccccccccc",obs.shape)
+        # print("dssssssssssssssssssssssssssssssssssssssssssssssssssss",actions.shape)   
+        #      
+        # print("end_seqend_seqend_seqend_seqend_seqend_seqend_seq",end_seq)          
+        obs =     obs[:end_seq].reshape([-1, self.seq_len, C]) # (N_seq, seq_len, H, W, C)
+        actions = actions[:end_seq].reshape([-1, self.seq_len, actions.shape[-1]]) # 
+        rewards = rewards[:end_seq].reshape([-1, self.seq_len, rewards.shape[-1]]) # 
+        # print("0000000000000000000000000000000000000000000000000000000000000000000 ",obs.shape )
+        # print("444444444444444444443333333333333333333333333333333333333333333333 ",actions.shape )
+        # if args.seq_mode:
+        #     start_range = max_len-self.seq_len
+        #     for t in range(0, max_len-self.seq_len, self.seq_len):
+        #         obs[t:t+self.seq_len]
+        # else:
+        #     rand_start = np.random.randint(max_len-self.seq_len)
+        #     obs = obs[rand_start:rand_start+self.seq_len] # (T, H, W, C)
+        #     actions = actions[rand_start:rand_start+self.seq_len]
+        return obs, actions , rewards
+
+    def __len__(self):
+        return len(self.indices)
+
+
+    
+
+
 # class GameSceneDataset_reward(torch.utils.data.Dataset):
 #     def __init__(self, data_path, seq_len=10, seq_mode=True, training=True, test_ratio=0.5):
 #         self.training = training
