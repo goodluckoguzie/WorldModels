@@ -1,3 +1,14 @@
+import glob
+from collections import deque
+import os
+
+import random
+import sys
+from hparams import HyperParams as hp
+import gym
+from tensorboardX import SummaryWriter
+import scipy.stats as ss
+from torch import optim
 import numpy as np
 import tensorboardX
 import time
@@ -9,26 +20,12 @@ import torch.nn.functional as F
 import torch.multiprocessing as mp
 torch.multiprocessing.set_start_method('spawn', force=True)
 
-from torch import optim
 
-import scipy.stats as ss
-from tensorboardX import SummaryWriter
-import gym
-
-
-import numpy as np
-import os, sys, glob
-import gym
-from hparams import HyperParams as hp
-import sys
 sys.path.append('./gsoc22-socnavenv')
-import random
-import socnavenv
 from socnavenv.wrappers import WorldFrameObservations
-import os
-import torch
+import socnavenv
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device('cpu')
+# device = torch.device( 'cpu')
 
 
 n_hiddens = 256
@@ -78,7 +75,8 @@ rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 ckpt_dir = hp.ckpt_dir  # 'ckpt'
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
 
-ckpt = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '015robotframe.pth.tar')))[-1]
+ckpt = sorted(glob.glob(os.path.join(
+    ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '015robotframe.pth.tar')))[-1]
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep2window_16', '*me.pth.tar')))[-1]
@@ -86,24 +84,6 @@ ckpt = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep1windo
 rnn_state = torch.load(ckpt, map_location={'cuda:0': str(device)})
 rnn.load_state_dict(rnn_state['model'])
 rnn.eval()
-
-
-##################################################################
-
-# numberOfActions = 4
-
-# def preprocess_observation(obs):
-#     """
-#     To convert dict observation to numpy observation
-#     """
-#     assert(type(obs) == dict)
-#     observation = np.array([], dtype=np.float32)
-#     observation = np.concatenate((observation, obs["goal"].flatten()) )
-#     observation = np.concatenate((observation, obs["humans"].flatten()) )
-#     observation = np.concatenate((observation, obs["laptops"].flatten()) )
-#     observation = np.concatenate((observation, obs["tables"].flatten()) )
-#     observation = np.concatenate((observation, obs["plants"].flatten()) )
-#     return torch.from_numpy(observation)
 
 
 class NeuralNetwork(nn.Module):
@@ -126,34 +106,34 @@ class NeuralNetwork(nn.Module):
         # return  F.softmax(self.mean_l(ot_n))   #   torch.tanh(self.mean_l(ot_n))
         return F.softmax(self.mean_l(ot_n).squeeze(0).squeeze(0), dim=0)
 
-##############################################################################################################
+
 def sample_noise(neural_net):
     '''
     Sample noise for each parameter of the neural net
     '''
     nn_noise = []
     for n in neural_net.parameters():
-        noise = np.random.normal(size=n.data.numpy().shape)
+        noise = np.random.normal(size=n.data.detach().cpu().numpy().shape)
 
         nn_noise.append(noise)
     return np.array(nn_noise)
 
 
-def discrete_to_continuous_action(action:int):
+def discrete_to_continuous_action(action: int):
     """
     Function to return a continuous space action for a given discrete action
     """
     if action == 0:
-        return np.array([0, 1], dtype=np.float32) 
+        return np.array([0, 1], dtype=np.float32)
     # Turning clockwise
     elif action == 1:
-        return np.array([0, -1], dtype=np.float32) 
+        return np.array([0, -1], dtype=np.float32)
     # Turning anti-clockwise and moving forward
     # elif action == 3:
-    #     return np.array([1, 0.5], dtype=np.float32) 
+    #     return np.array([1, 0.5], dtype=np.float32)
     # # Turning clockwise and moving forward
     # elif action == 4:
-    #     return np.array([1, -0.5], dtype=np.float32) 
+    #     return np.array([1, -0.5], dtype=np.float32)
     # # Move forward
     elif action == 2:
         return np.array([1, 0], dtype=np.float32)
@@ -166,7 +146,7 @@ def discrete_to_continuous_action(action:int):
     #     # Turning anti-clockwise with a reduced speed and rotation
     # elif action == 8:
     #     return np.array([0.5, -1], dtype=np.float32)
-    
+
     else:
         raise NotImplementedError
 
@@ -271,6 +251,7 @@ def evaluate_neuralnet(nn, env):
         # current_obs = torch.cat((z.unsqueeze(0), hidden[0]), -1)
         current_obs = torch.cat((unsqueezed_z.unsqueeze(0), hidden_for_action0[0],hidden_for_action1[0],hidden_for_action2[0],hidden_for_action3[0]), -1)
         current_obs = current_obs.squeeze(0).squeeze(0)
+        nn = nn.to(device)
 
         # sampling an action from the current state
         action_distribution = nn(current_obs).to(device)
@@ -278,11 +259,30 @@ def evaluate_neuralnet(nn, env):
         max_action = np.argmax(action_)
         action = discrete_to_continuous_action(max_action)
 
-        # print("sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",max_action)
+
+        # taking a step in the environment
+        next_obs, reward, done, info = env.step(action)
+
+        game_reward += reward
+
+        # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
+        next_obs = preprocess_observation(next_obs)
+        next_obs_ = next_obs
+
+        unsqueezed_action = torch.from_numpy(action).unsqueeze(0)#.unsqueeze(0)
+        next_obs = torch.from_numpy(next_obs).unsqueeze(0)#.unsqueeze(0)
+        # mdrnn.load_state_dict({k.strip('_l0'): v for k, v in rnn_state.items()})
+        # rnn_input = torch.cat((z, action, reward_), -1).float()
+        # out_full, hidden = mdrnn(rnn_input, hidden)
 
 
-        new_obs, reward, done, _ = env.step(action)
-        current_obs = new_obs
+        with torch.no_grad():
+            rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+            _,_, _, hidden = rnn.infer(rnn_input.unsqueeze(0).to(device),hidden)
+
+        current_obs = next_obs_
+        unsqueezed_action = unsqueezed_action
+
 
         game_reward += reward
 
@@ -290,6 +290,7 @@ def evaluate_neuralnet(nn, env):
             break
 
     return game_reward
+
 
 def evaluate_noisy_net(noise, neural_net, env):
     '''
@@ -299,8 +300,9 @@ def evaluate_noisy_net(noise, neural_net, env):
 
     # add the noise to each parameter of the NN
     for n, p in zip(noise, neural_net.parameters()):
-
+        p.data = p.data.cpu()
         p.data += torch.FloatTensor(n * STD_NOISE)
+    p.data = p.data.to(device)
 
     # evaluate the agent with the noise
     reward = evaluate_neuralnet(neural_net, env)
@@ -308,6 +310,7 @@ def evaluate_noisy_net(noise, neural_net, env):
     neural_net.load_state_dict(old_dict)
 
     return reward
+
 
 def worker(params_queue, output_queue):
     '''
@@ -319,7 +322,7 @@ def worker(params_queue, output_queue):
     env.set_padded_observations(True)
 
     # actor = NeuralNetwork(env.observation_space.shape[0], env.action_space.shape[0])
-    actor = NeuralNetwork(1071, 4)
+    actor = NeuralNetwork(1071, 4).to(device)
 
     while True:
         # get the new actor's params
@@ -334,7 +337,6 @@ def worker(params_queue, output_queue):
             np.random.seed(seed)
 
             noise = sample_noise(actor)
-
 
             pos_rew = evaluate_noisy_net(noise, actor, env)
             # Mirrored sampling
@@ -373,7 +375,8 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'doubleRNN_timestep_1{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'WORLDMODELRNN_GPU12_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(
+        STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
@@ -383,12 +386,13 @@ if __name__ == '__main__':
     env.set_padded_observations(True)
 
     # Initialize the agent
-    actor = NeuralNetwork(1071, 4)
+    actor = NeuralNetwork(1071, 4).to(device)
     # Initialize the optimizer
     optimizer = optim.Adam(actor.parameters(), lr=LEARNING_RATE)
 
     writer = SummaryWriter(log_dir='runs/'+writer_name)
 
+    queue = mp.Queue()
     # Queues to pass and get the variables to and from each processe
     output_queue = mp.Queue(maxsize=BATCH_SIZE)
     params_queue = mp.Queue(maxsize=BATCH_SIZE)
@@ -400,7 +404,6 @@ if __name__ == '__main__':
         p = mp.Process(target=worker, args=(params_queue, output_queue))
         p.start()
         processes.append(p)
-
 
     # Execute the main loop MAX_ITERATIONS times
     for n_iter in range(MAX_ITERATIONS):
@@ -422,33 +425,32 @@ if __name__ == '__main__':
             batch_noise.append(noise)
             batch_noise.append(-noise)
 
-            batch_reward.append(p_rews[0]) # reward of the positive noise
-            batch_reward.append(p_rews[1]) # reward of the negative noise
+            batch_reward.append(p_rews[0])  # reward of the positive noise
+            batch_reward.append(p_rews[1])  # reward of the negative noise
 
         # Print some stats
-        print(n_iter, 'Mean:',np.round(np.mean(batch_reward), 2), 'Max:', np.round(np.max(batch_reward), 2), 'Time:', np.round(time.time()-it_time, 2))
+        print(n_iter, 'Mean:', np.round(np.mean(batch_reward), 2), 'Max:', np.round(
+            np.max(batch_reward), 2), 'Time:', np.round(time.time()-it_time, 2))
         writer.add_scalar('reward', np.mean(batch_reward), n_iter)
 
         # Rank the reward and normalize it
         batch_reward = normalized_rank(batch_reward)
 
-
         th_update = []
         optimizer.zero_grad()
         # for each actor's parameter, and for each noise in the batch, update it by the reward * the noise value
+
         for idx, p in enumerate(actor.parameters()):
+            p = p.cpu()
             upd_weights = np.zeros(p.data.shape)
 
-            for n,r in zip(batch_noise, batch_reward):
+            for n, r in zip(batch_noise, batch_reward):
                 upd_weights += r*n[idx]
 
             upd_weights = upd_weights / (BATCH_SIZE*STD_NOISE)
             # put the updated weight on the gradient variable so that afterwards the optimizer will use it
-            # print("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",upd_weights)
-            # print("3333333333333333333333333333333333333333333333333333333333333333333",p.grad )
 
-            p.grad = torch.FloatTensor( -upd_weights)
-            # print("22222222222222222222222222222222222222222222222222222222222",p.grad )
+            p.grad = torch.FloatTensor(-upd_weights)
 
             th_update.append(np.mean(upd_weights))
 
@@ -457,9 +459,8 @@ if __name__ == '__main__':
 
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
-        if n_iter % 50 == 0:        
-            torch.save(actor.state_dict(), './models/wor_timestep_1.pt')
-
+        if n_iter % 50 == 0:
+            torch.save(actor.state_dict(),'./models/MODELRNN_env_timestGPU.pt')
 
     # quit the processes
     for _ in range(MAX_WORKERS):
