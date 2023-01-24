@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.multiprocessing as mp
+torch.multiprocessing.set_start_method('spawn', force=True)
+
 from torch import optim
 
 import scipy.stats as ss
@@ -25,8 +27,8 @@ import socnavenv
 from socnavenv.wrappers import WorldFrameObservations
 import os
 import torch
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cpu')
 
 
 n_hiddens = 256
@@ -76,7 +78,7 @@ rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
 ckpt_dir = hp.ckpt_dir  # 'ckpt'
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
 
-ckpt = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '015robotframe.pth.tar')))[-1]
+ckpt = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', 'robotframe.pth.tar')))[-1]
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
 # ckpt  = sorted(glob.glob(os.path.join(ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep2window_16', '*me.pth.tar')))[-1]
@@ -361,7 +363,7 @@ BATCH_SIZE = 100
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 4
+MAX_WORKERS = 8
 
 val_test = True
 # VIDEOS_INTERVAL = 100
@@ -371,7 +373,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'wor_timestep_1{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
+    writer_name = 'doubleRNN_timestep_1{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
     # Create the test environment
