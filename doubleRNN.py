@@ -24,8 +24,8 @@ torch.multiprocessing.set_start_method('spawn', force=True)
 sys.path.append('./gsoc22-socnavenv')
 from socnavenv.wrappers import WorldFrameObservations
 import socnavenv
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device( 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device( 'cpu')
 
 
 n_hiddens = 256
@@ -93,11 +93,11 @@ class NeuralNetwork(nn.Module):
     def __init__(self, input_shape, n_actions):
         super(NeuralNetwork, self).__init__()
 
-        self.mlp = nn.Linear(input_shape, 500)
-        self.x11 = nn.Linear(500, 250)
-        self.x22 = nn.Linear(250, 32)
+        self.mlp = nn.Linear(input_shape, 512)
+        self.x11 = nn.Linear(512, 128)
+        self.x22 = nn.Linear(128, 64)
 
-        self.mean_l = nn.Linear(32, n_actions)
+        self.mean_l = nn.Linear(64, n_actions)
 
     def forward(self, x):
         ot_n = self.x22(self.x11 (self.mlp(x.float())))
@@ -361,7 +361,7 @@ ENV_NAME = 'SocNavEnv-v1'
 
 # Hyperparameters
 STD_NOISE = 0.05
-BATCH_SIZE = 100
+BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
@@ -375,7 +375,7 @@ date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
 if __name__ == '__main__':
     # Writer name
-    writer_name = 'WORLDMODELRNN_GPU12_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(
+    writer_name = 'WORLDMODELRNN_CPU12_{}_{}_{}_{}_{}_{}'.format(ENV_NAME, date_time, str(
         STD_NOISE), str(BATCH_SIZE), str(LEARNING_RATE), str(MAX_ITERATIONS), str(MAX_WORKERS))
     print('Name:', writer_name)
     best = 0.0
@@ -460,7 +460,7 @@ if __name__ == '__main__':
         writer.add_scalar('loss', np.mean(th_update), n_iter)
 
         if n_iter % 50 == 0:
-            torch.save(actor.state_dict(),'./models/MODELRNN_env_timestGPU.pt')
+            torch.save(actor.state_dict(),'./models/MODELRNN_env_timestCPU.pt')
 
     # quit the processes
     for _ in range(MAX_WORKERS):
