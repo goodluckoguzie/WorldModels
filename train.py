@@ -115,6 +115,17 @@ if __name__ == "__main__":
             else:
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
+            
+    elif args["agent"].lower() == "duelingdqnnonpredictive":
+        if args["type"].lower() == "mlp":
+            from agents.duelingDQN_RNN_Non_predictive import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+            
 
     # elif args["agent"].lower() == "duelingdqnTemprnn":
     #     if args["type"].lower() == "mlp":
