@@ -333,7 +333,7 @@ class A2CAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_0_5.yaml")
+    env.configure("./configs/env_timestep_0_25.yaml")
     env.set_padded_observations(True)
     # config file for the model
     config = "./configs/a2c.yaml"
