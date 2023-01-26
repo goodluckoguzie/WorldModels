@@ -96,9 +96,20 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
 
-    elif args["agent"].lower() == "doublesteprnn":
+    elif args["agent"].lower() == "1stepaheadpredictivemodel":
         if args["type"].lower() == "mlp":
-            from agents.duelingDQN_Double_step_RNN import DuelingDQNAgent
+            from agents.1stepaheadpredictivemodel import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+   
+   
+    elif args["agent"].lower() == "2stepaheadpredictivemodel":
+        if args["type"].lower() == "mlp":
+            from agents.2stepaheadpredictivemodel import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
@@ -106,9 +117,9 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
 
-    elif args["agent"].lower() == "duelingdqndoublernn":
+    elif args["agent"].lower() == "Uncertaintyawarepredictiveworldmodels":
         if args["type"].lower() == "mlp":
-            from agents.duelingDQN_double_RNN import DuelingDQNAgent
+            from agents.Uncertainty_aware_predictive_world_models import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
@@ -116,9 +127,9 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
             
-    elif args["agent"].lower() == "duelingdqnnonpredictive":
+    elif args["agent"].lower() == "Nonpredictive_worldmodel":
         if args["type"].lower() == "mlp":
-            from agents.duelingDQN_RNN_Non_predictive import DuelingDQNAgent
+            from agents.Non_predictive_worldmodel import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
