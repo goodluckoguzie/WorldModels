@@ -83,6 +83,25 @@ rnn_state = torch.load(ckpt )#, map_location={'cuda:0': str(device)})
 rnn.load_state_dict(rnn_state['model'])
 rnn.eval()
 
+# class NeuralNetwork(nn.Module):
+#     '''
+#     Neural network for continuous action space
+#     '''
+#     def __init__(self, input_shape, n_actions):
+#         super(NeuralNetwork, self).__init__()
+
+#         self.mlp = nn.Linear(input_shape, 32)
+
+
+#         self.mean_l = nn.Linear(32, n_actions)
+
+#     def forward(self, x):
+#         ot_n = self.mlp(x.float())
+
+#         # return  F.softmax(self.mean_l(ot_n).squeeze(0).squeeze(0).detach().to('cpu'), dim=0).numpy()   #   torch.tanh(self.mean_l(ot_n))
+#         # return  F.softmax(self.mean_l(ot_n))   #   torch.tanh(self.mean_l(ot_n))
+#         return F.softmax(self.mean_l(ot_n).squeeze(0).squeeze(0), dim=0)
+
 class NeuralNetwork(nn.Module):
     '''
     Neural network for continuous action space
@@ -90,17 +109,27 @@ class NeuralNetwork(nn.Module):
     def __init__(self, input_shape, n_actions):
         super(NeuralNetwork, self).__init__()
 
-        self.mlp = nn.Linear(input_shape, 32)
+        self.mlp = nn.Sequential(
+            nn.Linear(input_shape, 256),
+            nn.Tanh(),
+            nn.Linear(256, 128),
+            nn.Tanh(),
+            nn.Linear(128, 64),
+            nn.Tanh(),
+            nn.Linear(64, 16),
+            nn.Tanh())
 
+        self.mean_l = nn.Linear(16, n_actions)
+        self.mean_l.weight.data.mul_(0.1)
 
-        self.mean_l = nn.Linear(32, n_actions)
-
+        self.logstd = nn.Parameter(torch.zeros(n_actions))
     def forward(self, x):
         ot_n = self.mlp(x.float())
 
         # return  F.softmax(self.mean_l(ot_n).squeeze(0).squeeze(0).detach().to('cpu'), dim=0).numpy()   #   torch.tanh(self.mean_l(ot_n))
         # return  F.softmax(self.mean_l(ot_n))   #   torch.tanh(self.mean_l(ot_n))
         return F.softmax(self.mean_l(ot_n).squeeze(0).squeeze(0), dim=0)
+
 
 
 def sample_noise(neural_net):
@@ -288,11 +317,11 @@ ENV_NAME = 'SocNavEnv-v1'
 
 # Hyperparameters
 STD_NOISE = 0.05
-BATCH_SIZE = 64
+BATCH_SIZE = 512
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 100_000
 
-MAX_WORKERS = 40
+MAX_WORKERS = 16
 
 val_test = True
 # VIDEOS_INTERVAL = 100
