@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     elif args["agent"].lower() == "1stepaheadpredictivemodel":
         if args["type"].lower() == "mlp":
-            from agents.1stepaheadpredictivemodel import DuelingDQNAgent
+            from agents.OneStepAheadPredictiveModel import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
@@ -109,7 +109,7 @@ if __name__ == "__main__":
    
     elif args["agent"].lower() == "2stepaheadpredictivemodel":
         if args["type"].lower() == "mlp":
-            from agents.2stepaheadpredictivemodel import DuelingDQNAgent
+            from agents.TwoStepAheadPredictiveModel import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
