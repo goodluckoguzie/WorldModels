@@ -116,20 +116,22 @@ if __name__ == "__main__":
             else:
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
+      
    
-    elif args["agent"].lower() == "UncertaintyAwarePredictiveWorldmodels":
+    elif args["agent"].lower() == "uncertaintyawarepredictiveworldmodels":
         if args["type"].lower() == "mlp":
-            from agents.uncertaintyawarepredictiveworldmodels import DuelingDQNAgent
-            
+            from agents.UncertaintyAwarePredictiveWorldModels import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
             else:
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
+   
+
 
             
-    elif args["agent"].lower() == "Nonpredictive_worldmodel":
+    elif args["agent"].lower() == "nonpredictiveworldmodel":
         if args["type"].lower() == "mlp":
             from agents.Non_predictive_worldmodel import DuelingDQNAgent
             env.set_padded_observations(True)
