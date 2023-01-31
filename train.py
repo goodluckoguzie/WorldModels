@@ -105,6 +105,16 @@ if __name__ == "__main__":
             else:
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
+ 
+    elif args["agent"].lower() == "a2c1stepaheadpredictivemodel":
+        if args["type"].lower() == "mlp":
+            from agents.a2cOneStepAheadPredictiveModel import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
    
    
     elif args["agent"].lower() == "2stepaheadpredictivemodel":
@@ -116,11 +126,32 @@ if __name__ == "__main__":
             else:
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
-      
+
+    elif args["agent"].lower() == "a2c2stepaheadpredictivemodel":
+        if args["type"].lower() == "mlp":
+            from agents.a2cTwoStepAheadPredictiveModel import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+            
    
     elif args["agent"].lower() == "uncertaintyawarepredictiveworldmodels":
         if args["type"].lower() == "mlp":
             from agents.UncertaintyAwarePredictiveWorldModels import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+   
+
+    elif args["agent"].lower() == "a2cuncertaintyawarepredictiveworldmodels":
+        if args["type"].lower() == "mlp":
+            from agents.a2cUncertaintyAwarePredictiveWorldModels import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
@@ -134,6 +165,16 @@ if __name__ == "__main__":
     elif args["agent"].lower() == "nonpredictiveworldmodel":
         if args["type"].lower() == "mlp":
             from agents.Non_predictive_worldmodel import DuelingDQNAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = DuelingDQNAgent(env, args["config"])
+            agent.train()
+                        
+    elif args["agent"].lower() == "a2cnonpredictiveworldmodel":
+        if args["type"].lower() == "mlp":
+            from agents.a2cNon_predictive_worldmodel import DuelingDQNAgent
             env.set_padded_observations(True)
             if args["kwargs"] is not None:
                 agent = DuelingDQNAgent(env, args["config"], **args["kwargs"])
