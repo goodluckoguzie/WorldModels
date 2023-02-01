@@ -395,29 +395,31 @@ class DuelingDQNAgent:
                 self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
             
    
-    def eval(self, num_episodes=50, path=None):
+    def eval(self, num_episodes=20, path=None):
         if path is None:
             path = os.getcwd()
 
-            print(path)
-            print("yeah")
+            # print(path)
+            # print("yeah")
             # path = './models/duelingdqn/episode00026500.pt' # self.save_path 
             # /models/duelingdqn/episode00026500.pt
             # model = torch.load('load/from/path/episode00026500.pt')
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00015300.pth'))#time step 2
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00007050.pth'))#time step 1
-            self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))#time step 0.5episode00001450
+            self.duelingDQN.load_state_dict(torch.load('./models/episode00099950.pth'))#time step 0.5episode00001450
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00001450.pth'))#time step 0.25episode
             # self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
     
         self.duelingDQN.eval()
 
-        total_reward = 0
+        # total_reward = 0
+        reward_per_episode = 0
         successive_runs = 0
         for i in range(num_episodes):
             o = self.env.reset()
             o = self.preprocess_observation(o)
+            total_reward = 0
             done = False
             while not done:
                 act_continuous, act_discrete = self.get_action(o, 0)
@@ -431,10 +433,11 @@ class DuelingDQNAgent:
                     successive_runs += 1
 
                 o = new_state
+            reward_per_episode += total_reward
 
         print(f"Total episodes run: {num_episodes}")
         print(f"Total successive runs: {successive_runs}")
-        print(f"Average reward per episode: {total_reward/num_episodes}")
+        print(f"Average reward per episode: {reward_per_episode/num_episodes}")
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
