@@ -96,6 +96,17 @@ if __name__ == "__main__":
                 agent = DuelingDQNAgent(env, args["config"])
             agent.train()
 
+
+    elif args["agent"].lower() == "ppo1stepaheadpredictivemodel":
+        if args["type"].lower() == "mlp":
+            from agents.ppoOneStepAheadPredictiveModel import PPOAgent
+            env.set_padded_observations(True)
+            if args["kwargs"] is not None:
+                agent = PPOAgent(env, args["config"], **args["kwargs"])
+            else:
+                agent = PPOAgent(env, args["config"])
+            agent.train()
+      
     elif args["agent"].lower() == "1stepaheadpredictivemodel":
         if args["type"].lower() == "mlp":
             from agents.OneStepAheadPredictiveModel import DuelingDQNAgent

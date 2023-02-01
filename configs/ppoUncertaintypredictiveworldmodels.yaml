@@ -1,15 +1,15 @@
-input_layer_size : 47  # input size of MLP
+input_layer_size : 1071  # input size of MLP
 mlp_layers: [512, 512]
 policy_net_hidden_layers : [128, 64, 4]  # policy network layers  
-value_net_hidden_layers : [128, 64, 4, 1]  # q_value network layers
+value_net_hidden_layers : [128, 64, 32, 1]  # q_value network layers
 num_episodes : 100_000  # number of episodes to train
 gamma : 0.99  # discount factor
 gae_lambda : 0.95  # gae_lambda used in GAE equation for advantage calculation
 entropy_pen : 0.4  # entropy penalty
 n_epochs : 5  # no. of epochs of training on each episode
 policy_clip : 0.05  # policy_clip parameter in PPO
-render: True  # setting it to True would render after every "render_freq" episodes
+render: False #True  # setting it to True would render after every "render_freq" episodes
 render_freq: 50  # if render is True, the episode will be rendered after every render_freq episodes
-save_path: "./models/ppo_TIMESTEP_1_experiment_1"  # path to save the model files
+save_path: "./models/ppo_2stepaheadpredictivemodel_TIMESTEP_1_experiment_1"  # path to save the model files
 save_freq: 50  # model would be saved after every save_freq epsidoes
 lr: 0.001  # learning rate 

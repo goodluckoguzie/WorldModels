@@ -14,6 +14,100 @@ import yaml
 from torch.distributions import Categorical
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, RolloutBuffer
+import sys
+import os ,glob
+
+from hparams import HyperParams as hp
+
+
+
+
+class Decoder(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(Decoder, self).__init__()
+        self.linear1 = nn.Linear(latent_dims, hidden_dims)
+        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear3 = nn.Linear(hidden_dims, input_dims)
+
+        self.input_dims = input_dims
+    def forward(self, z):
+        z = F.relu(self.linear1(z))
+        z = F.relu(self.linear2(z))
+        z = self.linear3(z)
+        # z = torch.sigmoid(z)
+        return z.reshape((-1, self.input_dims))
+
+
+
+class VariationalEncoder(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(VariationalEncoder, self).__init__()
+        self.linear1 = nn.Linear(input_dims,  hidden_dims)
+        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear3 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear4 = nn.Linear(hidden_dims, latent_dims)
+        self.linear5 = nn.Linear(hidden_dims, latent_dims)
+
+        self.N = torch.distributions.Normal(0, 1)
+        self.N.loc = self.N.loc.cuda() # hack to get sampling on the GPU
+        self.N.scale = self.N.scale.cuda()
+        self.kl = 0
+
+    def forward(self, x):
+        x = torch.flatten(x, start_dim=1)
+        x = F.relu(self.linear1(x))
+        x = F.relu(self.linear2(x))
+        x = F.relu(self.linear3(x))
+        mu =  self.linear4(x)
+        sigma = torch.exp(self.linear5(x))
+        z = mu + sigma*self.N.sample(mu.shape)
+        self.kl = (sigma**2 + mu**2 - torch.log(sigma) - 1/2).sum()
+        return z ,mu , sigma
+
+
+
+
+
+class VAE(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(VAE, self).__init__()
+        self.encoder = VariationalEncoder(input_dims, hidden_dims, latent_dims)
+        self.decoder = Decoder(input_dims, hidden_dims, latent_dims)
+
+    def forward(self, x):
+        z,mu , sigma = self.encoder(x)
+        return self.decoder(z),mu , sigma
+
+    def vae_loss(recon_x, x, mu, logvar):
+        """ VAE loss function """
+        recon_loss = nn.MSELoss(size_average=False)
+        BCE = recon_loss(recon_x, x)
+        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        return BCE + KLD, BCE, KLD
+
+
+
+class RNN(nn.Module):
+    def __init__(self, n_latents, n_actions, n_hiddens):
+        super(RNN, self).__init__()
+        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        # target --> next latent (vision)
+        self.fc = nn.Linear(n_hiddens, n_latents)
+
+    def forward(self, states):
+        h, _ = self.rnn(states)
+        y = self.fc(h)
+        return y, None, None
+    
+    def infer(self, states, hidden):
+        h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
+        y = self.fc(h)
+        return y, None, None, next_hidden
+
+
+
+
+
 
 class PPO(nn.Module):
     def __init__(self, input_dim:int, mlp_layers, policy_net_hidden_layers:list, value_net_hidden_layers:list):
@@ -28,10 +122,6 @@ class PPO(nn.Module):
     def act(self, state):
         state = self.mlp(state)
         action_probs = self.actor(state)
-        # print("88888888888888888888888888888888888888888888888888888888888888888888888888")
-        # print("ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",action_probs)
-        # print("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr")
-
         dist = Categorical(action_probs)
         action = dist.sample()
         action_logprob = dist.log_prob(action)
@@ -40,10 +130,6 @@ class PPO(nn.Module):
     def forward(self, state, action):
         state = self.mlp(state)
         action_probs = self.actor(state)
-
-        # print("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-        # print("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",action_probs)
-        # print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
         dist = Categorical(action_probs)
         action_logprobs = dist.log_prob(action)
         dist_entropy = dist.entropy()
@@ -87,6 +173,45 @@ class PPOAgent:
                 raise NameError(f"Variable named {k} not defined")
 
         self.configure(self.config)
+        sys.path.append('./WorldModels')
+        # from RNN.RNN import LSTM,RNN
+  
+        # self.data_path = self.data_dir# if not self.extra else self.extra_dir
+
+        self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        # self.vae_state = torch.load(self.ckpt)
+        # self.vae.load_state_dict(self.vae_state['model'])
+        # self.vae.eval()
+        # print('Loaded vae ckpt {}'.format(self.ckpt))
+
+
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        n_hiddens = 256
+        n_latents = 47
+        n_actions = 2
+
+        # print(os.getcwd())
+        self.vae = VAE(n_latents,n_hiddens,n_latents).to(device)
+
+
+        self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
+
+        # self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        # self.vae_state = torch.load(self.ckpt)
+        # self.vae.load_state_dict(self.vae_state['model'])
+        # self.vae.eval()
+        # print('Loaded vae ckpt {}'.format(self.ckpt))       
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '015robotframe.pth.tar')))[-1] #
+
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
+        rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
+        self.rnn.load_state_dict(rnn_state['model'])
+        self.rnn.eval()
+        print('Loaded rnn_state ckpt {}'.format(self.ckpt))
 
         # initializing model
         self.model = PPO(self.input_layer_size, self.mlp_layers, self.policy_net_hidden_layers, self.value_net_hidden_layers).to(self.device)
@@ -179,6 +304,20 @@ class PPOAgent:
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
 
+    # def preprocess_observation(self, obs):
+    #     """
+    #     To convert dict observation to numpy observation
+    #     """
+    #     assert(type(obs) == dict)
+    #     observation = np.array([], dtype=np.float32)
+    #     observation = np.concatenate((observation, obs["goal"].flatten()) )
+    #     observation = np.concatenate((observation, obs["humans"].flatten()) )
+    #     observation = np.concatenate((observation, obs["laptops"].flatten()) )
+    #     observation = np.concatenate((observation, obs["tables"].flatten()) )
+    #     observation = np.concatenate((observation, obs["plants"].flatten()) )
+    #     if "walls" in obs.keys():
+    #         observation = np.concatenate((observation, obs["walls"].flatten()))
+    #     return observation
     def preprocess_observation(self, obs):
         """
         To convert dict observation to numpy observation
@@ -190,8 +329,6 @@ class PPOAgent:
         observation = np.concatenate((observation, obs["laptops"].flatten()) )
         observation = np.concatenate((observation, obs["tables"].flatten()) )
         observation = np.concatenate((observation, obs["plants"].flatten()) )
-        if "walls" in obs.keys():
-            observation = np.concatenate((observation, obs["walls"].flatten()))
         return observation
 
     def discrete_to_continuous_action(self, action:int):
@@ -216,9 +353,7 @@ class PPOAgent:
     def get_action(self, state):
         with torch.no_grad():
             state = torch.FloatTensor(state).to(self.device)
-
-
-            action, action_logprob = self.old_model.act(state.float())
+            action, action_logprob = self.old_model.act(state)
             self.buffer.logprobs.append(action_logprob.cpu())
             return action
 
@@ -254,15 +389,11 @@ class PPOAgent:
         rewards = rewards.unsqueeze(-1)
         dones = dones.unsqueeze(-1)
         masks = 1 - dones
-        print("sssssssssssssssssssssssssssssssssssssssssssssssssssss",dones)
-        print("masksmasksmasksmasksmasks",masks)
         for t in reversed(range(0, len(rewards))):
             td_error = rewards[t] + (self.gamma * next_value * masks[t]) - values.data[t]
             next_value = values.data[t]
             
             advantage = td_error + (self.gamma * self.gae_lambda * advantage * masks[t])
-            # print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ",advantage )
-
             advantages.insert(0, advantage)
         advantages = torch.FloatTensor(advantages)
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-10)
@@ -280,45 +411,25 @@ class PPOAgent:
 
         for _ in range(self.n_epochs):
             logprobs, state_values, entropy = self.model(old_states, old_actions)
-            # print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbstate_valuesstate_valuesstate_valuesbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb ",state_values )
-            # print("cccccccccccccccccccccccccccccccccccccccentropyentropyentropyentropyentropyentropyccccccccccccccccccccccccccccccc ",entropy )
-
             advantage = self.calculate_advantages(state_values, rewards, dones)
-            # print("advantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantageadvantage ",advantage )
 
             # Finding the ratio (pi_theta / pi_theta__old)
             ratios = torch.exp(logprobs - old_logprobs)
             ratios = ratios.cpu() 
-
             # Finding Surrogate Loss
             surr1 = ratios* advantage.detach()
-
             surr2 = torch.clamp(ratios, 1-self.policy_clip, 1+self.policy_clip) * advantage.detach()
 
             # final loss of clipped objective PPO
             policy_loss = -torch.min(surr1, surr2).mean() - self.entropy_pen*(entropy.mean())
-            eps = 1e-6
-
-            # if policy_loss.isnan():
-            #      policy_loss=eps
-            # else: 
-            #     policy_loss = policy_loss
-
-            # print("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss ",surr2 )
-            # print("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss ",surr2 )
-
             critic_loss = F.mse_loss(state_values, state_value_target)
             
             loss = policy_loss + critic_loss
             self.episode_loss += loss.item()
-            # print("critic_losscritic_losscritic_losscritic_losscritic_losscritic_losscritic_loss",critic_loss)
-            # print("policpolicy_losspolicy_lossy_losspolicy_losspolicy_losspolicy_losspolicy_losspolicy_losspolicy_losspolicy_loss",policy_loss)
             loss.backward()
-            torch.autograd.set_detect_anomaly(True)
-            # gradient clipping
-            self.total_grad_norm += torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5).cpu()
-            self.optimizer.zero_grad()
 
+            # gradient clipping
+            self.total_grad_norm += torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5)
             self.optimizer.step()
 
         self.old_model.load_state_dict(self.model.state_dict())
@@ -355,7 +466,6 @@ class PPOAgent:
 
     def train(self):
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        # self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
         self.rewards = []
         self.losses = []
         self.grad_norms = []
@@ -364,6 +474,7 @@ class PPOAgent:
         self.steps_to_reach = []
 
         self.average_reward = 0
+        hiddens = 256
 
         # initialize train related parameters
         for i in range(self.num_episodes):
@@ -375,26 +486,55 @@ class PPOAgent:
             self.steps = 0
 
             # resetting the environment before the episode starts
+            # current_state = self.env.reset()
             current_state = self.env.reset()
 
             # preprocessing the observation
-            current_state = self.preprocess_observation(current_state)
+            # current_state = self.preprocess_observation(current_state)
 
+            current_obs = self.preprocess_observation(current_state)
+            action_ = random.randint(0, 3)
+            action = self.discrete_to_continuous_action(action_)
+            # action = np.atleast_2d(action)
+            action = torch.from_numpy(action).to(self.device)
+            hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
             done  = False
+            unsqueezed_action = action#.unsqueeze(0)
+
             while not done:
-                action = self.get_action(current_state)
-                # print("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",action)
+                z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
+
+                unsqueezed_z = z#.unsqueeze(0)
+                unsqueezed_action = unsqueezed_action.unsqueeze(0).to(self.device)
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+
+                    _,_, _, hidden0 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+
+                ################################################################################################
+
+                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
+                current_obs = torch.cat((z.unsqueeze(0), hidden[0]), -1)
+                current_obs = current_obs.squeeze(0).squeeze(0).cpu().detach().numpy()
+
+                
+                # action = self.get_action(current_state)
+                action = self.get_action(current_obs)
+
                 action_continuous = self.discrete_to_continuous_action(action)
                 next_state, reward, done, info = self.env.step(action_continuous)
                 next_state = self.preprocess_observation(next_state)
 
-                self.buffer.states.append(current_state)
+                # self.buffer.states.append(current_state)
+                self.buffer.states.append(current_obs)
                 self.buffer.actions.append(action)
                 self.buffer.dones.append(done)
                 self.buffer.rewards.append(reward)
-
-                current_state = next_state
-                
+                hidden =        hidden0
+                # current_state = next_state
+                current_obs = next_state
+                unsqueezed_action  = torch.from_numpy(action_continuous).to(self.device)                
                 self.steps += 1
                 self.episode_reward += reward
                 
@@ -462,7 +602,7 @@ if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
     env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
-    input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0] + 256
-    agent = PPOAgent(env, config="./configs/ppo.yaml", input_layer_size=input_layer_size)
+    input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    agent = PPOAgent(env, config="./configs/ppoNon_predictive_worldmodel.yaml", input_layer_size=input_layer_size)
     agent.train()
 
