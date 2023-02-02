@@ -127,7 +127,7 @@ class DuelingDQNAgent:
         # initializing the env
         self.env = env
         self.config = config
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
         
         # agent variables
         self.input_layer_size = None
@@ -175,7 +175,7 @@ class DuelingDQNAgent:
         # print('Loaded vae ckpt {}'.format(self.ckpt))
 
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
         n_hiddens = 256
         n_latents = 47
         n_actions = 2
@@ -197,7 +197,7 @@ class DuelingDQNAgent:
         self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '015robotframe.pth.tar')))[-1] #
 
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
-        rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
+        rnn_state = torch.load( self.ckpt, map_location={'cuda:1': str(self.device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
         print('Loaded rnn_state ckpt {}'.format(self.ckpt))
