@@ -169,7 +169,7 @@ class RNN_MODEL():
         self.rnnsave = data.rnnsave#'ckpt'
         self.data_path = data.data_dir 
         # self.seq_len = Seq_len.seq_len_16
-        self.seq_len = Seq_len.seq_1
+        self.seq_len = Seq_len.seq_len_1
         episode_length = data.time_steps
 
         print(self.seq_len) 
