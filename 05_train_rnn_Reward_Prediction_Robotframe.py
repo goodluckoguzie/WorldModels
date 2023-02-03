@@ -129,7 +129,7 @@ class RNN_MODEL():
         assert(config is not None)
         # initializing the env
         self.config = config
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
         self.extra = None
         # self.data_dir = None
         self.extra_dir = None
