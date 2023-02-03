@@ -149,7 +149,8 @@ class RNN_MODEL():
         self.run_name = None
         # self.seq_len = None
         self.run_name = None
-        self.window = Seq_len.seq_16
+        # self.window = Seq_len.seq_16
+        self.window = Seq_len.seq_1
 
                 # setting values from config file
         self.configure(self.config)
@@ -427,7 +428,7 @@ class RNN_MODEL():
                 }
                 
                 torch.save(
-                    d, os.path.join(self.ckpt_dir, '{:03d}rnnreward.pth.tar'.format(15))
+                    d, os.path.join(self.ckpt_dir, '{:03d}mainrnnreward.pth.tar'.format(15))
                 )
 
                 # and if it has, it will make a checkpoint of the current model
