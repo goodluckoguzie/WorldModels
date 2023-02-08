@@ -29,7 +29,7 @@ class Decoder(nn.Module):
         z = F.relu(self.linear1(z))
         z = F.relu(self.linear2(z))
         z = self.linear3(z)
-        z = torch.sigmoid(z)
+        # z = torch.sigmoid(z)
         return z.reshape((-1, self.input_dims))
 
 
@@ -60,6 +60,9 @@ class VariationalEncoder(nn.Module):
         return z ,mu , sigma
 
 
+
+
+
 class VAE(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
         super(VAE, self).__init__()
@@ -71,6 +74,7 @@ class VAE(nn.Module):
         return self.decoder(z),mu , sigma
 
 
+
 def vae_loss(recon_x, x, mu, logvar):
     """ VAE loss function """
     recon_loss = nn.MSELoss(size_average=False)
@@ -78,18 +82,18 @@ def vae_loss(recon_x, x, mu, logvar):
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD, BCE, KLD
 
-NORMALISE_FACTOR_POS = 40.*2
-def normalised(sample, factor_pos=1./NORMALISE_FACTOR_POS,  constant_0=0., constant_1=0.5):
-    ret = np.array(sample)
-    ret += constant_0
-    for i in range(47):
-        ret[:, i] = ret[:, i] * factor_pos
+# NORMALISE_FACTOR_POS = 40.*2
+# def normalised(sample, factor_pos=1./NORMALISE_FACTOR_POS,  constant_0=0., constant_1=0.5):
+#     ret = np.array(sample)
+#     ret += constant_0
+#     for i in range(47):
+#         ret[:, i] = ret[:, i] * factor_pos
 
-    # Add constant (0.5 to normalise) to make the data go from 0 to 1
-    ret += constant_1
-    return ret
-def denormalised(sample):
-    return normalised(sample=sample, factor_pos=NORMALISE_FACTOR_POS,  constant_0=-0.5, constant_1=-0.)
+#     # Add constant (0.5 to normalise) to make the data go from 0 to 1
+#     ret += constant_1
+#     return ret
+# def denormalised(sample):
+#     return normalised(sample=sample, factor_pos=NORMALISE_FACTOR_POS,  constant_0=-0.5, constant_1=-0.)
 
 
 
@@ -132,17 +136,17 @@ class VAE_MODEL():
 
         self.data_path = hp.data_dir# if not self.extra else self.extra_dir
         self.ckpt_dir = hp.ckpt_dir
-        dataset = GameSceneDataset(self.data_path )
+        self.dataset = GameSceneDataset(self.data_path )
         
 
 
-        self.dataset = normalised(dataset)
+        # self.dataset = normalised(dataset)
 
         self.loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True,num_workers=self.n_workers,)
         print("Train dataset lenght ",len(self.loader))
 
-        validset = GameSceneDataset(self.data_path, training=False)
-        self.validset = normalised(validset)
+        self.validset  = GameSceneDataset(self.data_path, training=False)
+        # self.validset = normalised(validset)
 
         self.valid_loader = DataLoader(self.validset, batch_size=self.test_batch, shuffle=False, drop_last=True)
         print("valid dataset lenght ",len(self.valid_loader))

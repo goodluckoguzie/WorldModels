@@ -94,7 +94,7 @@ def rollout():
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 20_000
+    max_ep = 15000
     #hp.n_rollout
     feat_dir = data.data_dir
 
@@ -196,5 +196,5 @@ if __name__ == '__main__':
                 # print("9999999999999999999999999999999999999999999999999999999999999999999999999", obs_lst.shape )
 
 
-    np.random.seed(hp.seed)
+    np.random.seed(1)
     rollout()
