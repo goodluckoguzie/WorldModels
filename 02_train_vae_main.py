@@ -132,7 +132,8 @@ class VAE_MODEL():
 
         # declaring the network
         global_step = 0
-        self.model = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
+        # self.model = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
+        self.model = VAE(47,self.n_hiddens,self.n_latents).to(DEVICE)
 
         self.data_path = hp.data_dir# if not self.extra else self.extra_dir
         self.ckpt_dir = hp.ckpt_dir
