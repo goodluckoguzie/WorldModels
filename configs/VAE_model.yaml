@@ -1,5 +1,6 @@
 
 n_latents: 32 
+input_dims: 47
 n_hiddens: 256
 n_actions: 2
 batch_size: 64
