@@ -3,7 +3,7 @@ buffer_size: 200_000  # buffer size
 batch_size: 512 #64 #64  # batch size for sampling from the buffer
 gamma: 0.99  # discount factor
 num_episodes: 100_000  # number of episodes to train
-epsilon: 1.0  # initial value of epsilon
+epsilon: 10  # initial value of epsilon
 epsilon_decay_rate: 0.0015  # after each episode, epsilon would be updated as epsion -= (epsilon_decay_rate)*epsilon
 polyak_const: 0.995  # polyak constant for updating the target network
 min_epsilon: 0.15  # minimum value of epsilon after which decay won't occur
