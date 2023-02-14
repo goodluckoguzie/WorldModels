@@ -127,7 +127,7 @@ class DuelingDQNAgent:
         # initializing the env
         self.env = env
         self.config = config
-        self.device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         
         # agent variables
         self.input_layer_size = None
@@ -175,7 +175,7 @@ class DuelingDQNAgent:
         # print('Loaded vae ckpt {}'.format(self.ckpt))
 
 
-        device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         n_hiddens = 256
         n_latents = 47
         n_actions = 2
@@ -197,7 +197,7 @@ class DuelingDQNAgent:
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
 
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
-        rnn_state = torch.load( self.ckpt, map_location={'cuda:1': str(self.device)})
+        rnn_state = torch.load( self.ckpt, map_location={'cuda': str(self.device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
         print('Loaded rnn_state ckpt {}'.format(self.ckpt))
@@ -533,22 +533,22 @@ class DuelingDQNAgent:
                 unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
                 next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
 
-                # with torch.no_grad():
-                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                #     current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
-                #     current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
-                #     current_obs_X_2_ = current_obs_X_2_[-1, :]
-                #     rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0).unsqueeze(0), unsqueezed_action.to(self.device)], dim=-1).float()
-
-                #     _,_, _, hidden = self.rnn.infer(rnn_input_X_2_,hidden)
-
-                # next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
-
                 with torch.no_grad():
                     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                    _,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+                    current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0).unsqueeze(0), unsqueezed_action.to(self.device)], dim=-1).float()
+
+                    _,_, _, hidden = self.rnn.infer(rnn_input_X_2_,hidden)
 
                 next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
+
+                # with torch.no_grad():
+                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                #     _,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+
+                # next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
 
                 
                 # rendering 

@@ -537,22 +537,22 @@ class DuelingDQNAgent:
                 unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
                 next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
 
-                # with torch.no_grad():
-                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                #     current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
-                #     current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
-                #     current_obs_X_2_ = current_obs_X_2_[-1, :]
-                #     rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0).unsqueeze(0), unsqueezed_action.to(self.device)], dim=-1).float()
-
-                #     _,_, _, hidden = self.rnn.infer(rnn_input_X_2_,hidden)
-
-                # next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
-
                 with torch.no_grad():
                     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                    _,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+                    current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0).unsqueeze(0), unsqueezed_action.to(self.device)], dim=-1).float()
+
+                    _,_, _, hidden = self.rnn.infer(rnn_input_X_2_,hidden)
 
                 next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
+
+                # with torch.no_grad():
+                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                #     _,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+
+                # next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
 
                 
                 # rendering 
