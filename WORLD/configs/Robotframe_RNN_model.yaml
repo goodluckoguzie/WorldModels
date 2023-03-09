@@ -1,0 +1,21 @@
+
+extra: 'additional'
+data_dir: 'Datasets'
+extra_dir: 'additional'
+ckpt_dir: 'ckpt'
+n_latents: 20
+input_dims: 47
+n_hiddens: 64
+n_actions: 2
+batch_size: 1
+test_batch: 1
+n_sample: 64
+log_interval: 50
+save_interval: 50
+max_step: 1000
+n_workers: 0
+run_name: RNN_MODEL_RobotFrame_Datasets_Timestep_0_5_main
+
+save_path: "./MODEL/RNN_MODEL_RobotFrame_Datasets_Timestep_0_5_main"  # path to save the model files
+
+n_layers: 2
