@@ -38,12 +38,13 @@ class NeuralNetwork(nn.Module):
 
 
 
-def evaluate(ann, env, seed):
+def evaluate(ann, env, seed, render=False):
     env.seed(seed) # deterministic for demonstration
     obs = env.reset()
     total_reward = 0
     while True:
-        env.render()
+        if render is True:
+            env.render()
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
         # the action is the value clipped returned by the nn
@@ -76,7 +77,7 @@ writer = SummaryWriter(log_dir='runs/'+writer_name)
 ann = NeuralNetwork(env.observation_space.shape[0], env.action_space.n)
 
 
-es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1,{'popsize': 50,'seed': 123})
+es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1,{'popsize': 100,'seed': 123})
 
 # es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1, {'seed': 123})
 
@@ -139,7 +140,8 @@ for iteration in range(10000):
 
 
     best_params = candidates[best_index]
-    rew = evaluate(ann, env, random.getrandbits(32))
+    render_the_test = os.path.exists("render")
+    rew = evaluate(ann, env, random.getrandbits(32), render=render_the_test)
     writer.add_scalar('test reward', rew, iteration)
     # print('current best reward : {}'.format(cur_best))
     if not best or cur_best >= best:
