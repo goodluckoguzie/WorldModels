@@ -9,6 +9,10 @@ import os, sys, glob
 
 import random
 
+ENV_NAME = 'LunarLander-v2'
+episodes_per_generation = 2
+popsize = 100
+
 class NeuralNetwork(nn.Module):
 
     def __init__(self, input_shape, n_actions):
@@ -61,7 +65,6 @@ def evaluate(ann, env, seed, render=False):
 
 
 import cma
-ENV_NAME = 'LunarLander-v2'
 np.random.seed(123)
 env = gym.make(ENV_NAME)
 import datetime
@@ -70,14 +73,14 @@ now = datetime.datetime.now()
 
 date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
 
-writer_name = 'cat_{}_{}'.format(ENV_NAME, date_time)
+writer_name = f'cma_{ENV_NAME}_pop{popsize}_k{episodes_per_generation}_{date_time}'
 
 writer = SummaryWriter(log_dir='runs/'+writer_name)
 
 ann = NeuralNetwork(env.observation_space.shape[0], env.action_space.n)
 
 
-es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1,{'popsize': 100,'seed': 123})
+es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1,{'popsize': popsize,'seed': 123})
 
 # es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1, {'seed': 123})
 
@@ -115,33 +118,39 @@ def fitness(x, ann, env, seed, visul=False):
 
 best = 0
 for iteration in range(10000):
-    seed = random.getrandbits(32)
+    seeds = [random.getrandbits(32) for _ in range(episodes_per_generation)]
     # Create population of candidates and evaluate them
     candidates, fitnesses , Maxfitnesses = es.ask(), [],[]
     for candidate in candidates:
-        # Load new policy parameters to agent.
-        # ann.set_params(candidate)
-        # Evaluate the agent using stable-baselines predict function
-        reward = fitness(candidate, ann, env, seed) 
-        fitnesses.append(reward)
-        Maxfitnesses.append(-reward)
+        reward = 0
+        for seed in seeds:
+            # Load new policy parameters to agent.
+            # ann.set_params(candidate)
+            # Evaluate the agent using stable-baselines predict function
+            reward += fitness(candidate, ann, env, seed) 
+        average_candidate_reward = reward / episodes_per_generation
+        fitnesses.append(average_candidate_reward)
+        Maxfitnesses.append(-average_candidate_reward)
     # CMA-ES update
     es.tell(candidates, fitnesses)
+
     # Display some training infos
     mean_fitness = np.mean(sorted(fitnesses)[:int(0.1 * len(candidates))])
     print("Iteration {:<3} Mean top 10% reward: {:.2f}".format(iteration, -mean_fitness))
-    
     cur_best = max(Maxfitnesses)
     best_index = np.argmax(Maxfitnesses)
     print("current  value {}...".format(cur_best))
-
-    writer.add_scalar('Mean top 10 reward', -mean_fitness, iteration)
-    writer.add_scalar('reward', cur_best, iteration)
+    writer.add_scalar('mean top 10 reward', -mean_fitness, iteration)
+    # writer.add_scalar('reward', cur_best, iteration)
 
 
     best_params = candidates[best_index]
     render_the_test = os.path.exists("render")
-    rew = evaluate(ann, env, random.getrandbits(32), render=render_the_test)
+    seeds = [random.getrandbits(32) for _ in range(episodes_per_generation)]
+    rew = 0
+    for seed in seeds:
+        rew += evaluate(ann, env, seed, render=render_the_test)
+    rew /= episodes_per_generation
     writer.add_scalar('test reward', rew, iteration)
     # print('current best reward : {}'.format(cur_best))
     if not best or cur_best >= best:
