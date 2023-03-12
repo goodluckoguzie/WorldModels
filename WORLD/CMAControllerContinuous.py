@@ -41,7 +41,7 @@ class NeuralNetwork(nn.Module):
     def forward(self, x):
         x = F.relu(self.l1(x.float()))
         x = F.relu(self.l2(x))
-        return self.lout(x)
+        return torch.tanh(self.lout(x))
     
     def get_params(self):
         p = np.empty((0,))
@@ -71,25 +71,6 @@ def preprocess_observation(obs):
     return torch.from_numpy(observation)
 
 
-def discrete_to_continuous_action(action:int):
-    """
-    Function to return a continuous space action for a given discrete action
-    """
-    if action == 0:
-        return np.array([0, 1], dtype=np.float32) 
-    # Turning clockwise
-    elif action == 1:
-        return np.array([0, -1], dtype=np.float32) 
-    # # Move forward
-    elif action == 2:
-        return np.array([1, 0], dtype=np.float32)
-    # stop the robot
-    elif action == 3:
-        return np.array([0, 0], dtype=np.float32)
-    else:
-        raise NotImplementedError
-
-
 def evaluate(ann, env, seed, render=False):
     env.seed(seed) # deterministic for demonstration
     obs = env.reset()
@@ -101,8 +82,7 @@ def evaluate(ann, env, seed, render=False):
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
         # the action is the value clipped returned by the nn
-        action = net_output.data.cpu().numpy().argmax()
-        action = discrete_to_continuous_action(action)
+        action = net_output.data.cpu().numpy()
         obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)
         total_reward += reward
@@ -190,7 +170,7 @@ def train_with_cma(generations, writer_name):
 
 
 if __name__ == '__main__':
-    ann = NeuralNetwork(47, 4)
+    ann = NeuralNetwork(47, 2)
     env = gym.make(ENV_NAME)
     env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
@@ -208,7 +188,7 @@ if __name__ == '__main__':
         np.random.seed(123)
         now = datetime.datetime.now()
         date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
-        writer_name = f'cma_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_{date_time}'
+        writer_name = f'cmaC_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_{date_time}'
         writer = SummaryWriter(log_dir='runs/'+writer_name)
         es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 0.1, {'popsize': POPULATION_SIZE, 'seed': 123})
 
