@@ -25,7 +25,7 @@ import cma
 
 
 ENV_NAME = 'SocNavEnv-v1'
-EPISODES_PER_GENERATION = 2
+EPISODES_PER_GENERATION = 5
 GENERATIONS = 10000
 POPULATION_SIZE = 100
 SAVE_PATH = "./models/CMA/"
@@ -71,7 +71,7 @@ def preprocess_observation(obs):
     return torch.from_numpy(observation)
 
 
-def evaluate(ann, env, seed, render=False):
+def evaluate(ann, env, seed, render=False, wait_after_render=False):
     env.seed(seed) # deterministic for demonstration
     obs = env.reset()
     obs = preprocess_observation(obs)
@@ -82,12 +82,17 @@ def evaluate(ann, env, seed, render=False):
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
         # the action is the value clipped returned by the nn
-        action = net_output.data.cpu().numpy()
+        action = net_output.data.cpu().numpy().argmax()
+        action = discrete_to_continuous_action(action)
         obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)
         total_reward += reward
         if done:
             break
+    if wait_after_render:
+        for i in range(2):
+            env.render()
+            time.sleep(1)
     return total_reward
 
 
@@ -96,30 +101,8 @@ def fitness(candidate, env, seed, render=False):
     return -evaluate(ann, env, seed, render)
 
 
-def fake_generations(generations=10000):
-    for generation in range(generations):
-        print(f'generation {generation}')
-        seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
-        for candidate in range(POPULATION_SIZE):
-            # print(f'  candidate {candidate}')
-            reward = 0
-            episode = 0
-            for seed in seeds:
-                # print(f'    episode {episode}')
-                episode += 1
-                env.seed(seed)
-                obs = env.reset()
-                total_reward = 0
-                # print(f'      ', end='')
-                for step in range(1000000000):
-                    # print(f'{step}', end='')
-                    _, _, done, _ = env.step(np.array([1., 0.], dtype=np.float32))
-                    if done:
-                        # print()
-                        break
-
-
 def train_with_cma(generations, writer_name):
+    es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 5, {'popsize': POPULATION_SIZE, 'seed': 123})
     best = 0
     for generation in range(generations):
         seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
@@ -175,9 +158,10 @@ if __name__ == '__main__':
     env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
-    if sys.argv[1] == '-test':
+    if len(sys.argv)>2 and sys.argv[1] == '-test':
         ann.load_state_dict(torch.load(sys.argv[2]))
-        evaluate(ann, env, seed=random.getrandbits(32), render=True)
+        reward = evaluate(ann, env, seed=random.getrandbits(32), render=True, wait_after_render=True)
+        print(f'Reward: {reward}')
     else:
         while not os.path.exists("start"):
             time.sleep(1)
@@ -190,6 +174,5 @@ if __name__ == '__main__':
         date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
         writer_name = f'cmaC_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_{date_time}'
         writer = SummaryWriter(log_dir='runs/'+writer_name)
-        es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 0.1, {'popsize': POPULATION_SIZE, 'seed': 123})
 
         train_with_cma(GENERATIONS, writer_name)
