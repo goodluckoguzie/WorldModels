@@ -8,15 +8,15 @@ episode:
 
 rewards:
     use_sngnn: 0 #0.05  #0.05 #0.033 #0.05  # use the SNGNN network as the reward function
-    use_distance_to_goal: True  # use the distance to goal in the reward function
+    use_distance_to_goal: False  # use the distance to goal in the reward function
     reach_reward: 1.0  # reward received when agent reaches goal
-    out_of_map_reward: -0.4  # reward that the agent receives if it goes out of map. (since there are walls and on collision with a wall, the episode terminates, this reward is irrelevant)
+    out_of_map_reward: -0.5 # reward that the agent receives if it goes out of map. (since there are walls and on collision with a wall, the episode terminates, this reward is irrelevant)
     max_steps_reward: -0.5  # reward that the agent receives if the maximum steps have been taken, terminating the episode
-    alive_reward: -0.00001  # for each step that the robot is alive
-    collision_reward: -0.4  # reward received on collision with any entity
-    distance_reward_scaler: 0.05  # reward received would be given by (distance_to_goal)/(distance_reward_divisor)
-    discomfort_dist: 0.6
-    discomfort_penalty_factor: 0.05
+    alive_reward: 0.0  # for each step that the robot is alive
+    collision_reward: -2  # reward received on collision with any entity
+    distance_reward_scaler: 0  # reward received would be given by (distance_to_goal)/(distance_reward_divisor)
+    discomfort_dist: 0.
+    discomfort_penalty_factor: 0.0
     
 robot:
     robot_radius: 0.3  # radius of the robot
@@ -52,7 +52,7 @@ human-laptop-interaction:
 env:
     margin: 0.5  # margin for the env
     max_advance_human: 0.14  # maximum speed for humans
-    max_advance_robot: 0.1  # maximum linear speed for robot 
+    max_advance_robot: 0.14  # maximum linear speed for robot 
     max_rotation: 0.387596899  # maximum rotational speed for robot
     wall_segment_size: 1.0  # size of the wall segment, used when segmenting the wall
     speed_threshold: 0.05  # speed below which would be considered 0 (for humans)

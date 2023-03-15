@@ -82,8 +82,7 @@ def evaluate(ann, env, seed, render=False, wait_after_render=False):
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
         # the action is the value clipped returned by the nn
-        action = net_output.data.cpu().numpy().argmax()
-        action = discrete_to_continuous_action(action)
+        action = net_output.data.cpu().numpy()
         obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)
         total_reward += reward
@@ -102,7 +101,7 @@ def fitness(candidate, env, seed, render=False):
 
 
 def train_with_cma(generations, writer_name):
-    es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 5, {'popsize': POPULATION_SIZE, 'seed': 123})
+    es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 10, {'popsize': POPULATION_SIZE, 'seed': 123})
     best = 0
     for generation in range(generations):
         seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
@@ -160,8 +159,9 @@ if __name__ == '__main__':
 
     if len(sys.argv)>2 and sys.argv[1] == '-test':
         ann.load_state_dict(torch.load(sys.argv[2]))
-        reward = evaluate(ann, env, seed=random.getrandbits(32), render=True, wait_after_render=True)
-        print(f'Reward: {reward}')
+        while True:
+            reward = evaluate(ann, env, seed=random.getrandbits(32), render=True, wait_after_render=True)
+            print(f'Reward: {reward}')
     else:
         while not os.path.exists("start"):
             time.sleep(1)

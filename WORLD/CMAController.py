@@ -101,7 +101,8 @@ def evaluate(ann, env, seed, render=False, wait_after_render=False):
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
         # the action is the value clipped returned by the nn
-        action = net_output.data.cpu().numpy()
+        action = net_output.data.cpu().numpy().argmax()
+        action = discrete_to_continuous_action(action)
         obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)
         total_reward += reward
