@@ -15,6 +15,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 import gym
 
+import pickle
+
 from hparams import HyperParams as hp
 
 sys.path.append('./gsoc22-socnavenv')
@@ -23,9 +25,54 @@ from socnavenv.wrappers import WorldFrameObservations
 
 import cma
 
+import pygame
+pygame.init()
+pygame.joystick.init()
+joystick = pygame.joystick.Joystick(0)
+################################################
+###########   Calibrate joystick   #############
+################################################
+axes = joystick.get_numaxes()
+try:
+    with open('joystick_calibration.pickle', 'rb') as f:
+        centre, values, min_values, max_values = pickle.load(f)
+except:
+    centre = {}
+    values = {}
+    min_values = {}
+    max_values = {}
+    for axis in range(axes):
+        values[axis] = 0.
+        centre[axis] = 0.
+        min_values[axis] = 0.
+        max_values[axis] = 0.
+    T = 3.
+    print(f'Leave the controller neutral for {T} seconds')
+    t = time.time()
+    while time.time() - t < T:
+        pygame.event.pump()
+        for axis in range(axes):
+            centre[axis] = joystick.get_axis(axis)
+        time.sleep(0.05)
+    T = 5.
+    print(f'Move the joystick around for {T} seconds trying to reach the max and min values for the axes')
+    t = time.time()
+    while time.time() - t < T:
+        pygame.event.pump()
+        for axis in range(axes):
+            value = joystick.get_axis(axis)-centre[axis]
+            if value > max_values[axis]:
+                max_values[axis] = value
+            if value < min_values[axis]:
+                min_values[axis] = value
+        time.sleep(0.05)
+    with open('joystick_calibration.pickle', 'wb') as f:
+        pickle.dump([centre, values, min_values, max_values], f)
+
+
 
 ENV_NAME = 'SocNavEnv-v1'
-EPISODES_PER_GENERATION = 3
+EPISODES_PER_GENERATION = 5
 GENERATIONS = 10000
 POPULATION_SIZE = 100
 SAVE_PATH = "./models/CMA/"
@@ -41,7 +88,7 @@ class NeuralNetwork(nn.Module):
     def forward(self, x):
         x = F.relu(self.l1(x.float()))
         x = F.relu(self.l2(x))
-        return self.lout(x)
+        return torch.tanh(self.lout(x))
     
     def get_params(self):
         p = np.empty((0,))
@@ -71,42 +118,25 @@ def preprocess_observation(obs):
     return torch.from_numpy(observation)
 
 
-def discrete_to_continuous_action(action:int):
-    """
-    Function to return a continuous space action for a given discrete action
-    """
-    if action == 0:
-        return np.array([0, 1], dtype=np.float32) 
-    # Turning clockwise
-    elif action == 1:
-        return np.array([0, -1], dtype=np.float32) 
-    # # Move forward
-    elif action == 2:
-        return np.array([1, 0], dtype=np.float32)
-    # stop the robot
-    elif action == 3:
-        return np.array([0, 0], dtype=np.float32)
-    else:
-        raise NotImplementedError
-
-
 def evaluate(ann, env, seed, render=False, wait_after_render=False):
     env.seed(seed) # deterministic for demonstration
     obs = env.reset()
     obs = preprocess_observation(obs)
     total_reward = 0
+    print()
     while True:
         if render is True:
             env.render()
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
         # the action is the value clipped returned by the nn
-        action = net_output.data.cpu().numpy().argmax()
-        action = discrete_to_continuous_action(action)
-        obs, reward, done, _ = env.step(action)
+        pygame.event.pump()
+        axis_data = [joystick.get_axis(axis)-centre[axis] for axis in range(4)]
+        obs, reward, done, _ = env.step([-axis_data[1], -axis_data[2]])
         obs = preprocess_observation(obs)
         total_reward += reward
         if done:
+            print(total_reward)
             break
     if wait_after_render:
         for i in range(2):
@@ -121,7 +151,7 @@ def fitness(candidate, env, seed, render=False):
 
 
 def train_with_cma(generations, writer_name):
-    es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 5, {'popsize': POPULATION_SIZE, 'seed': 123})
+    es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 10, {'popsize': POPULATION_SIZE, 'seed': 123})
     best = 0
     for generation in range(generations):
         seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
@@ -131,7 +161,7 @@ def train_with_cma(generations, writer_name):
             reward = 0
             for seed in seeds:
                 # Evaluate the agent using stable-baselines predict function
-                reward += fitness(candidate, env, seed, render=False) 
+                reward += fitness(candidate, env, seed, render=True) 
             average_candidate_reward = reward / EPISODES_PER_GENERATION
             fitnesses.append(average_candidate_reward)
             Maxfitnesses.append(-average_candidate_reward)
@@ -172,15 +202,16 @@ def train_with_cma(generations, writer_name):
 
 
 if __name__ == '__main__':
-    ann = NeuralNetwork(47, 4)
+    ann = NeuralNetwork(47, 2)
     env = gym.make(ENV_NAME)
     env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     if len(sys.argv)>2 and sys.argv[1] == '-test':
         ann.load_state_dict(torch.load(sys.argv[2]))
-        reward = evaluate(ann, env, seed=random.getrandbits(32), render=True, wait_after_render=True)
-        print(f'Reward: {reward}')
+        while True:
+            reward = evaluate(ann, env, seed=random.getrandbits(32), render=True, wait_after_render=True)
+            print(f'Reward: {reward}')
     else:
         while not os.path.exists("start"):
             time.sleep(1)
@@ -191,7 +222,7 @@ if __name__ == '__main__':
         np.random.seed(123)
         now = datetime.datetime.now()
         date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
-        writer_name = f'cma_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_{date_time}'
+        writer_name = f'cmaC_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_{date_time}'
         writer = SummaryWriter(log_dir='runs/'+writer_name)
 
         train_with_cma(GENERATIONS, writer_name)
