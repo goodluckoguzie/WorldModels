@@ -28,6 +28,7 @@ ENV_NAME = 'SocNavEnv-v1'
 EPISODES_PER_GENERATION = 3
 GENERATIONS = 10000
 POPULATION_SIZE = 100
+SIGMA=5
 SAVE_PATH = "./models/CMA/"
 
 
@@ -101,7 +102,7 @@ def fitness(candidate, env, seed, render=False):
 
 
 def train_with_cma(generations, writer_name):
-    es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], 10, {'popsize': POPULATION_SIZE, 'seed': 123})
+    es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], SIGMA, {'popsize': POPULATION_SIZE, 'seed': 123})
     best = 0
     for generation in range(generations):
         seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
@@ -123,14 +124,16 @@ def train_with_cma(generations, writer_name):
         print("Iteration {:<3} Mean top 10% reward: {:.2f}".format(generation, -mean_fitness))
         cur_best = max(Maxfitnesses)
         best_index = np.argmax(Maxfitnesses)
-        print("current  value {}...".format(cur_best))
-        writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
+        # print("current  value {}...".format(cur_best))
+        # writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
         # writer.add_scalar('reward', cur_best, generation)
 
         best_params = candidates[best_index]
         render_the_test = os.path.exists("render")
         seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
         rew = 0
+        # GOODLUCK: You forgot this
+        ann.set_params(best_params)
         for seed in seeds:
             rew += evaluate(ann, env, seed, render=render_the_test)
         rew /= EPISODES_PER_GENERATION
@@ -139,6 +142,7 @@ def train_with_cma(generations, writer_name):
         if not best or cur_best >= best:
             best = cur_best
             print("Saving new best with value {}...".format(cur_best))
+            # GOODLUCK: What is the purpose of the following line?
             d = best_params
             torch.save(ann.state_dict(), writer_name+'_BEST.pth')
         # Saving model every 
@@ -172,7 +176,7 @@ if __name__ == '__main__':
         np.random.seed(123)
         now = datetime.datetime.now()
         date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
-        writer_name = f'cmaC_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_{date_time}'
+        writer_name = f'cmaC_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_sigma{SIGMA}_{date_time}'
         writer = SummaryWriter(log_dir='runs/'+writer_name)
 
         train_with_cma(GENERATIONS, writer_name)
