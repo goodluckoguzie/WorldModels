@@ -125,8 +125,8 @@ def train_with_cma(generations, writer_name):
         cur_best = max(Maxfitnesses)
         best_index = np.argmax(Maxfitnesses)
         # print("current  value {}...".format(cur_best))
-        # writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
-        # writer.add_scalar('reward', cur_best, generation)
+        writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
+        writer.add_scalar('reward', cur_best, generation)
 
         best_params = candidates[best_index]
         render_the_test = os.path.exists("render")
