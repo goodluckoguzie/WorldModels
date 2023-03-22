@@ -63,18 +63,25 @@ def preprocess_observation(obs):
     To convert dict observation to numpy observation
     """
     assert(type(obs) == dict)
-    #observation = np.array([], dtype=np.float32)
-    #observation = np.concatenate((observation, obs["goal"].flatten()) )
-    #observation = np.concatenate((observation, obs["humans"].flatten()) )
-    #observation = np.concatenate((observation, obs["laptops"].flatten()) )
-    #observation = np.concatenate((observation, obs["tables"].flatten()) )
-    #observation = np.concatenate((observation, obs["plants"].flatten()) )
     obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
     humans = obs["humans"].flatten()
     for i in range(int(round(humans.shape[0]/(6+7)))):
         index = i*(6+7)
         obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
     return torch.from_numpy(obs2)
+    
+def preprocess_observation_for_prediction(obs):
+    """
+    To convert dict observation to numpy observation
+    """
+    assert(type(obs) == dict)
+    observation = np.array([], dtype=np.float32)
+    observation = np.concatenate((observation, obs["goal"].flatten()) )
+    observation = np.concatenate((observation, obs["humans"].flatten()) )
+    observation = np.concatenate((observation, obs["laptops"].flatten()) )
+    observation = np.concatenate((observation, obs["tables"].flatten()) )
+    observation = np.concatenate((observation, obs["plants"].flatten()) )
+    return observation
 
 
 def evaluate(ann, env, seed, render=False, wait_after_render=False):
