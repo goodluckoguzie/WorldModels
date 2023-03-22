@@ -127,22 +127,28 @@ def evaluate(ann, env, seed, render=False, wait_after_render=False):
         axis_data = [joystick.get_axis(axis)-centre[axis] for axis in range(4)]
         obs, reward, done, _ = env.step([-axis_data[1], -axis_data[2]])
         obs = preprocess_observation(obs)
+        total_reward += reward
         draw_obs(obs)
         if done:
             print(total_reward)
             break
     if wait_after_render:
-        for i in range(2):
-            env.render()
-            time.sleep(5)
+        env.render()
+        time.sleep(5)
     return total_reward
 
 
 def train_with_cma(generations):
+    all_rewards = 0
     for generation in range(generations):
+        gen_reward = 0
         seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
-        for seed in seeds:
-            evaluate(None, env, seed, render=True, wait_after_render=True)
+        for seed_index, seed in enumerate(seeds):
+            r = evaluate(None, env, seed, render=True, wait_after_render=True)
+            all_rewards += r
+            gen_reward += r
+            print(f'gen:{gen_reward/(seed_index+1)}   overall:{all_rewards/(seed_index+1+generation*EPISODES_PER_GENERATION)}')
+
 
 
 
