@@ -25,7 +25,7 @@ import cma
 
 
 ENV_NAME = 'SocNavEnv-v1'
-EPISODES_PER_GENERATION = 12
+EPISODES_PER_GENERATION = 20
 GENERATIONS = 10000
 POPULATION_SIZE = 100
 SIGMA=0.1
@@ -163,9 +163,13 @@ if __name__ == '__main__':
 
     if len(sys.argv)>2 and sys.argv[1] == '-test':
         ann.load_state_dict(torch.load(sys.argv[2]))
+        done = 0
+        accumulated_reward =0
         while True:
             reward = evaluate(ann, env, seed=random.getrandbits(32), render=True, wait_after_render=True)
-            print(f'Reward: {reward}')
+            accumulated_reward += reward
+            done += 1
+            print(f'Reward: {reward} (avg:{accumulated_reward/done})')
     else:
         while not os.path.exists("start"):
             time.sleep(1)
