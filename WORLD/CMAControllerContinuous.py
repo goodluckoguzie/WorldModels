@@ -25,9 +25,9 @@ import cma
 
 
 ENV_NAME = 'SocNavEnv-v1'
-EPISODES_PER_GENERATION = 20
+EPISODES_PER_GENERATION = 16
 GENERATIONS = 10000
-POPULATION_SIZE = 100
+POPULATION_SIZE = 128
 SIGMA=0.1
 SAVE_PATH = "./models/CMA/"
 
@@ -43,13 +43,13 @@ class NeuralNetwork(nn.Module):
         x = F.relu(self.l1(x.float()))
         x = F.relu(self.l2(x))
         return torch.tanh(self.lout(x))
-    
+
     def get_params(self):
         p = np.empty((0,))
         for n in self.parameters():
             p = np.append(p, n.flatten().cpu().detach().numpy())
         return p
-    
+
     def set_params(self, x):
         start = 0
         for p in self.parameters():
@@ -63,13 +63,18 @@ def preprocess_observation(obs):
     To convert dict observation to numpy observation
     """
     assert(type(obs) == dict)
-    observation = np.array([], dtype=np.float32)
-    observation = np.concatenate((observation, obs["goal"].flatten()) )
-    observation = np.concatenate((observation, obs["humans"].flatten()) )
-    observation = np.concatenate((observation, obs["laptops"].flatten()) )
-    observation = np.concatenate((observation, obs["tables"].flatten()) )
-    observation = np.concatenate((observation, obs["plants"].flatten()) )
-    return torch.from_numpy(observation)
+    #observation = np.array([], dtype=np.float32)
+    #observation = np.concatenate((observation, obs["goal"].flatten()) )
+    #observation = np.concatenate((observation, obs["humans"].flatten()) )
+    #observation = np.concatenate((observation, obs["laptops"].flatten()) )
+    #observation = np.concatenate((observation, obs["tables"].flatten()) )
+    #observation = np.concatenate((observation, obs["plants"].flatten()) )
+    obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
+    humans = obs["humans"].flatten()
+    for i in range(int(round(humans.shape[0]/(6+7)))):
+        index = i*(6+7)
+        obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
+    return torch.from_numpy(obs2)
 
 
 def evaluate(ann, env, seed, render=False, wait_after_render=False):
@@ -125,25 +130,23 @@ def train_with_cma(generations, writer_name):
         cur_best = max(Maxfitnesses)
         best_index = np.argmax(Maxfitnesses)
         # print("current  value {}...".format(cur_best))
-        # writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
+        writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
         # writer.add_scalar('reward', cur_best, generation)
 
         best_params = candidates[best_index]
         render_the_test = os.path.exists("render")
         seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
-        rew = 0
+        test_rew = 0
         # GOODLUCK: You forgot this
         ann.set_params(best_params)
         for seed in seeds:
-            rew += evaluate(ann, env, seed, render=render_the_test)
-        rew /= EPISODES_PER_GENERATION
-        writer.add_scalar('test reward', rew, generation)
+            test_rew += evaluate(ann, env, seed, render=render_the_test)
+        test_rew /= EPISODES_PER_GENERATION
+        writer.add_scalar('test reward', test_rew, generation)
         # Save model if it's best
-        if not best or cur_best >= best:
+        if not best or test_rew >= best:
             best = cur_best
-            print("Saving new best with value {}...".format(cur_best))
-            # GOODLUCK: What is the purpose of the following line?
-            d = best_params
+            print("Saving new best with value {}...".format(best))
             torch.save(ann.state_dict(), writer_name+'_BEST.pth')
         # Saving model every 
         if (generation+1)%5 == 0:
@@ -156,20 +159,20 @@ def train_with_cma(generations, writer_name):
 
 
 if __name__ == '__main__':
-    ann = NeuralNetwork(47, 2)
+    ann = NeuralNetwork(23, 2)
     env = gym.make(ENV_NAME)
     env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
 
     if len(sys.argv)>2 and sys.argv[1] == '-test':
         ann.load_state_dict(torch.load(sys.argv[2]))
+        accumulated_reward = 0
         done = 0
-        accumulated_reward =0
         while True:
             reward = evaluate(ann, env, seed=random.getrandbits(32), render=True, wait_after_render=True)
             accumulated_reward += reward
             done += 1
-            print(f'Reward: {reward} (avg:{accumulated_reward/done})')
+            print(f'Reward: {reward}    (avg:{accumulated_reward/done})')
     else:
         while not os.path.exists("start"):
             time.sleep(1)

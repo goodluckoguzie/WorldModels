@@ -35,14 +35,16 @@ SAVE_PATH = "./models/CMA/"
 class NeuralNetwork(nn.Module):
     def __init__(self, input_shape, n_actions):
         super(NeuralNetwork, self).__init__()
-        self.l1 = nn.Linear(input_shape, 32)
-        self.l2 = nn.Linear(32, 32)
-        self.lout = nn.Linear(32, n_actions)
+        self.l1 = nn.Linear(input_shape, 64)
+        self.l2 = nn.Linear(64, 64)
+        self.l3 = nn.Linear(64, 64)
+        self.lout = nn.Linear(64, n_actions)
 
     def forward(self, x):
-        x = F.relu(self.l1(x.float()))
-        x = F.relu(self.l2(x))
-        return self.lout(x)
+        x = F.elu(self.l1(x.float()))
+        x = F.elu(self.l2(x))
+        x = F.elu(self.l3(x))
+        return torch.tanh(self.lout(x))
 
     def get_params(self):
         p = np.empty((0,))
@@ -63,25 +65,18 @@ def preprocess_observation(obs):
     To convert dict observation to numpy observation
     """
     assert(type(obs) == dict)
+    #observation = np.array([], dtype=np.float32)
+    #observation = np.concatenate((observation, obs["goal"].flatten()) )
+    #observation = np.concatenate((observation, obs["humans"].flatten()) )
+    #observation = np.concatenate((observation, obs["laptops"].flatten()) )
+    #observation = np.concatenate((observation, obs["tables"].flatten()) )
+    #observation = np.concatenate((observation, obs["plants"].flatten()) )
     obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
     humans = obs["humans"].flatten()
     for i in range(int(round(humans.shape[0]/(6+7)))):
         index = i*(6+7)
         obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
     return torch.from_numpy(obs2)
-    
-def preprocess_observation_for_prediction(obs):
-    """
-    To convert dict observation to numpy observation
-    """
-    assert(type(obs) == dict)
-    observation = np.array([], dtype=np.float32)
-    observation = np.concatenate((observation, obs["goal"].flatten()) )
-    observation = np.concatenate((observation, obs["humans"].flatten()) )
-    observation = np.concatenate((observation, obs["laptops"].flatten()) )
-    observation = np.concatenate((observation, obs["tables"].flatten()) )
-    observation = np.concatenate((observation, obs["plants"].flatten()) )
-    return observation
 
 
 def evaluate(ann, env, seed, render=False, wait_after_render=False):
@@ -95,8 +90,7 @@ def evaluate(ann, env, seed, render=False, wait_after_render=False):
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
         # the action is the value clipped returned by the nn
-        action = net_output.data.cpu().numpy().argmax()
-        action = discrete_to_continuous_action(action)
+        action = net_output.data.cpu().numpy()
         obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)
         total_reward += reward
