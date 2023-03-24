@@ -19,15 +19,14 @@ from hparams import HyperParams as hp
 
 sys.path.append('./gsoc22-socnavenv')
 import socnavenv
-from socnavenv.wrappers import WorldFrameObservations
 
 import cma
 
 
 ENV_NAME = 'SocNavEnv-v1'
-EPISODES_PER_GENERATION = 20
+EPISODES_PER_GENERATION = 10
 GENERATIONS = 10000
-POPULATION_SIZE = 128
+POPULATION_SIZE = 100
 SIGMA=0.1
 SAVE_PATH = "./models/CMA/"
 
@@ -83,14 +82,18 @@ def evaluate(ann, env, seed, render=False, wait_after_render=False):
     env.seed(seed) # deterministic for demonstration
     obs = env.reset()
     obs = preprocess_observation(obs)
+    prev_obs = obs
     total_reward = 0
     while True:
         if render is True:
             env.render()
         # Output of the neural net
-        net_output = ann(torch.tensor(obs))
+        cat = torch.cat((prev_obs, obs), 0)
+        net_output = ann(cat)
         # the action is the value clipped returned by the nn
         action = net_output.data.cpu().numpy()
+
+        prev_obs = torch.tensor(obs)
         obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)
         total_reward += reward
@@ -147,7 +150,7 @@ def train_with_cma(generations, writer_name):
         writer.add_scalar('test reward', test_rew, generation)
         # Save model if it's best
         if not best or test_rew >= best:
-            best = cur_best
+            best = test_rew
             print("Saving new best with value {}...".format(best))
             torch.save(ann.state_dict(), writer_name+'_BEST.pth')
         # Saving model every 
@@ -161,7 +164,7 @@ def train_with_cma(generations, writer_name):
 
 
 if __name__ == '__main__':
-    ann = NeuralNetwork(23, 2)
+    ann = NeuralNetwork(23*2, 2)
     env = gym.make(ENV_NAME)
     env.configure('./configs/env_timestep_1.yaml')
     env.set_padded_observations(True)
