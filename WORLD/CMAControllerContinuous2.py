@@ -25,7 +25,7 @@ import cma
 
 
 ENV_NAME = 'SocNavEnv-v1'
-EPISODES_PER_GENERATION = 20
+EPISODES_PER_GENERATION = 16
 GENERATIONS = 10000
 POPULATION_SIZE = 128
 SIGMA=0.1
@@ -111,16 +111,42 @@ def fitness(candidate, env, seed, render=False):
 def train_with_cma(generations, writer_name):
     es = cma.CMAEvolutionStrategy(len(ann.get_params())*[0], SIGMA, {'popsize': POPULATION_SIZE, 'seed': 123})
     best = 0
+
+    def reps(generation):
+        if generation < 10:
+            return 3
+        elif generation < 50:
+            return 5
+        elif generation < 100:
+            return 8
+        elif generation < 200:
+            return 12
+        else:
+             return EPISODES_PER_GENERATION
+
+    def scale(generation):
+        if generation < 10:
+            return 2
+        elif generation < 50:
+            return 1.5
+        elif generation < 100:
+            return 1
+        elif generation < 200:
+            return 0.5
+        else:
+             return 0.125
+        
+
     for generation in range(generations):
-        seeds = [random.getrandbits(32) for _ in range(EPISODES_PER_GENERATION)]
+        seeds = [random.getrandbits(32) for _ in range(reps(generation))]
         # Create population of candidates and evaluate them
-        candidates, fitnesses , Maxfitnesses = es.ask(), [],[]
+        candidates, fitnesses , Maxfitnesses = es.ask(sigma_fac=scale(generation)), [],[]
         for candidate in candidates:
             reward = 0
             for seed in seeds:
                 # Evaluate the agent using stable-baselines predict function
                 reward += fitness(candidate, env, seed, render=False) 
-            average_candidate_reward = reward / EPISODES_PER_GENERATION
+            average_candidate_reward = reward / reps(generation)
             fitnesses.append(average_candidate_reward)
             Maxfitnesses.append(-average_candidate_reward)
         # CMA-ES update
@@ -133,6 +159,8 @@ def train_with_cma(generations, writer_name):
         best_index = np.argmax(Maxfitnesses)
         # print("current  value {}...".format(cur_best))
         writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
+        writer.add_scalar('reps', reps(generation), generation)
+        writer.add_scalar('sigma', SIGMA*scale(generation), generation)
         # writer.add_scalar('reward', cur_best, generation)
 
         best_params = candidates[best_index]
