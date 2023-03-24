@@ -125,6 +125,8 @@ def train_with_cma(generations, writer_name):
             return 8
         elif generation < 200:
             return 12
+        elif generation < 400:
+            return 16
         else:
              return EPISODES_PER_GENERATION
 
@@ -137,6 +139,8 @@ def train_with_cma(generations, writer_name):
             return 1
         elif generation < 200:
             return 0.5
+        elif generation < 400:
+            return 0.25
         else:
              return 0.125
         
@@ -162,10 +166,9 @@ def train_with_cma(generations, writer_name):
         cur_best = max(Maxfitnesses)
         best_index = np.argmax(Maxfitnesses)
         # print("current  value {}...".format(cur_best))
-        writer.add_scalar('mean top 10 reward', -mean_fitness, generation)
-        writer.add_scalar('reps', reps(generation), generation)
-        writer.add_scalar('sigma', SIGMA*scale(generation), generation)
-        # writer.add_scalar('reward', cur_best, generation)
+        writer.add_scalar('performance/mean top 10 reward', -mean_fitness, generation)
+        writer.add_scalar('params/reps', reps(generation), generation)
+        writer.add_scalar('params/sigma', SIGMA*scale(generation), generation)
 
         best_params = candidates[best_index]
         render_the_test = os.path.exists("render")
@@ -176,7 +179,7 @@ def train_with_cma(generations, writer_name):
         for seed in seeds:
             test_rew += evaluate(ann, env, seed, render=render_the_test)
         test_rew /= EPISODES_PER_GENERATION
-        writer.add_scalar('test reward', test_rew, generation)
+        writer.add_scalar('performance/test reward', test_rew, generation)
         # Save model if it's best
         if not best or test_rew >= best:
             best = test_rew
