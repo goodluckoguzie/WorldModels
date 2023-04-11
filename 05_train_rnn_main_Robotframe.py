@@ -3,7 +3,9 @@ import torch.nn as nn
 import numpy as np
 from hparams import RNNHyperParams as hp
 # from hparams import NonPrePaddedRobotFrame_Datasets_Timestep_1 as data
-from hparams import RobotFrame_Datasets_Timestep_0_5 as data
+# from hparams import RobotFrame_Datasets_Timestep_1 as data
+from hparams import RobotFrame_Datasets_Timestep_1 as data
+
 from hparams import Seq_Len as Seq_len
 
 
@@ -68,7 +70,7 @@ class VariationalEncoder(nn.Module):
 
 
 
-
+# n_latents = 47
 
 class VAE(nn.Module):
     def __init__(self, input_dims, hidden_dims, latent_dims):
@@ -78,7 +80,9 @@ class VAE(nn.Module):
 
     def forward(self, x):
         z,mu , sigma = self.encoder(x)
-        return self.decoder(z),mu , sigma
+        return self.decoder(z),mu , sigma ,z
+
+
 
     def vae_loss(recon_x, x, mu, logvar):
         """ VAE loss function """
@@ -88,11 +92,10 @@ class VAE(nn.Module):
         return BCE + KLD, BCE, KLD
 
 
-
 class RNN(nn.Module):
-    def __init__(self, n_latents, n_actions, n_hiddens):
+    def __init__(self, n_latents, n_actions, n_hiddens,n_layers):
         super(RNN, self).__init__()
-        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens,num_layers=n_layers,batch_first=True)
         # target --> next latent (vision)
         self.fc = nn.Linear(n_hiddens, n_latents)
 
@@ -105,6 +108,24 @@ class RNN(nn.Module):
         h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
         y = self.fc(h)
         return y, None, None, next_hidden
+
+
+# class RNN(nn.Module):
+#     def __init__(self, n_latents, n_actions, n_hiddens):
+#         super(RNN, self).__init__()
+#         self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+#         # target --> next latent (vision)
+#         self.fc = nn.Linear(n_hiddens, n_latents)
+
+#     def forward(self, states):
+#         h, _ = self.rnn(states)
+#         y = self.fc(h)
+#         return y, None, None
+    
+#     def infer(self, states, hidden):
+#         h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
+#         y = self.fc(h)
+#         return y, None, None, next_hidden
 
 
 # NORMALISE_FACTOR_POS = 40.*2
@@ -134,6 +155,7 @@ class RNN_MODEL():
         self.ckpt_dir = None
         # rnn variables
         self.n_latents = None
+        self.input_dim = None
         self.n_actions = None
         self.n_hiddens = None
         self.batch_size = None
@@ -145,6 +167,7 @@ class RNN_MODEL():
         self.save_path = None
         self.n_workers = None
         self.run_name = None
+        self.n_layers = None
         # self.seq_len = None
         self.run_name = None
         self.window = Seq_len.seq_16
@@ -156,12 +179,20 @@ class RNN_MODEL():
         self.configure(self.config)
         # declaring the network
         global_step = 0
-        self.vae = VAE(self.n_latents,self.n_hiddens,self.n_latents).to(DEVICE)
 
+        self.vae = VAE(self.input_dim,256,self.n_latents).to(DEVICE)
+        print("self.n_hiddens",self.n_hiddens)
+        print("self.n_latents",self.n_latents)
 
-        self.rnn = RNN(self.n_latents, self.n_actions, self.n_hiddens).to(DEVICE)
+        self.rnn = RNN(self.n_latents, self.n_actions, self.n_hiddens, self.n_layers).to(DEVICE)
+        self.ckpt_dir = data.ckpt_dir#'ckpt'
 
-  
+        self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+
+        self.vae_state = torch.load(self.ckpt)
+        self.vae.load_state_dict(self.vae_state['model'])
+        self.vae.eval()
+        print('Loaded vae ckpt {}'.format(self.ckpt))       
         # self.data_path = hp.data_dir# if not self.extra else self.extra_dir
 
         self.ckpt_dir = data.ckpt_dir#'ckpt'
@@ -176,12 +207,7 @@ class RNN_MODEL():
         print(self.seq_len) 
         self.ckpt_dir = os.path.join(self.ckpt_dir, self.rnnsave + self.window)
 
-        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
 
-        # self.vae_state = torch.load(self.ckpt)
-        # self.vae.load_state_dict(self.vae_state['model'])
-        # self.vae.eval()
-        # print('Loaded vae ckpt {}'.format(self.ckpt))       
    
         # self.ckpt  = sorted(glob.glob(os.path.join(hp.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
         # rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
@@ -245,6 +271,10 @@ class RNN_MODEL():
             self.n_latents = config["n_latents"]
             assert(self.n_latents is not None), f"Argument n_latents size cannot be None"
 
+        if self.input_dim is None:
+            self.input_dim = config["input_dims"]
+            assert(self.input_dim is not None), f"Argument input_dims size cannot be None"
+
         if self.n_hiddens is None:
             self.n_hiddens = config["n_hiddens"]
             assert(self.n_hiddens is not None), f"Argument hidden_layers cannot be None"
@@ -290,6 +320,10 @@ class RNN_MODEL():
         if self.run_name is None:
             self.run_name = config["run_name"]
             assert(self.run_name is not None), f"Argument run_name cannot be None"
+
+        if self.n_layers is None:
+            self.n_layers = config["n_layers"]
+            assert(self.n_layers is not None), f"Argument n_layers cannot be None"
 
         # check vae dir exists, if not, create it
         RNN_runs = data.RNN_runs #'WorldFrame_RNN_model_runs'
@@ -349,8 +383,8 @@ class RNN_MODEL():
                     # obs = normalised(obs)
                     # obs = torch.from_numpy(obs)
                     obs, actions = obs.to(DEVICE), actions.to(DEVICE)
-                    # z,latent_mu, latent_var = self.vae(obs) # (B*T, vsize)
-                    z = obs
+                    znew,latent_mu, latent_var ,z = self.vae(obs) # (B*T, vsize)
+                    # z = obs
                     # print("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll")
                     # print("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",len(actions))
                     # print("555555555555555555555555555555555555555555555555555555555555555555555555",self.n_latents)
@@ -389,7 +423,9 @@ class RNN_MODEL():
                     # obs = torch.from_numpy(obs)
                     obs, actions = obs.to(DEVICE), actions.to(DEVICE)
 
-                    z = obs
+                    # z = obs
+
+                    znew,latent_mu, latent_var ,z = self.vae(obs) # (B*T, vsize)
 
                     # z = latent_mu
                     z = z.view(-1, self.seq_len, self.n_latents) # (B*n_seq, T, vsize)
@@ -430,13 +466,13 @@ class RNN_MODEL():
             self.train_losses = []
             self.valid_losses = []
 
-            if self.global_step % 5 == 0:
+            if self.global_step % 10 == 0:
                 d = {
                     'model': self.rnn.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
                 }
                 torch.save(
-                    d, os.path.join(self.ckpt_dir, '{:03d}robotframe.pth.tar'.format(15))
+                    d, os.path.join(self.ckpt_dir, '{:03d}robotframemain.pth.tar'.format(10))
                 )
 
                 # and if it has, it will make a checkpoint of the current model
@@ -476,7 +512,7 @@ class RNN_MODEL():
 
 if __name__ == '__main__':
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-    np.random.seed(0)
+    # np.random.seed(0)
 
     # config file for the model
     config = "./configs/Robotframe_RNN_model.yaml"

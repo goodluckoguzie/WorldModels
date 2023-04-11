@@ -245,7 +245,8 @@ class DuelingDQNAgent:
 
     def get_action(self, current_state, epsilon):
         # self.duelingDQN.load_state_dict(torch.load('./models/episode00100000.pth'))
-        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_TIMESTEP_1_BASELINE_experiment_1/episode00099950.pth'))
+        # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_TIMESTEP_1_BASELINE_experiment_1/episode00099950.pth'))
+        self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_test/episode00002850.pth'))
 
         self.duelingDQN.eval()
 
@@ -318,7 +319,7 @@ def rollout():
         # while not done and t < (time_steps-2):
 
         for t in range(time_steps):       
-            # env.render()
+            env.render()
             action, act_discrete = agent.get_action(obs, 0)
             next_obs, reward, done, _ = env.step(action)
             next_obs = preprocess_observation(next_obs)

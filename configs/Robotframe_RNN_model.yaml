@@ -3,7 +3,7 @@ extra: 'additional'
 data_dir: 'Datasets'
 extra_dir: 'additional'
 ckpt_dir: 'ckpt'
-n_latents: 47
+n_latents: 23 #47
 n_hiddens: 256
 n_actions: 2
 batch_size: 1

@@ -14,8 +14,10 @@ import argparse
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
 import sys
+from hparams import RobotFrame_Datasets_Timestep_1 as data
 
 from hparams import HyperParams as hp
+
 
 
 
@@ -74,15 +76,12 @@ class VAE(nn.Module):
 
     def forward(self, x):
         z,mu , sigma = self.encoder(x)
-        return self.decoder(z),mu , sigma
+        return self.decoder(z),mu , sigma,z
 
-    def vae_loss(recon_x, x, mu, logvar):
-        """ VAE loss function """
-        recon_loss = nn.MSELoss(size_average=False)
-        BCE = recon_loss(recon_x, x)
-        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-        return BCE + KLD, BCE, KLD
-
+    def dcode(self, x):
+        d = self.decoder(x)
+        return d
+        # return self.decoder(z),mu , sigma ,z
 
 
 class RNN(nn.Module):
@@ -101,7 +100,6 @@ class RNN(nn.Module):
         h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
         y = self.fc(h)
         return y, None, None, next_hidden
-
 
 
 class DuelingDQN(nn.Module):
@@ -131,6 +129,8 @@ class DuelingDQNAgent:
         
         # agent variables
         self.input_layer_size = None
+
+        self.input_dim = None
         self.hidden_layers = None
         self.v_net_layers = None
         self.a_net_layers = None
@@ -177,30 +177,40 @@ class DuelingDQNAgent:
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         n_hiddens = 256
-        n_latents = 47
+        n_hiddensrnn = 256
+        n_latents = 16 #47
         n_actions = 2
 
-        # print(os.getcwd())
-        self.vae = VAE(n_latents,n_hiddens,n_latents).to(device)
+        # print(os.getcwd())n_hiddens
+        # self.vae = VAE(self.input_dim,n_hiddens,n_latents).to(device)
+        self.vae = VAE(self.input_dim,n_hiddens,n_latents).to(device)
 
 
-        self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
+        self.rnn = RNN(n_latents, n_actions, n_hiddensrnn).to(device)
+        self.ckpt_dir = data.ckpt_dir#'ckpt'
 
-        # self.ckpt_dir = hp.ckpt_dir#'ckpt'
-        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
-        # self.vae_state = torch.load(self.ckpt)
-        # self.vae.load_state_dict(self.vae_state['model'])
-        # self.vae.eval()
+        self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae_16', '*k.pth.tar')))[-1]
+
+        self.vae_state = torch.load(self.ckpt)
+        self.vae.load_state_dict(self.vae_state['model'])
+        self.vae.eval()
+        print('Loaded vae ckpt {}'.format(self.ckpt))  
+
+ 
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '015robotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep05window_16', '018robotframe.pth.tar')))[-1] #
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16_16', '00000056robotframemain16.pth.tar')))[-1] #
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_199_16', '00000046robotframemain16.pth.tar')))[-1] #
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_100_16', '00000046robotframemain16.pth.tar')))[-1] #
 
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
         rnn_state = torch.load( self.ckpt, map_location={'cuda': str(self.device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
         print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+
+        print('self.input_layer_size',self.input_layer_size)
 
 
 
@@ -232,6 +242,10 @@ class DuelingDQNAgent:
         if self.input_layer_size is None:
             self.input_layer_size = config["input_layer_size"]
             assert(self.input_layer_size is not None), f"Argument input_layer_size cannot be None"
+
+        if self.input_dim is None:
+            self.input_dim = config["input_dims"]
+            assert(self.input_dim is not None), f"Argument input_dims size cannot be None"
 
         if self.hidden_layers is None:
             self.hidden_layers = config["hidden_layers"]
@@ -306,18 +320,34 @@ class DuelingDQNAgent:
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
     
-    def preprocess_observation(self, obs):
+
+    def preprocess_observation(self,obs):
         """
         To convert dict observation to numpy observation
         """
         assert(type(obs) == dict)
-        observation = np.array([], dtype=np.float32)
-        observation = np.concatenate((observation, obs["goal"].flatten()) )
-        observation = np.concatenate((observation, obs["humans"].flatten()) )
-        observation = np.concatenate((observation, obs["laptops"].flatten()) )
-        observation = np.concatenate((observation, obs["tables"].flatten()) )
-        observation = np.concatenate((observation, obs["plants"].flatten()) )
-        return observation
+        obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
+        humans = obs["humans"].flatten()
+        for i in range(int(round(humans.shape[0]/(6+7)))):
+            index = i*(6+7)
+            obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
+        # return torch.from_numpy(obs2)
+        return obs2
+
+
+
+    # def preprocess_observation(self, obs):
+    #     """
+    #     To convert dict observation to numpy observation
+    #     """
+    #     assert(type(obs) == dict)
+    #     observation = np.array([], dtype=np.float32)
+    #     observation = np.concatenate((observation, obs["goal"].flatten()) )
+    #     observation = np.concatenate((observation, obs["humans"].flatten()) )
+    #     observation = np.concatenate((observation, obs["laptops"].flatten()) )
+    #     observation = np.concatenate((observation, obs["tables"].flatten()) )
+    #     observation = np.concatenate((observation, obs["plants"].flatten()) )
+    #     return observation
     
     def discrete_to_continuous_action(self ,action:int):
         """
@@ -449,7 +479,8 @@ class DuelingDQNAgent:
 
     def train(self):
         self.loss_fn = nn.MSELoss()
-        self.optimizer = optim.Adam(self.duelingDQN.parameters(), lr=self.lr)
+        # self.optimizer = optim.Adam(self.duelingDQN.parameters(), lr=self.lr)
+        self.optimizer = optim.AdamW(self.duelingDQN.parameters(), lr=self.lr, amsgrad=True)
         self.rewards = []
         self.losses = []
         self.exploration_rates = []
@@ -490,26 +521,30 @@ class DuelingDQNAgent:
             unsqueezed_action = action#.unsqueeze(0)
 
             while not done: 
-
-                
                 # unsqueezed_action = action.unsqueeze(0)
                 z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
-
-                unsqueezed_z = z#.unsqueeze(0)
-                unsqueezed_action = unsqueezed_action.unsqueeze(0).to(self.device)
-                #############################################################################################
                 with torch.no_grad():
-                    rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
-
-                    current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
-                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
-                    current_obs_X_2_ = current_obs_X_2_[-1, :]
-                    # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",current_obs_X_2_.shape)
-                    # print("111111111111111111111111111111111111111111",unsqueezed_action.shape)
+                    znew,latent_mu, latent_var ,z = self.vae(z) # (B*T, vsize)
+                    z = z.to(self.device)
                 
-                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), unsqueezed_action], dim=-1).float()
+                # unsqueezed_action = action.unsqueeze(0)
+                # z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
 
-                    _,_, _, hidden = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden)
+                # unsqueezed_z = z#.unsqueeze(0)
+                # unsqueezed_action = unsqueezed_action.unsqueeze(0).to(self.device)
+                # # #############################################################################################
+                # with torch.no_grad():
+                #     rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+
+                #     current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    # current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    # current_obs_X_2_ = current_obs_X_2_[-1, :]
+                    # # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",current_obs_X_2_.shape)
+                    # # print("111111111111111111111111111111111111111111",unsqueezed_action.shape)
+                
+                    # rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), unsqueezed_action], dim=-1).float()
+
+                    # _,_, _, hidden = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden)
 
                 ################################################################################################
 
@@ -534,7 +569,10 @@ class DuelingDQNAgent:
                 next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
 
                 with torch.no_grad():
-                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                    znew,latent_mu, latent_var ,next_obs = self.vae(next_obs.to(self.device)) # (B*T, vsize)
+                    next_obs =next_obs.unsqueeze(0).to(self.device)
+                    
+                    rnn_input = torch.cat([next_obs, unsqueezed_action.to(self.device)], dim=-1).float()
                     current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
                     current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
                     current_obs_X_2_ = current_obs_X_2_[-1, :]
@@ -545,7 +583,10 @@ class DuelingDQNAgent:
                 next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
 
                 # with torch.no_grad():
-                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+
+                #     znew,latent_mu, latent_var ,next_obs = self.vae(next_obs.to(self.device)) # (B*T, vsize)
+                #     next_obs =next_obs.unsqueeze(0).to(self.device)
+                #     rnn_input = torch.cat([next_obs, unsqueezed_action.to(self.device)], dim=-1).float()
                 #     _,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
 
                 # next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
@@ -576,7 +617,7 @@ class DuelingDQNAgent:
                     self.update()
 
                 current_obs = next_obs_
-                unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
+                # unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
  
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
@@ -585,9 +626,17 @@ class DuelingDQNAgent:
                         p_target.data.add_((1 - self.polyak_const) * p.data)
 
 
-            # decaying epsilon
+            # # decaying epsilon
+            # if self.epsilon > self.min_epsilon:
+            #     self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
+
+
+
+                    # Decay epsilon
             if self.epsilon > self.min_epsilon:
-                self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
+                self.epsilon *= self.epsilon_decay_rate
+                self.epsilon = max(self.min_epsilon, self.epsilon)
+
 
             # plotting using tensorboard
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
@@ -627,7 +676,7 @@ if __name__ == "__main__":
 
     # config file for the model
     config = "./configs/1stepaheadpredictivemodel.yaml"
-    input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]+hiddens
+    input_layer_size = 23 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]+hiddens
     # input_layer_size = 94#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
 
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="WORLDMODEL")

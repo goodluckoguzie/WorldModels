@@ -164,19 +164,35 @@ class DuelingDQNAgent:
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
     
-    def preprocess_observation(self, obs):
+    # def preprocess_observation(self, obs):
+    #     """
+    #     To convert dict observation to numpy observation
+    #     """
+    #     assert(type(obs) == dict)
+    #     observation = np.array([], dtype=np.float32)
+    #     observation = np.concatenate((observation, obs["goal"].flatten()) )
+    #     observation = np.concatenate((observation, obs["humans"].flatten()) )
+    #     observation = np.concatenate((observation, obs["laptops"].flatten()) )
+    #     observation = np.concatenate((observation, obs["tables"].flatten()) )
+    #     observation = np.concatenate((observation, obs["plants"].flatten()) )
+    #     return observation
+
+
+    def preprocess_observation(self,obs):
         """
         To convert dict observation to numpy observation
         """
         assert(type(obs) == dict)
-        observation = np.array([], dtype=np.float32)
-        observation = np.concatenate((observation, obs["goal"].flatten()) )
-        observation = np.concatenate((observation, obs["humans"].flatten()) )
-        observation = np.concatenate((observation, obs["laptops"].flatten()) )
-        observation = np.concatenate((observation, obs["tables"].flatten()) )
-        observation = np.concatenate((observation, obs["plants"].flatten()) )
-        return observation
+        obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
+        humans = obs["humans"].flatten()
+        for i in range(int(round(humans.shape[0]/(6+7)))):
+            index = i*(6+7)
+            obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
+        # return torch.from_numpy(obs2)
+        return obs2
     
+
+
     def discrete_to_continuous_action(self ,action:int):
         if action == 0:
             return np.array([0, 1], dtype=np.float32) 
@@ -193,7 +209,6 @@ class DuelingDQNAgent:
             raise NotImplementedError
 
     def get_action(self, current_state, epsilon):
-
         if np.random.random() > epsilon:
             # exploit
             with torch.no_grad():
@@ -302,6 +317,9 @@ class DuelingDQNAgent:
 
         # train loop
         for i in range(self.num_episodes):
+            # self.seeds = [random.getrandbits(32) for _ in range(self.num_episodes)]
+
+            # self.env.seed(self.seeds) # deterministic for demonstration
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
             done = False
@@ -346,7 +364,7 @@ class DuelingDQNAgent:
 
 
                 # sampling a mini-batch of state transitions if the replay buffer has sufficent examples
-                if len(self.experience_replay) > self.batch_size:
+                if len(self.experience_replay) > (self.batch_size):
                     self.update()
 
                 # setting the current observation to the next observation
@@ -359,9 +377,16 @@ class DuelingDQNAgent:
                         p_target.data.add_((1 - self.polyak_const) * p.data)
 
 
-            # decaying epsilon
+#             # decaying epsilon
+#             if self.epsilon > self.min_epsilon:
+#                 self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
+#                     # Decay epsilon
+
             if self.epsilon > self.min_epsilon:
-                self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
+
+                self.epsilon *= self.epsilon_decay_rate
+
+                self.epsilon = max(self.min_epsilon, self.epsilon)
 
             # plotting using tensorboard
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
@@ -422,7 +447,7 @@ if __name__ == "__main__":
 
     # config file for the model
     config = "./configs/duelingDQN.yaml"
-    input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    input_layer_size = 23 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
     agent.train()
     

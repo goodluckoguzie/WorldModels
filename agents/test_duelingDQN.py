@@ -164,19 +164,31 @@ class DuelingDQNAgent:
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
     
-    def preprocess_observation(self, obs):
+    # def preprocess_observation(self, obs):
+    #     """
+    #     To convert dict observation to numpy observation
+    #     """
+    #     assert(type(obs) == dict)
+    #     observation = np.array([], dtype=np.float32)
+    #     observation = np.concatenate((observation, obs["goal"].flatten()) )
+    #     observation = np.concatenate((observation, obs["humans"].flatten()) )
+    #     observation = np.concatenate((observation, obs["laptops"].flatten()) )
+    #     observation = np.concatenate((observation, obs["tables"].flatten()) )
+    #     observation = np.concatenate((observation, obs["plants"].flatten()) )
+    #     return observation
+    def preprocess_observation(self,obs):
         """
         To convert dict observation to numpy observation
         """
         assert(type(obs) == dict)
-        observation = np.array([], dtype=np.float32)
-        observation = np.concatenate((observation, obs["goal"].flatten()) )
-        observation = np.concatenate((observation, obs["humans"].flatten()) )
-        observation = np.concatenate((observation, obs["laptops"].flatten()) )
-        observation = np.concatenate((observation, obs["tables"].flatten()) )
-        observation = np.concatenate((observation, obs["plants"].flatten()) )
-        return observation
-    
+        obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
+        humans = obs["humans"].flatten()
+        for i in range(int(round(humans.shape[0]/(6+7)))):
+            index = i*(6+7)
+            obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
+        # return torch.from_numpy(obs2)
+        return obs2
+
     def discrete_to_continuous_action(self ,action:int):
         """
         Function to return a continuous space action for a given discrete action
@@ -395,7 +407,7 @@ class DuelingDQNAgent:
                 self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
             
    
-    def eval(self, num_episodes=20, path=None):
+    def eval(self, num_episodes=500, path=None):
         if path is None:
             path = os.getcwd()
 
@@ -407,7 +419,11 @@ class DuelingDQNAgent:
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqn_epsilon_decay_rate_action_8_v1/episode00100000.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00015300.pth'))#time step 2
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00007050.pth'))#time step 1
-            self.duelingDQN.load_state_dict(torch.load('./models/episode00099950.pth'))#time step 0.5episode00001450
+            # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqninput23/episode00100000.pth'))#time step 0.5episode00001450
+            # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqninput23b/episode00099900.pth'))
+            # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqninputb/episode00099900.pth'))
+            # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqninput23nodiscomfortrwdb/episode00100000.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/duelingDQN_input_23_2048_128b/episode00053200.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00001450.pth'))#time step 0.25episode
             # self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
     
@@ -427,7 +443,7 @@ class DuelingDQNAgent:
                 new_state = self.preprocess_observation(new_state)
                 total_reward += reward
 
-                self.env.render()
+                # self.env.render()
 
                 if info["REACHED_GOAL"]:
                     successive_runs += 1
@@ -441,12 +457,12 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_0_25.yaml")
+    env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
 
     # config file for the model
     config = "./configs/duelingDQN.yaml"
-    input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    input_layer_size = 23 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
     agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
-    agent.eval(num_episodes=50, path=None)
+    agent.eval(num_episodes=500, path=None)
     

@@ -29,7 +29,6 @@ def discrete_to_continuous_action(action:int):
     # elif action == 4:
     #     return np.array([1, -0.5], dtype=np.float32) 
     # # Move forward        plt.xlim(0, 1000)
-        plt.ylim(0.00001, 0.0007)
     elif action == 2:
         return np.array([1, 0], dtype=np.float32)
     # stop the robot
@@ -88,13 +87,14 @@ def rollout():
 
     env = gym.make("SocNavEnv-v1")
     env.configure('./configs/env_timestep_0_5.yaml')
+    # env.configure('./configs/env_timestep_1.yaml')
     # env.configure('./configs/env.yaml')
 
 
     env.set_padded_observations(True)
 
     # seq_len = 300
-    max_ep = 15000
+    max_ep = 10000
     #hp.n_rollout
     feat_dir = data.data_dir
 
@@ -126,7 +126,7 @@ def rollout():
             # reward = torch.from_numpy(reward)
             # rew = rew + reward
             # print("tttttttttttttttttttttttttttttttttttttttttttttttttttt",t)
-            # print("sdssssssssssssssssssssssssssssssssssssssssssssssssss",reward)
+            # print("sdssssssssssssssssssssssssssssssssssssssssssssssssss",obs)
             # print("ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg")
 
 
