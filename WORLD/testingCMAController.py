@@ -14,6 +14,7 @@ import socnavenv
 from socnavenv.wrappers import WorldFrameObservations
 import os
 import torch
+import cma
 
 
 ENV_NAME = 'SocNavEnv-v1'
@@ -25,32 +26,16 @@ env.set_padded_observations(True)
 
 
 class NeuralNetwork(nn.Module):
-
     def __init__(self, input_shape, n_actions):
         super(NeuralNetwork, self).__init__()
-        # self.l1 = nn.Linear(input_shape, 64)
-        # self.l2 = nn.Linear(64, 16)
-        # self.lout = nn.Linear(16, n_actions)
-        self.lout = nn.Linear(input_shape, n_actions)
-        
+        self.l1 = nn.Linear(input_shape, 32)
+        self.l2 = nn.Linear(32, 32)
+        self.lout = nn.Linear(32, n_actions)
+
     def forward(self, x):
-        # x = F.relu(self.l1(x.float()))
-        # x = F.relu(self.l2(x))
-        # return self.lout(x)
-        return self.lout(x.float())
-    
-    def get_params(self):
-        p = np.empty((0,))
-        for n in self.parameters():
-            p = np.append(p, n.flatten().cpu().detach().numpy())
-        return p
-    
-    def set_params(self, x):
-        start = 0
-        for p in self.parameters():
-            e = start + np.prod(p.shape)
-            p.data = torch.FloatTensor(x[start:e]).reshape(p.shape)
-            start = e
+        x = F.relu(self.l1(x.float()))
+        x = F.relu(self.l2(x))
+        return self.lout(x)
 
 
 def preprocess_observation(obs):
@@ -98,20 +83,24 @@ def discrete_to_continuous_action(action:int):
     else:
         raise NotImplementedError
 
-def evaluate(ann, env, view):
-    env.seed(0) # deterministic for demonstration
+def evaluate(ann, env):
+    seed=random.getrandbits(32)
+    env.seed(seed)
     obs = env.reset()
     obs = preprocess_observation(obs)
     total_reward = 0
+    # ann.load_state_dict(torch.load('./models/WM_modelhalfnetwork/episode00005680.pth'))
+    # ann.load_state_dict(torch.load('./models/CMA1/cma_SocNavEnv-v1_pop100_k3_15_16.49.18_gen_00001365.pth'))
+    # ann.load_state_dict(torch.load('./models/CMA2/cma_SocNavEnv-v1_pop100_k3_15_16.50.7_gen_00001385.pth'))
+    ann.load_state_dict(torch.load('./models/CMA3/cma_SocNavEnv-v1_pop100_k3_15_16.50.24_gen_00001425.pth'))
+    # ann.load_state_dict(torch.load('./WM_modelC.pt'))
     s = 0
-    # while True:
-    while s < 202:
-        # if view is True:
+    R = 0
 
-            # if (1 + s) % 5 == 0:
+    while True:
 
-  
-            #     env.render()
+        env.render()
+
         # Output of the neural net
         net_output = ann(torch.tensor(obs))
 
@@ -124,66 +113,27 @@ def evaluate(ann, env, view):
         obs, reward, done, _ = env.step(action)
         obs = preprocess_observation(obs)
         total_reward += reward
+
         s = s + 1
 
         if done:
             break
         # print("total_reward",total_reward)
+        # print('Total reward',R)
+        # AverageReward = AverageReward + R
 
     return total_reward
 
 
 
-import cma
 np.random.seed(123)
-
-
 ann = NeuralNetwork(47, 4)
+AverageReward = 0
+for episode in range(500):
+    episode = episode + 1
+    Rew = evaluate(ann,env)
+    AverageReward = Rew + AverageReward
 
-
-es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1,{'popsize': 100,'seed': 123})
-
-# es = cma.CMAEvolutionStrategy(len(ann.get_params()) * [0], 0.1, {'seed': 123})
-
-
-def fitness(x, ann, env, visul=False):
-    ann.set_params(x)
-    return -evaluate(ann, env, view=False)
-
-
-
-
-best = 0
-for i in range(100000):
-    solutions = np.array(es.ask())
-    fits = [fitness(x, ann, env) for x in solutions]
-
-    es.tell(solutions, fits)
-    es.disp()
-    cur_best = max(fits)
-    best_index = np.argmax(fits)
-    print("current  value {}...".format(cur_best))
-
-    best_params = solutions[best_index]
-    # print('current best reward : {}'.format(cur_best))
-    if not best or cur_best >= best:
-        best = cur_best
-        print("Saving new best with value {}...".format(cur_best))
-        d = best_params
-        torch.save(ann.state_dict(), 'controller1.pt')
-        # if i % 50 == 0:
-        #     evaluate(ann, env,view=True)
-    def save_model(ann ,path):
-        torch.save(ann.state_dict(), path)
-    save_path = "./models/WM"
-    # saving model
-    if (save_path is not None) and ((i+1)%5 == 0):
-        if not os.path.isdir(save_path):
-            os.makedirs(save_path)
-        try:
-            save_model(ann ,os.path.join(save_path, "episode"+ str(i+1).zfill(8) + ".pth"))
-        except:
-            print("Error in saving model")
-
-
-print('best reward : {}'.format(best))
+    # print("Total reward = ",Rew)
+    # print("episodes = ",episode)
+print("Average reward after 50 episodes = ",AverageReward/episode)
