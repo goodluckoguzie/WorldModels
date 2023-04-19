@@ -8,6 +8,8 @@ class Seq_Len:
     seq_8 = 'window_8'
     seq_len_16 = 17
     seq_16 = 'window_16'
+    seq_len_32 = 33
+    seq_32 = 'window_32'
 
 class NonPrePaddedRobotFrame_Datasets_Timestep_0_5:
     data_dir = 'RobotFrameDatasetsTimestep05'
@@ -92,6 +94,8 @@ class RobotFrame_Datasets_Timestep_2:
 
 class RobotFrame_Datasets_Timestep_1:
     data_dir = 'RobotFrameDatasetsTimestep1'
+    humanTrialData_dir = 'HumanTrialRobotFrameDatasetsTimestep1'
+
     time_steps =  200
     RNN_runs = 'RobotFrameDatasetsTimestep1'
     ckpt_dir = 'ckpt'
@@ -314,6 +318,31 @@ class VAEHyperParams:
 
     extra = False
     data_dir = 'Datasets'
+    extra_dir = 'additional'
+    ckpt_dir = 'ckpt'
+
+    n_hiddens = 256
+    batch_size = 64 # 
+    test_batch = 12
+    n_sample = 64
+
+    vsize = 47 # latent size of Vision
+    msize = 128 # size of Memory
+    asize = 2 # action size
+
+    log_interval = 5000
+    save_interval = 10000
+
+    max_step = 100_0000
+
+    n_workers = 0
+
+
+class VAEHyperParamsTimestep05:
+    vision = 'VAE'
+
+    extra = False
+    data_dir = 'RobotFrameDatasetsTimestep05'
     extra_dir = 'additional'
     ckpt_dir = 'ckpt'
 

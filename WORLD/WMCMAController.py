@@ -26,9 +26,9 @@ import cma
 
 
 ENV_NAME = 'SocNavEnv-v1'
-EPISODES_PER_GENERATION = 5
+EPISODES_PER_GENERATION = 3
 GENERATIONS = 10000
-POPULATION_SIZE = 10#0 # 128
+POPULATION_SIZE = 100
 SIGMA=0.1
 SAVE_PATH = "./models/CMAWM/"
 
@@ -371,7 +371,7 @@ if __name__ == '__main__':
         np.random.seed(123)
         now = datetime.datetime.now()
         date_time = "{}_{}.{}.{}".format(now.day, now.hour, now.minute, now.second)
-        writer_name = f'cmaC_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_sigma{SIGMA}_{date_time}'
+        writer_name = f'WMcmaC_{ENV_NAME}_pop{POPULATION_SIZE}_k{EPISODES_PER_GENERATION}_sigma{SIGMA}_{date_time}'
         writer = SummaryWriter(log_dir='runs/'+writer_name)
 
         train_with_cma(GENERATIONS, writer_name)

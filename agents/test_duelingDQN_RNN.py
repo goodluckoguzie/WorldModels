@@ -173,7 +173,7 @@ class DuelingDQNAgent:
         # print('Loaded vae ckpt {}'.format(self.ckpt))
 
 
-        device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         n_hiddens = 256
         n_latents = 47
         n_actions = 2
@@ -383,7 +383,7 @@ class DuelingDQNAgent:
             return action_continuous, action_discrete
  
 
-    def eval(self, num_episodes=500, path=None):
+    def eval(self, num_episodes=100, path=None):
 
 
         sys.path.append('./WorldModels')
@@ -436,8 +436,8 @@ class DuelingDQNAgent:
         # print('Loaded vae ckpt {}'.format(self.ckpt))       
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16_16', '00000056robotframemain16.pth.tar')))[-1] #
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_199_16', '00000046robotframemain16.pth.tar')))[-1] #
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16_16', '00000056robotframemain16.pth.tar')))[-1] #
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_199_16', '00000046robotframemain16.pth.tar')))[-1] #
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_100_16', '00000046robotframemain16.pth.tar')))[-1] #
 
         # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
@@ -451,7 +451,7 @@ class DuelingDQNAgent:
 
         self.rnn.eval()
         if path is None:
-            self.duelingDQN.load_state_dict(torch.load('./models/WM_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_199_2048_128/episode00133000.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/WM_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_2/episode00200000.pth'))
 
         
         self.duelingDQN.eval()
@@ -547,9 +547,9 @@ class DuelingDQNAgent:
                 unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
 
                 # self.env.render()
-
                 if info["REACHED_GOAL"]:
                     successive_runs += 1
+            total_reward += self.episode_reward
 
         print(f"Total episodes run: {num_episodes}")
         print(f"Total successive runs: {successive_runs}")
@@ -557,6 +557,8 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
+    env.seed(123) # deterministic for demonstration
+
     env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
 

@@ -407,7 +407,7 @@ class DuelingDQNAgent:
                 self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
             
    
-    def eval(self, num_episodes=500, path=None):
+    def eval(self, num_episodes=100, path=None):
         if path is None:
             path = os.getcwd()
 
@@ -423,7 +423,7 @@ class DuelingDQNAgent:
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqninput23b/episode00099900.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqninputb/episode00099900.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingdqninput23nodiscomfortrwdb/episode00100000.pth'))
-            self.duelingDQN.load_state_dict(torch.load('./models/duelingDQN_input_23_2048_128b/episode00053200.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/duelingDQN_input_23_512_128_Exp_1/episode00200000.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/episode00001450.pth'))#time step 0.25episode
             # self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
     
@@ -448,6 +448,7 @@ class DuelingDQNAgent:
                 if info["REACHED_GOAL"]:
                     successive_runs += 1
 
+
                 o = new_state
             reward_per_episode += total_reward
 
@@ -457,6 +458,8 @@ class DuelingDQNAgent:
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
+    env.seed(123) # deterministic for demonstration
+
     env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
 
