@@ -8,98 +8,17 @@ import numpy as np
 import copy
 import random
 import torch.optim as optim
-import os ,glob
+import os
 import yaml
 import argparse
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
 import sys
-from hparams import RobotFrame_Datasets_Timestep_1 as data
-
-from hparams import HyperParams as hp
-
+sys.path.append('./WorldModels')
+from RNN.RNN import LSTM,RNN
 
 
 
-
-class Decoder(nn.Module):
-    def __init__(self, input_dims, hidden_dims, latent_dims):
-        super(Decoder, self).__init__()
-        self.linear1 = nn.Linear(latent_dims, hidden_dims)
-        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
-        self.linear3 = nn.Linear(hidden_dims, input_dims)
-
-        self.input_dims = input_dims
-    def forward(self, z):
-        z = F.relu(self.linear1(z))
-        z = F.relu(self.linear2(z))
-        z = self.linear3(z)
-        # z = torch.sigmoid(z)
-        return z.reshape((-1, self.input_dims))
-
-
-
-class VariationalEncoder(nn.Module):
-    def __init__(self, input_dims, hidden_dims, latent_dims):
-        super(VariationalEncoder, self).__init__()
-        self.linear1 = nn.Linear(input_dims,  hidden_dims)
-        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
-        self.linear3 = nn.Linear(hidden_dims, hidden_dims)
-        self.linear4 = nn.Linear(hidden_dims, latent_dims)
-        self.linear5 = nn.Linear(hidden_dims, latent_dims)
-
-        self.N = torch.distributions.Normal(0, 1)
-        self.N.loc = self.N.loc.cuda() # hack to get sampling on the GPU
-        self.N.scale = self.N.scale.cuda()
-        self.kl = 0
-
-    def forward(self, x):
-        x = torch.flatten(x, start_dim=1)
-        x = F.relu(self.linear1(x))
-        x = F.relu(self.linear2(x))
-        x = F.relu(self.linear3(x))
-        mu =  self.linear4(x)
-        sigma = torch.exp(self.linear5(x))
-        z = mu + sigma*self.N.sample(mu.shape)
-        self.kl = (sigma**2 + mu**2 - torch.log(sigma) - 1/2).sum()
-        return z ,mu , sigma
-
-
-
-
-
-class VAE(nn.Module):
-    def __init__(self, input_dims, hidden_dims, latent_dims):
-        super(VAE, self).__init__()
-        self.encoder = VariationalEncoder(input_dims, hidden_dims, latent_dims)
-        self.decoder = Decoder(input_dims, hidden_dims, latent_dims)
-
-    def forward(self, x):
-        z,mu , sigma = self.encoder(x)
-        return self.decoder(z),mu , sigma,z
-
-    def dcode(self, x):
-        d = self.decoder(x)
-        return d
-        # return self.decoder(z),mu , sigma ,z
-
-
-class RNN(nn.Module):
-    def __init__(self, n_latents, n_actions, n_hiddens):
-        super(RNN, self).__init__()
-        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
-        # target --> next latent (vision)
-        self.fc = nn.Linear(n_hiddens, n_latents)
-
-    def forward(self, states):
-        h, _ = self.rnn(states)
-        y = self.fc(h)
-        return y, None, None
-    
-    def infer(self, states, hidden):
-        h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
-        y = self.fc(h)
-        return y, None, None, next_hidden
 
 class DuelingDQN(nn.Module):
     def __init__(self, input_size, hidden_layers:list, v_net_layers:list, a_net_layers:list) -> None:
@@ -125,9 +44,7 @@ class DuelingDQNAgent:
         self.env = env
         self.config = config
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        
-      
-        self.input_dim = None
+
         # agent variables
         self.input_layer_size = None
         self.hidden_layers = None
@@ -147,7 +64,6 @@ class DuelingDQNAgent:
         self.render_freq = None
         self.save_freq = None
         self.run_name = None
-        # self.ckpt_dir = None
 
         # if variables are set using **kwargs, it would be considered and not the config entry
         for k, v in kwargs.items():
@@ -158,55 +74,6 @@ class DuelingDQNAgent:
         
         # setting values from config file
         self.configure(self.config)
-
-
-
-        sys.path.append('./WorldModels')
-        # from RNN.RNN import LSTM,RNN
-  
-        self.ckpt_dir = hp.ckpt_dir#'ckpt'
-        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
-        # self.vae_state = torch.load(self.ckpt)
-        # self.vae.load_state_dict(self.vae_state['model'])
-        # self.vae.eval()
-        # print('Loaded vae ckpt {}'.format(self.ckpt))
-
-
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        n_hiddens = 256
-        n_hiddensrnn = 256
-        n_latents = 16 #47
-        n_actions = 2
-
-        # print(os.getcwd())n_hiddens
-        # self.vae = VAE(self.input_dim,n_hiddens,n_latents).to(device)
-        self.vae = VAE(self.input_dim,n_hiddens,n_latents).to(device)
-
-
-        self.rnn = RNN(n_latents, n_actions, n_hiddensrnn).to(device)
-        self.ckpt_dir = data.ckpt_dir#'ckpt'
-
-        self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae_16', '*k.pth.tar')))[-1]
-
-        self.vae_state = torch.load(self.ckpt)
-        self.vae.load_state_dict(self.vae_state['model'])
-        self.vae.eval()
-        print('Loaded vae ckpt {}'.format(self.ckpt))  
-
- 
-        # print('Loaded vae ckpt {}'.format(self.ckpt))       
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16_16', '00000056robotframemain16.pth.tar')))[-1] #
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_199_16', '00000046robotframemain16.pth.tar')))[-1] #
-
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
-        rnn_state = torch.load( self.ckpt, map_location={'cpu': str(self.device)})
-        self.rnn.load_state_dict(rnn_state['model'])
-        self.rnn.eval()
-        print('Loaded rnn_state ckpt {}'.format(self.ckpt))
-
-        print('self.input_layer_size',self.input_layer_size)
-
 
         # declaring the network
         self.duelingDQN = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
@@ -233,14 +100,9 @@ class DuelingDQNAgent:
         with open(config, "r") as ymlfile:
             config = yaml.safe_load(ymlfile)
 
-
         if self.input_layer_size is None:
             self.input_layer_size = config["input_layer_size"]
             assert(self.input_layer_size is not None), f"Argument input_layer_size cannot be None"
-
-        if self.input_dim is None:
-            self.input_dim = config["input_dims"]
-            assert(self.input_dim is not None), f"Argument input_dims size cannot be None"
 
         if self.hidden_layers is None:
             self.hidden_layers = config["hidden_layers"]
@@ -306,44 +168,24 @@ class DuelingDQNAgent:
             self.save_freq = config["save_freq"]
             assert(self.save_freq is not None), f"Argument save_freq cannot be None"
 
-        # if self.ckpt_dir is None:
-        #     self.ckpt_dir = config["ckpt_dir"]
-        #     assert(self.ckpt_dir is not None), f"Argument ckpt_dir  cannot be None"
-
 
     def xavier_init_weights(self, m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
     
-    # def preprocess_observation(self, obs):
-    #     """
-    #     To convert dict observation to numpy observation
-    #     """
-    #     assert(type(obs) == dict)
-    #     observation = np.array([], dtype=np.float32)
-    #     observation = np.concatenate((observation, obs["goal"].flatten()) )
-    #     observation = np.concatenate((observation, obs["humans"].flatten()) )
-    #     observation = np.concatenate((observation, obs["laptops"].flatten()) )
-    #     observation = np.concatenate((observation, obs["tables"].flatten()) )
-    #     observation = np.concatenate((observation, obs["plants"].flatten()) )
-    #     return observation
-
-
-    def preprocess_observation(self,obs):
+    def preprocess_observation(self, obs):
         """
         To convert dict observation to numpy observation
         """
         assert(type(obs) == dict)
-        obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
-        humans = obs["humans"].flatten()
-        for i in range(int(round(humans.shape[0]/(6+7)))):
-            index = i*(6+7)
-            obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
-        # return torch.from_numpy(obs2)
-        return obs2
-
-
-
+        observation = np.array([], dtype=np.float32)
+        observation = np.concatenate((observation, obs["goal"].flatten()) )
+        observation = np.concatenate((observation, obs["humans"].flatten()) )
+        observation = np.concatenate((observation, obs["laptops"].flatten()) )
+        observation = np.concatenate((observation, obs["tables"].flatten()) )
+        observation = np.concatenate((observation, obs["plants"].flatten()) )
+        return observation
+    
     def discrete_to_continuous_action(self ,action:int):
         """
         Function to return a continuous space action for a given discrete action
@@ -375,6 +217,7 @@ class DuelingDQNAgent:
         else:
             raise NotImplementedError
 
+
     def get_action(self, current_state, epsilon):
 
         if np.random.random() > epsilon:
@@ -389,7 +232,7 @@ class DuelingDQNAgent:
         
         else:
             # explore
-            act = np.random.randint(0, 4)
+            act = np.random.randint(0, 7)
             return self.discrete_to_continuous_action(act), act 
     
     def calculate_grad_norm(self):
@@ -472,6 +315,8 @@ class DuelingDQNAgent:
         self.writer.add_scalar("Steps to reach goal / episode", self.steps, episode)
         self.writer.flush()  
 
+
+
     def train(self):
         self.loss_fn = nn.MSELoss()
         self.optimizer = optim.Adam(self.duelingDQN.parameters(), lr=self.lr)
@@ -484,31 +329,35 @@ class DuelingDQNAgent:
         self.steps_to_reach = []
 
         self.average_reward = 0
-        # latents = 47updat
-        # actions = 2
+
+
+        
+        self.STEPS_TO_TAKE = 198
+        self.REWARD_INCREMENT = 0.0023
+        self.REWARD_THRESHOLD = -0.8
+        self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
+
+
+        latents = 47
+        actions = 2
         hiddens = 256
-        # rnn = RNN(latents, actions, hiddens).to(self.device)
-        # rnn = rnn.float()
-        # rnn.load_state_dict(torch.load('./MODEL/worldmodel.pt'))
-        # rnn.eval()
+        rnn = RNN(latents, actions, hiddens).to(self.device)
+        rnn = rnn.float()
+        rnn.load_state_dict(torch.load('./MODEL/rnn_dqn_model.pt'))
+        rnn.eval()
+        
 
         # train loop
         for i in range(self.num_episodes):
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
-            action_ = random.randint(0, 3)
-            action00 = self.discrete_to_continuous_action(action_)
-            action0 = torch.from_numpy((self.discrete_to_continuous_action(0))).unsqueeze(0).to(self.device)
-            action1 = torch.from_numpy((self.discrete_to_continuous_action(1))).unsqueeze(0).to(self.device)
-            action2 = torch.from_numpy((self.discrete_to_continuous_action(2))).unsqueeze(0).to(self.device)
-            action3 = torch.from_numpy((self.discrete_to_continuous_action(3))).unsqueeze(0).to(self.device)
+
+
+            # action = random.randint(0, 7)
+            # action = self.discrete_to_continuous_action(action)
             # action = np.atleast_2d(action)
-            action00 = torch.from_numpy(action00).unsqueeze(0).to(self.device)
-            hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
-            hidden_for_action0 = hidden
-            hidden_for_action1 = hidden
-            hidden_for_action2 = hidden
-            hidden_for_action3 = hidden
+            # action = torch.from_numpy(action).to(self.device)
+
 
             done = False
             self.episode_reward = 0
@@ -517,105 +366,59 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
-            unsqueezed_action = action00.to(self.device)
-
-            while not done: 
+            hidden = rnn.init_hidden()
+            hidden= hidden.unsqueeze(0).unsqueeze(0)
 
             
-                current_obs = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
-                with torch.no_grad():
-                    znew,latent_mu, latent_var ,current_obs = self.vae(current_obs) # (B*T, vsize)
-                unsqueezed_z = current_obs.to(self.device)
-                old_obs = unsqueezed_z
+            while not done: 
 
-                current_obs = torch.cat((unsqueezed_z.unsqueeze(0), hidden_for_action0[0],hidden_for_action1[0],hidden_for_action2[0],hidden_for_action3[0]), -1)
-                current_obs = current_obs.squeeze(0).squeeze(0)
 
-                # sampling an action from the current state
+                # unsqueezed_action = action.unsqueeze(0)
+                z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
+                z = z.unsqueeze(0)
+                hidden= hidden[0]
+
+
+
+                # with torch.no_grad():
+                #     rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+                #     _,_, hidden = rnn(rnn_input)
+                
+                # print("z",z.shape)
+                # print("hidden",hidden.shape)
+
+                current_obs = torch.cat((z, hidden.to(self.device)),-1)
+                # current_obs = torch.cat((z.unsqueeze(0), hidden[0]),-1)
+                current_obs =  current_obs.squeeze(0).squeeze(0)
+
+                # # sampling an action from the current state
                 action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
+                
 
-                # taking a step in the environment
+                # # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
 
                 # incrementing total steps
                 self.steps += 1
 
-                # preprocessing the observation,
+                # # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
                 next_obs = self.preprocess_observation(next_obs)
                 next_obs_ = next_obs
 
 
-                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).to(self.device)
-                next_obs = torch.from_numpy(next_obs).unsqueeze(0).to(self.device)
-
+                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
+                next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
 
                 with torch.no_grad():
-
-                    znew,latent_mu, latent_var ,next_obs = self.vae(next_obs) 
-                    next_obs =next_obs
-                unsqueezed_z     = next_obs
-
-                #########################################################################################################################################
-                with torch.no_grad():
-
                     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                    # rnn_input = torch.cat([old_obs, unsqueezed_action.to(self.device)], dim=-1).float()
-
-                    _,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0).to(self.device),hidden)
-                
-                #############################################################################################
-
-                if (unsqueezed_action==action0).all() : #unsqueezed_action.squeeze(0) != action0.squeeze(0):
-
-                    with torch.no_grad():
-
-
-                        rnn_input = torch.cat([next_obs, action0], dim=-1).float()
-
-                        _,_, _, hidden_for_action0 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
-
-                else:
-                    hidden_for_action0 = hidden
-
-                    ################################################################################################
-                if (unsqueezed_action==action1).all():
-
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action1], dim=-1).float()
-
-                        _,_, _, hidden_for_action1 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
- 
-                else:
-                                hidden_for_action1 = hidden
-                    #############################################################################################
-                if (unsqueezed_action==action2).all():
-
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action2], dim=-1).float()
-
-                        _,_, _, hidden_for_action2 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
-
-                else:
-                                hidden_for_action2 = hidden
-                    #############################################################################################
-                if (unsqueezed_action==action3).all():
-
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action3], dim=-1).float()
-
-                        _,_, _, hidden_for_action3 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
-
-                else:
-                                hidden_for_action3 = hidden
-                    ################################################################################################
-
-                next_obs = torch.cat((unsqueezed_z.unsqueeze(0), hidden_for_action0[0],hidden_for_action1[0],hidden_for_action2[0],hidden_for_action3[0]), -1)
-
-
+                    # print("ddddddddddddddddddddddddddd",rnn_input.shape)
+                    _,_, hidden = rnn(rnn_input.to(self.device))
+        
+                next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)),-1)
 
 
                 
-                # rendering 
+                # rendering if reqd
                 if self.render and ((i+1) % self.render_freq == 0):
                     self.env.render()
 
@@ -630,35 +433,37 @@ class DuelingDQNAgent:
                     self.has_collided = 1
                     self.steps = self.env.EPISODE_LENGTH
 
-
                 next_obs = next_obs.squeeze(0).squeeze(0).cpu()
                 current_obs = current_obs.squeeze(0).squeeze(0).cpu()
-                # storing the current state transition in the replay buffer.
+                # storing the current state transition in the replay buffer. 
                 self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
+                # print("currenttttttttttttttttttttttt",current_obs.shape)
+                # print("nxt_obbbbbbbbbbbbbbbbbbbbs",next_obs.shape)
 
-                if len(self.experience_replay) > (self.batch_size):
+
+                # sampling a mini-batch of state transitions if the replay buffer has sufficent examples
+                if len(self.experience_replay) > self.batch_size:
                     self.update()
 
+                # setting the current observation to the next observation
                 current_obs = next_obs_
-                # unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
-                unsqueezed_action = unsqueezed_action
- 
+
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
                     for p_target, p in zip(self.fixed_targets.parameters(), self.duelingDQN.parameters()):
                         p_target.data.mul_(self.polyak_const)
                         p_target.data.add_((1 - self.polyak_const) * p.data)
 
-#             # decaying epsilon
-#             if self.epsilon > self.min_epsilon:
-#                 self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
-#                     # Decay epsilon
 
-            if self.epsilon > self.min_epsilon:
+            # decaying epsilon
+            # if self.epsilon > self.min_epsilon:
+            #     self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
 
-                self.epsilon *= self.epsilon_decay_rate
+            self.EPSILON_DELTA = (self.epsilon - self.min_epsilon)/self.STEPS_TO_TAKE
 
-                self.epsilon = max(self.min_epsilon, self.epsilon)
+            if self.epsilon  > self.min_epsilon and self.episode_reward >= self.REWARD_THRESHOLD:    
+                self.epsilon = self.epsilon - self.EPSILON_DELTA    
+                self.REWARD_THRESHOLD = self.REWARD_THRESHOLD + self.REWARD_INCREMENT
 
             # plotting using tensorboard
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
@@ -679,24 +484,50 @@ class DuelingDQNAgent:
             else:
                 self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
             
-  
+   
+    def eval(self, num_episodes, path=None):
+        if path is not None:
+            self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))
+        
+        self.duelingDQN.eval()
+
+        total_reward = 0
+        successive_runs = 0
+        for i in range(num_episodes):
+            o = self.env.reset()
+            o = self.preprocess_observation(o)
+            done = False
+            while not done:
+                act_continuous, act_discrete = self.get_action(o, 0)
+                new_state, reward, done, info = self.env.step(act_continuous)
+                new_state = self.preprocess_observation(new_state)
+                total_reward += reward
+
+                self.env.render()
+
+                if info["REACHED_GOAL"]:
+                    successive_runs += 1
+
+                o = new_state
+
+        print(f"Total episodes run: {num_episodes}")
+        print(f"Total successive runs: {successive_runs}")
+        print(f"Average reward per episode: {total_reward/num_episodes}")
+
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
-    env.configure("./configs/env_timestep_1.yaml")
+    env.configure("./configs/env.yaml")
     env.set_padded_observations(True)
-    hiddens = 256
 
-    # print("yesssssssssssssssssssss")
+
     # rnn = RNN(latents, actions, hiddens).to(self.device)
     # rnn = rnn.float()
     # rnn.load_state_dict(torch.load('./MODEL/model.pt'))
     # rnn.eval()
 
     # config file for the model
-    config = "./configs/Uncertaintypredictiveworldmodels.yaml"
-    input_layer_size = 1040 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]+hiddens+hiddens+hiddens+hiddens
-    # input_layer_size = 94#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
-
-    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="WORLDMODEL")
+    config = "./configs/dqn_trained_rnn_duelingDQN_version_Reward_Based_Epsilon_Decay.yaml"
+    input_layer_size = 303#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
     agent.train()
     

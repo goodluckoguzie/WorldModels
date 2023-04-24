@@ -49,8 +49,8 @@ class VariationalEncoder(nn.Module):
         self.linear5 = nn.Linear(hidden_dims, latent_dims)
 
         self.N = torch.distributions.Normal(0, 1)
-        self.N.loc = self.N.loc.cuda() # hack to get sampling on the GPU
-        self.N.scale = self.N.scale.cuda()
+        self.N.loc = self.N.loc.cuda(2) # hack to get sampling on the GPU
+        self.N.scale = self.N.scale.cuda(2)
         self.kl = 0
 
     def forward(self, x):
@@ -124,7 +124,7 @@ class DuelingDQNAgent:
         # initializing the env
         self.env = env
         self.config = config
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = 'cuda:2' if torch.cuda.is_available() else 'cpu'
         
       
         self.input_dim = None
@@ -172,7 +172,7 @@ class DuelingDQNAgent:
         # print('Loaded vae ckpt {}'.format(self.ckpt))
 
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        device = 'cuda:2' if torch.cuda.is_available() else 'cpu'
         n_hiddens = 256
         n_hiddensrnn = 256
         n_latents = 16 #47
@@ -484,7 +484,7 @@ class DuelingDQNAgent:
         self.steps_to_reach = []
 
         self.average_reward = 0
-        # latents = 47updat
+        # latents = 47
         # actions = 2
         hiddens = 256
         # rnn = RNN(latents, actions, hiddens).to(self.device)
@@ -517,22 +517,95 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
-            unsqueezed_action = action00.to(self.device)
+
+            # latent_mu = torch.from_numpy(next_obs)#.unsqueeze(0)
+            unsqueezed_action = action00.to(self.device)#.unsqueeze(0)
 
             while not done: 
 
-            
+                
+                # unsqueezed_action = action.unsqueeze(0)
+                # z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
                 current_obs = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
                 with torch.no_grad():
                     znew,latent_mu, latent_var ,current_obs = self.vae(current_obs) # (B*T, vsize)
-                unsqueezed_z = current_obs.to(self.device)
-                old_obs = unsqueezed_z
+                    # z = z.to(self.device)
+                unsqueezed_z = current_obs.to(self.device)#.unsqueeze(0)
+                # unsqueezed_action =.to(self.device) unsqueezed_action.unsqueeze(0).to(self.device)
+###########################################################################################################################                
 
+                with torch.no_grad():
+                    rnn_input = torch.cat([unsqueezed_z.to(self.device), unsqueezed_action.to(self.device)], dim=-1).float()
+
+                    _,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0).to(self.device),hidden)
+
+
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([current_obs, action0], dim=-1).float()
+
+                    current_obs_X_2_,_, _, hidden0 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
+
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action0], dim=-1).float()
+
+                    _,_, _, hidden_for_action0 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden0)
+
+                ################################################################################################
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([current_obs, action1], dim=-1).float()
+
+                    current_obs_X_2_,_, _, hidden1 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
+
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action1], dim=-1).float()
+
+                    _,_, _, hidden_for_action1 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden1)
+
+                ################################################################################################
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([current_obs, action2], dim=-1).float()
+
+                    current_obs_X_2_,_, _, hidden2 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
+
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action2], dim=-1).float()
+
+                    _,_, _, hidden_for_action2 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden2)
+
+                ################################################################################################
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([current_obs, action3], dim=-1).float()
+
+                    current_obs_X_2_,_, _, hidden3 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
+
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action3], dim=-1).float()
+
+                    _,_, _, hidden_for_action3 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden3)
+
+                ################################################################################################
+
+                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
+                # current_obs = torch.cat((z.unsqueeze(0), hidden[0]), -1)
                 current_obs = torch.cat((unsqueezed_z.unsqueeze(0), hidden_for_action0[0],hidden_for_action1[0],hidden_for_action2[0],hidden_for_action3[0]), -1)
                 current_obs = current_obs.squeeze(0).squeeze(0)
 
                 # sampling an action from the current state
                 action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
+
+
 
                 # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
@@ -545,70 +618,96 @@ class DuelingDQNAgent:
                 next_obs_ = next_obs
 
 
-                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).to(self.device)
+                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0)
                 next_obs = torch.from_numpy(next_obs).unsqueeze(0).to(self.device)
 
 
                 with torch.no_grad():
 
-                    znew,latent_mu, latent_var ,next_obs = self.vae(next_obs) 
-                    next_obs =next_obs
+                    znew,latent_mu, latent_var ,next_obs = self.vae(next_obs) # (B*T, vsize)
+                    next_obs =next_obs#.unsqueeze(0).to(self.device)
                 unsqueezed_z     = next_obs
 
-                #########################################################################################################################################
+
+
+
+                # with torch.no_grad():
+                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                #     current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+                #     current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                #     current_obs_X_2_ = current_obs_X_2_[-1, :]
+                #     rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0).unsqueeze(0), unsqueezed_action.to(self.device)], dim=-1).float()
+
+
+#########################################################################################################################################################################
                 with torch.no_grad():
 
-                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                    # rnn_input = torch.cat([old_obs, unsqueezed_action.to(self.device)], dim=-1).float()
+                    rnn_input = torch.cat([next_obs, unsqueezed_action.to(self.device)], dim=-1).float()
 
                     _,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0).to(self.device),hidden)
-                
+
+
                 #############################################################################################
-
-                if (unsqueezed_action==action0).all() : #unsqueezed_action.squeeze(0) != action0.squeeze(0):
-
-                    with torch.no_grad():
+                with torch.no_grad():
 
 
-                        rnn_input = torch.cat([next_obs, action0], dim=-1).float()
+                    rnn_input = torch.cat([next_obs, action0], dim=-1).float()
 
-                        _,_, _, hidden_for_action0 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_,_, _, hidden0 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
 
-                else:
-                    hidden_for_action0 = hidden
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action0], dim=-1).float()
 
-                    ################################################################################################
-                if (unsqueezed_action==action1).all():
+                    _,_, _, hidden_for_action0 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden0)
 
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action1], dim=-1).float()
+                ################################################################################################
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, action1], dim=-1).float()
 
-                        _,_, _, hidden_for_action1 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
- 
-                else:
-                                hidden_for_action1 = hidden
-                    #############################################################################################
-                if (unsqueezed_action==action2).all():
+                    current_obs_X_2_,_, _, hidden1 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
 
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action2], dim=-1).float()
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action1], dim=-1).float()
 
-                        _,_, _, hidden_for_action2 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    _,_, _, hidden_for_action1 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden1)
 
-                else:
-                                hidden_for_action2 = hidden
-                    #############################################################################################
-                if (unsqueezed_action==action3).all():
+                ################################################################################################
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, action2], dim=-1).float()
 
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action3], dim=-1).float()
+                    current_obs_X_2_,_, _, hidden2 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
 
-                        _,_, _, hidden_for_action3 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action2], dim=-1).float()
 
-                else:
-                                hidden_for_action3 = hidden
-                    ################################################################################################
+                    _,_, _, hidden_for_action2 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden2)
 
+                ################################################################################################
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, action3], dim=-1).float()
+
+                    current_obs_X_2_,_, _, hidden3 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                    current_obs_X_2_ = current_obs_X_2_[-1, :]
+
+                
+                    rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), action3], dim=-1).float()
+
+                    _,_, _, hidden_for_action3 = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden3)
+
+                ################################################################################################
+
+                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
+                # current_obs = torch.cat((z.unsqueeze(0), hidden[0]), -1)
                 next_obs = torch.cat((unsqueezed_z.unsqueeze(0), hidden_for_action0[0],hidden_for_action1[0],hidden_for_action2[0],hidden_for_action3[0]), -1)
 
 
@@ -636,7 +735,7 @@ class DuelingDQNAgent:
                 # storing the current state transition in the replay buffer.
                 self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
 
-                if len(self.experience_replay) > (self.batch_size):
+                if len(self.experience_replay) > (self.batch_size * 2):
                     self.update()
 
                 current_obs = next_obs_
@@ -649,16 +748,10 @@ class DuelingDQNAgent:
                         p_target.data.mul_(self.polyak_const)
                         p_target.data.add_((1 - self.polyak_const) * p.data)
 
-#             # decaying epsilon
-#             if self.epsilon > self.min_epsilon:
-#                 self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
-#                     # Decay epsilon
 
+            # decaying epsilon
             if self.epsilon > self.min_epsilon:
-
-                self.epsilon *= self.epsilon_decay_rate
-
-                self.epsilon = max(self.min_epsilon, self.epsilon)
+                self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
 
             # plotting using tensorboard
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")

@@ -1,17 +1,17 @@
-lr: 0.0015 #0029 # learning rate
-buffer_size: 200_000  # buffer size
-batch_size: 32 #32 #32 #64  # batch size for sampling from the buffer
+lr: 0.0001 #0.0015  # learning rate
+buffer_size: 1000_000  # buffer size
+batch_size: 64 #32 # batch size for sampling from the buffer
 gamma: 0.99  # discount factor
-num_episodes: 500_000  # number of episodes to train
-epsilon: 1.0  # initial value of epsilon
-epsilon_decay_rate: 0.99975  # after each episode, epsilon would be updated as epsion -= (epsilon_decay_rate)*epsilon
+num_episodes: 200_000  # number of episodes to train
+epsilon: 1  # initial value of epsilon
+epsilon_decay_rate: 0.995 #0.99975 #0.015  # after each episode, epsilon would be updated as epsion -= (epsilon_decay_rate)*epsilon
 polyak_const: 0.995  # polyak constant for updating the target network
 min_epsilon: 0.01  # minimum value of epsilon after which decay won't occur
 render: False  # setting it to True would render after every "render_freq" episodes
-render_freq: 50  # if render is True, the episode will be rendered after every render_freq episodes
-save_path: "./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_2048_128b"  # path to save the model files
+render_freq: 500  # if render is True, the episode will be rendered after every render_freq episodes
+save_path: "./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_4"  # path to save the model files
 save_freq: 500  # model would be saved after every save_freq epsidoes
-hidden_layers: [2048,128]  #[512, 128,128]  # the hidden layers of the model. Input layer size will be fixed according to the observation shape
+hidden_layers: [512,128] #[2048,128]  #[512, 128,128]  # the hidden layers of the model. Input layer size will be fixed according to the observation shape
 v_net_layers: [128,128,1] #[128,64,4,1]  # value network
 a_net_layers: [128,128,4]  # advantage network
 input_layer_size: 1040 #303

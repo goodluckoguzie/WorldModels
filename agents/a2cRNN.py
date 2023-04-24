@@ -12,6 +12,102 @@ from torch.distributions import Categorical
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP
 
+import os ,glob
+
+import sys
+
+from hparams import HyperParams as hp
+
+
+
+
+class Decoder(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(Decoder, self).__init__()
+        self.linear1 = nn.Linear(latent_dims, hidden_dims)
+        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear3 = nn.Linear(hidden_dims, input_dims)
+
+        self.input_dims = input_dims
+    def forward(self, z):
+        z = F.relu(self.linear1(z))
+        z = F.relu(self.linear2(z))
+        z = self.linear3(z)
+        # z = torch.sigmoid(z)
+        return z.reshape((-1, self.input_dims))
+
+
+
+class VariationalEncoder(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(VariationalEncoder, self).__init__()
+        self.linear1 = nn.Linear(input_dims,  hidden_dims)
+        self.linear2 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear3 = nn.Linear(hidden_dims, hidden_dims)
+        self.linear4 = nn.Linear(hidden_dims, latent_dims)
+        self.linear5 = nn.Linear(hidden_dims, latent_dims)
+
+        self.N = torch.distributions.Normal(0, 1)
+        self.N.loc = self.N.loc.cuda() # hack to get sampling on the GPU
+        self.N.scale = self.N.scale.cuda()
+        self.kl = 0
+
+    def forward(self, x):
+        x = torch.flatten(x, start_dim=1)
+        x = F.relu(self.linear1(x))
+        x = F.relu(self.linear2(x))
+        x = F.relu(self.linear3(x))
+        mu =  self.linear4(x)
+        sigma = torch.exp(self.linear5(x))
+        z = mu + sigma*self.N.sample(mu.shape)
+        self.kl = (sigma**2 + mu**2 - torch.log(sigma) - 1/2).sum()
+        return z ,mu , sigma
+
+
+
+
+
+class VAE(nn.Module):
+    def __init__(self, input_dims, hidden_dims, latent_dims):
+        super(VAE, self).__init__()
+        self.encoder = VariationalEncoder(input_dims, hidden_dims, latent_dims)
+        self.decoder = Decoder(input_dims, hidden_dims, latent_dims)
+
+    def forward(self, x):
+        z,mu , sigma = self.encoder(x)
+        return self.decoder(z),mu , sigma
+
+    def vae_loss(recon_x, x, mu, logvar):
+        """ VAE loss function """
+        recon_loss = nn.MSELoss(size_average=False)
+        BCE = recon_loss(recon_x, x)
+        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        return BCE + KLD, BCE, KLD
+
+
+
+class RNN(nn.Module):
+    def __init__(self, n_latents, n_actions, n_hiddens):
+        super(RNN, self).__init__()
+        self.rnn = nn.LSTM(n_latents+n_actions, n_hiddens, batch_first=True)
+        # target --> next latent (vision)
+        self.fc = nn.Linear(n_hiddens, n_latents)
+
+    def forward(self, states):
+        h, _ = self.rnn(states)
+        y = self.fc(h)
+        return y, None, None
+    
+    def infer(self, states, hidden):
+        h, next_hidden = self.rnn(states, hidden) # return (out, hx, cx)
+        y = self.fc(h)
+        return y, None, None, next_hidden
+
+
+
+
+
+
 class ActorCritic(nn.Module):
     def __init__(self, input_dim:int, policy_net_hidden_layers:list, value_net_hidden_layers:list):
         super(ActorCritic, self).__init__()
@@ -54,6 +150,47 @@ class A2CAgent:
         
         # setting values from config file
         self.configure(self.config)
+        sys.path.append('./WorldModels')
+        # from RNN.RNN import LSTM,RNN
+  
+        # self.data_path = self.data_dir# if not self.extra else self.extra_dir
+
+        self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        # self.vae_state = torch.load(self.ckpt)
+        # self.vae.load_state_dict(self.vae_state['model'])
+        # self.vae.eval()
+        # print('Loaded vae ckpt {}'.format(self.ckpt))
+
+
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        n_hiddens = 256
+        n_latents = 47
+        n_actions = 2
+
+        # print(os.getcwd())
+        self.vae = VAE(n_latents,n_hiddens,n_latents).to(device)
+
+
+        self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
+
+        # self.ckpt_dir = hp.ckpt_dir#'ckpt'
+        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
+        # self.vae_state = torch.load(self.ckpt)
+        # self.vae.load_state_dict(self.vae_state['model'])
+        # self.vae.eval()
+        # print('Loaded vae ckpt {}'.format(self.ckpt))       
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '015robotframe.pth.tar')))[-1] #
+
+        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
+        rnn_state = torch.load( self.ckpt, map_location={'cuda:0': str(self.device)})
+        self.rnn.load_state_dict(rnn_state['model'])
+        self.rnn.eval()
+        print('Loaded rnn_state ckpt {}'.format(self.ckpt))
+
+
 
         # initializing model
         self.model = ActorCritic(self.input_layer_size, self.policy_net_hidden_layers, self.value_net_hidden_layers).to(self.device)
@@ -135,20 +272,20 @@ class A2CAgent:
     #     if "walls" in obs.keys():
     #         observation = np.concatenate((observation, obs["walls"].flatten()))
     #     return observation
-
-    def preprocess_observation(self,obs):
+    def preprocess_observation(self, obs):
         """
         To convert dict observation to numpy observation
         """
         assert(type(obs) == dict)
-        obs2 = np.array(obs["goal"][-2:], dtype=np.float32)
-        humans = obs["humans"].flatten()
-        for i in range(int(round(humans.shape[0]/(6+7)))):
-            index = i*(6+7)
-            obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
-        # return torch.from_numpy(obs2)
-        return obs2
-    
+        observation = np.array([], dtype=np.float32)
+        observation = np.concatenate((observation, obs["goal"].flatten()) )
+        observation = np.concatenate((observation, obs["humans"].flatten()) )
+        observation = np.concatenate((observation, obs["laptops"].flatten()) )
+        observation = np.concatenate((observation, obs["tables"].flatten()) )
+        observation = np.concatenate((observation, obs["plants"].flatten()) )
+        return observation
+
+        
     def get_action(self, state):
         with torch.no_grad():
             state = torch.FloatTensor(state).to(self.device)
@@ -251,13 +388,20 @@ class A2CAgent:
         self.steps_to_reach = []
         
         self.average_reward = 0
+        hiddens = 256
+        import random
 
         for i in range(self.num_episodes):
             # resetting the environment before the episode starts
             current_state = self.env.reset()
             
             # preprocessing the observation
-            current_state = self.preprocess_observation(current_state)
+            current_obs = self.preprocess_observation(current_state)
+            action_ = random.randint(0, 3)
+            action = self.discrete_to_continuous_action(action_)
+            # action = np.atleast_2d(action)
+            action = torch.from_numpy(action).to(self.device)
+            hidden = [torch.zeros(1, 1, hiddens).to(self.device) for _ in range(2)]
 
             # initializing episode related variables
             done = False
@@ -269,17 +413,52 @@ class A2CAgent:
             self.steps = 0
 
             self.trajectory = [] # [[s, a, r, s', done], [], ...]
-            
+            unsqueezed_action = action#.unsqueeze(0)
             while not done:
+                # unsqueezed_action = action.unsqueeze(0)
+                z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
 
-                action = self.get_action(current_state)
+                unsqueezed_z = z#.unsqueeze(0)
+                unsqueezed_action = unsqueezed_action.unsqueeze(0).to(self.device)
+
+                with torch.no_grad():
+                    rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
+
+                    _,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+
+                # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
+                current_obs = torch.cat((z.unsqueeze(0), hidden[0]), -1)
+                current_obs = current_obs.squeeze(0).squeeze(0).cpu().detach().numpy()
+
+                # action = self.get_action(current_state)
+                action = self.get_action(current_obs)
+
                 action_continuous = self.discrete_to_continuous_action(action)
+                
+
                 next_state, reward, done, info = self.env.step(action_continuous)
-                next_state = self.preprocess_observation(next_state)
+
+                next_obs = self.preprocess_observation(next_state)
+
+                next_obs_ = next_obs
+
+                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).unsqueeze(0)
+                next_obs = torch.from_numpy(next_obs).unsqueeze(0).unsqueeze(0)
+
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                    _,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
+
+                next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
+                next_obs = next_obs.squeeze(0).squeeze(0).cpu().detach().numpy()
+                                                
                 # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",current_state.shape)
-                self.trajectory.append([current_state, action, reward, next_state, done])
+                # self.trajectory.append([current_state, action, reward, next_state, done])
+                self.trajectory.append([current_obs, action, reward, next_obs, done])
                 self.episode_reward += reward
-                current_state = next_state
+                # current_state = next_state
+                current_obs = next_obs_
+                unsqueezed_action  = torch.from_numpy(action_continuous).to(self.device)
 
                 self.steps += 1
                 if info["REACHED_GOAL"]:
@@ -349,7 +528,9 @@ if __name__ == "__main__":
     env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
     # config file for the model
-    config = "./configs/a2c.yaml"
-    input_layer_size = 23#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    config = "./configs/a2cRNN.yaml"
+    input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]+hiddens
+
+    # input_layer_size = env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
     agent = A2CAgent(env, config)
     agent.train()

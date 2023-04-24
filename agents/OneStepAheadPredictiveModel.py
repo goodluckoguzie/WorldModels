@@ -490,13 +490,9 @@ class DuelingDQNAgent:
         self.steps_to_reach = []
 
         self.average_reward = 0
-        # latents = 47
-        # actions = 2
+        self.best_average_reward = 0
         hiddens = 256
-        # rnn = RNN(latents, actions, hiddens).to(self.device)
-        # rnn = rnn.float()
-        # rnn.load_state_dict(torch.load('./MODEL/worldmodel.pt'))
-        # rnn.eval()
+
 
         # train loop
         for i in range(self.num_episodes):
@@ -530,23 +526,23 @@ class DuelingDQNAgent:
                 # unsqueezed_action = action.unsqueeze(0)
                 # z = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
 
-                # unsqueezed_z = z#.unsqueeze(0)
-                # unsqueezed_action = unsqueezed_action.unsqueeze(0).to(self.device)
-                # # #############################################################################################
+                unsqueezed_z = z#.unsqueeze(0)
+                unsqueezed_action = unsqueezed_action.unsqueeze(0).to(self.device)
+                # #############################################################################################
                 # with torch.no_grad():
                 #     rnn_input = torch.cat([unsqueezed_z, unsqueezed_action], dim=-1).float()
 
                 #     current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
-                    # current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
-                    # current_obs_X_2_ = current_obs_X_2_[-1, :]
-                    # # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",current_obs_X_2_.shape)
-                    # # print("111111111111111111111111111111111111111111",unsqueezed_action.shape)
+                #     current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
+                #     current_obs_X_2_ = current_obs_X_2_[-1, :]
+                #     # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",current_obs_X_2_.shape)
+                #     # print("111111111111111111111111111111111111111111",unsqueezed_action.shape)
                 
-                    # rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), unsqueezed_action], dim=-1).float()
+                #     rnn_input_X_2_ = torch.cat([current_obs_X_2_.unsqueeze(0), unsqueezed_action], dim=-1).float()
 
-                    # _,_, _, hidden = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden)
+                #     _,_, _, hidden = self.rnn.infer(rnn_input_X_2_.unsqueeze(0),hidden)
 
-                ################################################################################################
+                # ################################################################################################
 
                 # current_obs = torch.cat((z.unsqueeze(0).unsqueeze(0), hidden[0].unsqueeze(0)),-1)
                 current_obs = torch.cat((z.unsqueeze(0), hidden[0]), -1)
@@ -571,7 +567,6 @@ class DuelingDQNAgent:
                 with torch.no_grad():
                     znew,latent_mu, latent_var ,next_obs = self.vae(next_obs.to(self.device)) # (B*T, vsize)
                     next_obs =next_obs.unsqueeze(0).to(self.device)
-                    
                     rnn_input = torch.cat([next_obs, unsqueezed_action.to(self.device)], dim=-1).float()
                     current_obs_X_2_,_, _, hidden = self.rnn.infer(rnn_input.to(self.device),hidden)
                     current_obs_X_2_ = current_obs_X_2_.squeeze(0)          
@@ -617,7 +612,7 @@ class DuelingDQNAgent:
                     self.update()
 
                 current_obs = next_obs_
-                # unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
+                unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
  
                 # updating the fixed targets using polyak update
                 with torch.no_grad():
@@ -642,11 +637,18 @@ class DuelingDQNAgent:
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
             self.plot(i+1)
 
+            # update average (always!)
+            self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
+
             # saving model
-            if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.episode_reward >= self.average_reward:
+            # if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.episode_reward >= self.average_reward:
+            if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.average_reward >= self.best_average_reward:
+                self.best_average_reward = self.average_reward
                 if not os.path.isdir(self.save_path):
                     os.makedirs(self.save_path)
                 try:
+                    print("Error in saving model")
+
                     self.save_model(os.path.join(self.save_path, "episode"+ str(i+1).zfill(8) + ".pth"))
                 except:
                     print("Error in saving model")
@@ -654,27 +656,13 @@ class DuelingDQNAgent:
             # updating the average reward
             if (i+1) % self.save_freq == 0:
                 self.average_reward = 0
-            else:
-                self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
-            
   
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
     env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
     hiddens = 256
-
-
-
-
-
-
-    # rnn = RNN(latents, actions, hiddens).to(self.device)
-    # rnn = rnn.float()
-    # rnn.load_state_dict(torch.load('./MODEL/model.pt'))
-    # rnn.eval()
-
-    # config file for the model
+    np.random.seed(123)
     config = "./configs/1stepaheadpredictivemodel.yaml"
     input_layer_size = 23 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]+hiddens
     # input_layer_size = 94#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
