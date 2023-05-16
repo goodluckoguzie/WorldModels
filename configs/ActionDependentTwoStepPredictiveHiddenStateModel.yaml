@@ -1,6 +1,6 @@
-lr: 0.0005 #0.0015  # learning rate
-buffer_size: 200_000  # buffer size
-batch_size: 32 #32 # batch size for sampling from the buffer
+lr: 0.0001 #0.0015  # learning rate
+buffer_size: 1_000_000  # buffer size
+batch_size: 64 # batch size for sampling from the buffer
 gamma: 0.98 # 0.99  # discount factor
 num_episodes: 200_000  # number of episodes to train
 epsilon: 1  # initial value of epsilon
@@ -9,7 +9,7 @@ polyak_const: 0.99 #0.995  # polyak constant for updating the target network
 min_epsilon: 0.01  # minimum value of epsilon after which decay won't occur
 render: False  # setting it to True would render after every "render_freq" episodes
 render_freq: 500  # if render is True, the episode will be rendered after every render_freq episodes
-save_path: "./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_4"  # path to save the model files
+save_path: "./models/ADTSPHSM_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_4"  # path to save the model files
 save_freq: 500  # model would be saved after every save_freq epsidoes
 hidden_layers: [512,128] # the hidden layers of the model. Input layer size will be fixed according to the observation shape
 v_net_layers: [128,128,1]  # value network

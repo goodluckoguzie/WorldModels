@@ -450,12 +450,10 @@ class DuelingDQNAgent:
 
         self.rnn.eval()
         if path is None:
-            self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00192500.pth'))
-            # self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00199500.pth'))
-
+            # self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00192500.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00199500.pth'))
         
         self.duelingDQN.eval()
-
         total_reward = 0
         successive_runs = 0
 
@@ -523,12 +521,12 @@ class DuelingDQNAgent:
                 unsqueezed_z     = next_obs
 
                 #########################################################################################################################################
-                with torch.no_grad():
+                # with torch.no_grad():
 
-                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                    # rnn_input = torch.cat([old_obs, unsqueezed_action.to(self.device)], dim=-1).float()
+                #     rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
+                #     # rnn_input = torch.cat([old_obs, unsqueezed_action.to(self.device)], dim=-1).float()
 
-                    _,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0).to(self.device),hidden)
+                #     _,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0).to(self.device),hidden)
                 
                 #############################################################################################
 

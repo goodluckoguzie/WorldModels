@@ -382,7 +382,7 @@ class DuelingDQNAgent:
             action_continuous = self.discrete_to_continuous_action(action_discrete)
             return action_continuous, action_discrete
 
-    def eval(self, num_episodes=50, path=None):
+    def eval(self, num_episodes=200, path=None):
 
 
         sys.path.append('./WorldModels')
@@ -450,8 +450,7 @@ class DuelingDQNAgent:
 
         self.rnn.eval()
         if path is None:
-            # self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00192500.pth'))
-            self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00199500.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/MASPM_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp/episode00185000.pth'))
 
         
         self.duelingDQN.eval()
@@ -460,6 +459,7 @@ class DuelingDQNAgent:
         successive_runs = 0
 
         hiddens = 256
+
         for i in range(num_episodes):
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
@@ -484,22 +484,27 @@ class DuelingDQNAgent:
             self.has_reached_goal = 0
             self.has_collided = 0
             self.steps = 0
-            unsqueezed_action = action00.to(self.device)
+
+            # latent_mu = torch.from_numpy(next_obs)#.unsqueeze(0)updat
+            unsqueezed_action = action00.to(self.device)#.unsqueeze(0)
 
             while not done: 
 
-            
                 current_obs = torch.from_numpy(current_obs).unsqueeze(0).to(self.device)
                 with torch.no_grad():
                     znew,latent_mu, latent_var ,current_obs = self.vae(current_obs) # (B*T, vsize)
-                unsqueezed_z = current_obs.to(self.device)
+                    # z = z.to(self.device)
+                unsqueezed_z = current_obs.to(self.device)#.unsqueeze(0)
                 old_obs = unsqueezed_z
+                # z = z.to(self.device)
 
                 current_obs = torch.cat((unsqueezed_z.unsqueeze(0), hidden_for_action0[0],hidden_for_action1[0],hidden_for_action2[0],hidden_for_action3[0]), -1)
                 current_obs = current_obs.squeeze(0).squeeze(0)
 
                 # sampling an action from the current state
                 action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
+
+
 
                 # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
@@ -512,77 +517,52 @@ class DuelingDQNAgent:
                 next_obs_ = next_obs
 
 
-                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0).to(self.device)
+                unsqueezed_action = torch.from_numpy(action_continuous).unsqueeze(0)
                 next_obs = torch.from_numpy(next_obs).unsqueeze(0).to(self.device)
 
 
                 with torch.no_grad():
 
-                    znew,latent_mu, latent_var ,next_obs = self.vae(next_obs) 
-                    next_obs =next_obs
+                    znew,latent_mu, latent_var ,next_obs = self.vae(next_obs) # (B*T, vsize)
+                    next_obs =next_obs#.unsqueeze(0).to(self.device)
                 unsqueezed_z     = next_obs
 
-                #########################################################################################################################################
+
+#########################################################################################################################################################################
                 with torch.no_grad():
 
-                    rnn_input = torch.cat([next_obs, unsqueezed_action], dim=-1).float()
-                    # rnn_input = torch.cat([old_obs, unsqueezed_action.to(self.device)], dim=-1).float()
+                    # rnn_input = torch.cat([next_obs, unsqueezed_action.to(self.device)], dim=-1).float()
+                    rnn_input = torch.cat([old_obs, unsqueezed_action.to(self.device)], dim=-1).float()
 
                     _,_, _, hidden = self.rnn.infer(rnn_input.unsqueeze(0).to(self.device),hidden)
-                
+
+
                 #############################################################################################
-
-                if (unsqueezed_action==action0).all() : #unsqueezed_action.squeeze(0) != action0.squeeze(0):
-                # if (unsqueezed_action!=action0).all() : #unsqueezed_action.squeeze(0) != action0.squeeze(0):
-
-                    with torch.no_grad():
+                with torch.no_grad():
 
 
-                        rnn_input = torch.cat([next_obs, action0], dim=-1).float()
+                    rnn_input = torch.cat([next_obs, action0], dim=-1).float()
 
-                        _,_, _, hidden_for_action0 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+                    current_obs_X_2_,_, _, hidden_for_action0 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
 
-                else:
-                    hidden_for_action0 = hidden
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, action1], dim=-1).float()
 
-                    ################################################################################################
-                if (unsqueezed_action==action1).all():
-                # if (unsqueezed_action!=action1).all():
+                    current_obs_X_2_,_, _, hidden_for_action1 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
 
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action1], dim=-1).float()
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, action2], dim=-1).float()
 
-                        _,_, _, hidden_for_action1 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
- 
-                else:
-                                hidden_for_action1 = hidden
-                    #############################################################################################
-                if (unsqueezed_action==action2).all():
-                # if (unsqueezed_action!=action2).all():
+                    current_obs_X_2_,_, _, hidden_for_action2 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
+        
+                #############################################################################################
+                with torch.no_grad():
+                    rnn_input = torch.cat([next_obs, action3], dim=-1).float()
 
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action2], dim=-1).float()
-
-                        _,_, _, hidden_for_action2 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
-
-                else:
-                                hidden_for_action2 = hidden
-                    #############################################################################################
-                if (unsqueezed_action==action3).all():
-                # if (unsqueezed_action!=action3).all():
-
-                    with torch.no_grad():
-                        rnn_input = torch.cat([next_obs, action3], dim=-1).float()
-
-                        _,_, _, hidden_for_action3 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
-
-                else:
-                                hidden_for_action3 = hidden
-                    ################################################################################################
+                    current_obs_X_2_,_, _, hidden_for_action3 = self.rnn.infer(rnn_input.unsqueeze(0),hidden)
 
                 next_obs = torch.cat((unsqueezed_z.unsqueeze(0), hidden_for_action0[0],hidden_for_action1[0],hidden_for_action2[0],hidden_for_action3[0]), -1)
-
-
 
 
                 # rendering 
@@ -595,25 +575,25 @@ class DuelingDQNAgent:
                 # storing whether the agent reached the goal
                 if info["REACHED_GOAL"]:
                     self.has_reached_goal = 1
-                    successive_runs += 1
-
                 
-                if info["HUMAN_COLLISION"]:
+                if info["COLLISION"]:
                     self.has_collided = 1
                     self.steps = self.env.EPISODE_LENGTH
 
 
                 next_obs = next_obs.squeeze(0).squeeze(0).cpu()
                 current_obs = current_obs.squeeze(0).squeeze(0).cpu()
-                # storing the current state transition in the replay buffer.
+ 
 
                 current_obs = next_obs_
                 # unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
                 unsqueezed_action = unsqueezed_action
 
                 # self.env.render()
+
+                if info["REACHED_GOAL"]:
+                    successive_runs += 1
             total_reward += self.episode_reward
-            print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, i), flush=True)
 
         print(f"Total episodes run: {num_episodes}")
         print(f"Total successive runs: {successive_runs}")
@@ -634,7 +614,7 @@ if __name__ == "__main__":
     # rnn.eval()
 
     # config file for the model
-    config = "./configs/Uncertaintypredictiveworldmodels.yaml"
+    config = "./configs/multiActionStatePredictiveModel.yaml"
     input_layer_size = 1040 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]+hiddens
     # input_layer_size = 94#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
 

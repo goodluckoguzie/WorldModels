@@ -460,6 +460,8 @@ class DuelingDQNAgent:
         successive_runs = 0
 
         hiddens = 256
+        env.seed(123)
+
         for i in range(num_episodes):
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
@@ -598,7 +600,7 @@ class DuelingDQNAgent:
                     successive_runs += 1
 
                 
-                if info["HUMAN_COLLISION"]:
+                if info["COLLISION"]:
                     self.has_collided = 1
                     self.steps = self.env.EPISODE_LENGTH
 
@@ -611,7 +613,7 @@ class DuelingDQNAgent:
                 # unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
                 unsqueezed_action = unsqueezed_action
 
-                # self.env.render()
+                self.env.render()
             total_reward += self.episode_reward
             print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, i), flush=True)
 

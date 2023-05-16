@@ -451,7 +451,7 @@ class DuelingDQNAgent:
         self.rnn.eval()
         if path is None:
             # self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00192500.pth'))
-            self.duelingDQN.load_state_dict(torch.load('./models/Uncertainty_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00199500.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/ADTSPHSM_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_1/episode00199500.pth'))
 
         
         self.duelingDQN.eval()
@@ -611,7 +611,7 @@ class DuelingDQNAgent:
                 # unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
                 unsqueezed_action = unsqueezed_action
 
-                # self.env.render()
+                self.env.render()
             total_reward += self.episode_reward
             print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, i), flush=True)
 
@@ -634,7 +634,7 @@ if __name__ == "__main__":
     # rnn.eval()
 
     # config file for the model
-    config = "./configs/Uncertaintypredictiveworldmodels.yaml"
+    config = "./configs/ActionDependentTwoStepPredictiveHiddenStateModel.yaml"
     input_layer_size = 1040 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]+hiddens
     # input_layer_size = 94#env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
 
