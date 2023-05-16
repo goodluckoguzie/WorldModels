@@ -173,7 +173,7 @@ class DuelingDQNAgent:
         # print('Loaded vae ckpt {}'.format(self.ckpt))
 
 
-        device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         n_hiddens = 256
         n_latents = 47
         n_actions = 2
@@ -382,7 +382,7 @@ class DuelingDQNAgent:
             action_continuous = self.discrete_to_continuous_action(action_discrete)
             return action_continuous, action_discrete
 
-    def eval(self, num_episodes=1000, path=None):
+    def eval(self, num_episodes=50, path=None):
 
 
         sys.path.append('./WorldModels')
@@ -445,17 +445,18 @@ class DuelingDQNAgent:
 
         self.rnn.eval()
         if path is None:
-            self.duelingDQN.load_state_dict(torch.load('./models1/2stepahead_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_Exp_3/episode00060600.pth'))
+            self.duelingDQN.load_state_dict(torch.load('./models/1stepahead_EXP_A_INPUT_SIZE_VAE_16_RNN_WIND_16_512_128_64/episode00199500.pth'))
 
         
         self.duelingDQN.eval()
 
         total_reward = 0
-        successive_runs = 0
+        self.successive_runs = 0
 
         hiddens = 256
         self.reward_per_episode = 0
         successive_runs = 0
+
         for i in range(num_episodes):
             current_obs = self.env.reset()
             current_obs = self.preprocess_observation(current_obs)
@@ -514,6 +515,7 @@ class DuelingDQNAgent:
 
                 # taking a step in the environment
                 next_obs, reward, done, info = self.env.step(action_continuous)
+                total_reward += reward
 
                 # incrementing total steps
                 self.steps += 1
@@ -541,16 +543,13 @@ class DuelingDQNAgent:
                 if self.render and ((i+1) % self.render_freq == 0):
                     self.env.render()
 
-                # storing the rewards
-                self.episode_reward += reward
-                self.reward_per_episode += total_reward
-
+            
                 # storing whether the agent reached the goal
                 if info["REACHED_GOAL"]:
                     self.has_reached_goal = 1
-                    successive_runs += 1
+                    self.successive_runs += 1
 
-                if info["COLLISION"]:
+                if info["HUMAN_COLLISION"]:
                     self.has_collided = 1
                     self.steps = self.env.EPISODE_LENGTH
 
@@ -563,16 +562,19 @@ class DuelingDQNAgent:
                 current_obs = next_obs_
                 unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
 
-                self.env.render()
+                # self.env.render()
+            total_reward += self.episode_reward
+            print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, i), flush=True)
 
         print(f"Total episodes run: {num_episodes}")
-        print(f"Total successive runs: {successive_runs}")
-        print(f"Average reward per episode: {self.reward_per_episode/num_episodes}")
+        print(f"Total successive runs: {self.successive_runs}")
+        print(f"Average reward per episode: {total_reward/num_episodes}")
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
     env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
+    env.seed(123)
 
 
 

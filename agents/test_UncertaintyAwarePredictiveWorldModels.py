@@ -382,7 +382,7 @@ class DuelingDQNAgent:
             action_continuous = self.discrete_to_continuous_action(action_discrete)
             return action_continuous, action_discrete
 
-    def eval(self, num_episodes=2000, path=None):
+    def eval(self, num_episodes=50, path=None):
 
 
         sys.path.append('./WorldModels')
@@ -460,6 +460,7 @@ class DuelingDQNAgent:
         successive_runs = 0
 
         hiddens = 256
+        env.seed(123)
 
         for i in range(num_episodes):
             current_obs = self.env.reset()
@@ -534,6 +535,7 @@ class DuelingDQNAgent:
                 #############################################################################################
 
                 if (unsqueezed_action==action0).all() : #unsqueezed_action.squeeze(0) != action0.squeeze(0):
+                # if (unsqueezed_action!=action0).all() : #unsqueezed_action.squeeze(0) != action0.squeeze(0):
 
                     with torch.no_grad():
 
@@ -547,6 +549,7 @@ class DuelingDQNAgent:
 
                     ################################################################################################
                 if (unsqueezed_action==action1).all():
+                # if (unsqueezed_action!=action1).all():
 
                     with torch.no_grad():
                         rnn_input = torch.cat([next_obs, action1], dim=-1).float()
@@ -557,6 +560,7 @@ class DuelingDQNAgent:
                                 hidden_for_action1 = hidden
                     #############################################################################################
                 if (unsqueezed_action==action2).all():
+                # if (unsqueezed_action!=action2).all():
 
                     with torch.no_grad():
                         rnn_input = torch.cat([next_obs, action2], dim=-1).float()
@@ -567,6 +571,7 @@ class DuelingDQNAgent:
                                 hidden_for_action2 = hidden
                     #############################################################################################
                 if (unsqueezed_action==action3).all():
+                # if (unsqueezed_action!=action3).all():
 
                     with torch.no_grad():
                         rnn_input = torch.cat([next_obs, action3], dim=-1).float()
@@ -608,8 +613,9 @@ class DuelingDQNAgent:
                 # unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
                 unsqueezed_action = unsqueezed_action
 
-                # self.env.render()
+                self.env.render()
             total_reward += self.episode_reward
+            print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, i), flush=True)
 
         print(f"Total episodes run: {num_episodes}")
         print(f"Total successive runs: {successive_runs}")

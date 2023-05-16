@@ -14,25 +14,27 @@ import argparse
 from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
 
+
 class DuelingDQN(nn.Module):
-    def __init__(self, input_size, hidden_layers:list, v_net_layers:list, a_net_layers:list) -> None:
+    def __init__(self, input_size, hidden_layers: list, v_net_layers: list, a_net_layers: list) -> None:
         super().__init__()
         # sizes of the first layer in the value and advantage networks should be same as the output of the hidden layer network
-        assert(v_net_layers[0]==hidden_layers[-1] and a_net_layers[0]==hidden_layers[-1])
+        assert(v_net_layers[0] == hidden_layers[-1]
+               and a_net_layers[0] == hidden_layers[-1])
         self.hidden_mlp = MLP(input_size, hidden_layers)
         self.value_network = MLP(v_net_layers[0], v_net_layers[1:])
         self.advantage_network = MLP(a_net_layers[0], a_net_layers[1:])
-        
 
-    def forward(self,x):
+    def forward(self, x):
         x = self.hidden_mlp.forward(x)
         v = self.value_network.forward(x)
         a = self.advantage_network.forward(x)
         q = v + a - torch.mean(a, dim=1, keepdim=True)
         return q
 
+
 class DuelingDQNAgent:
-    def __init__(self, env:gym.Env, config:str, **kwargs) -> None:
+    def __init__(self, env: gym.Env, config: str, **kwargs) -> None:
         assert(env is not None and config is not None)
         # initializing the env
         self.env = env
@@ -65,15 +67,17 @@ class DuelingDQNAgent:
                 setattr(self, k, v)
             else:
                 raise NameError(f"Variable named {k} not defined")
-        
+
         # setting values from config file
         self.configure(self.config)
 
         # declaring the network
-        self.duelingDQN = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
-        
-        #initializing the fixed targets
-        self.fixed_targets = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
+        self.duelingDQN = DuelingDQN(
+            self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
+
+        # initializing the fixed targets
+        self.fixed_targets = DuelingDQN(
+            self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
         self.fixed_targets.load_state_dict(self.duelingDQN.state_dict())
 
         # initalizing the replay buffer
@@ -87,25 +91,29 @@ class DuelingDQNAgent:
         else:
             self.writer = SummaryWriter()
 
-    def configure(self, config:str):
+    def configure(self, config: str):
         with open(config, "r") as ymlfile:
             config = yaml.safe_load(ymlfile)
 
         if self.input_layer_size is None:
             self.input_layer_size = config["input_layer_size"]
-            assert(self.input_layer_size is not None), f"Argument input_layer_size cannot be None"
+            assert(
+                self.input_layer_size is not None), f"Argument input_layer_size cannot be None"
 
         if self.hidden_layers is None:
             self.hidden_layers = config["hidden_layers"]
-            assert(self.hidden_layers is not None), f"Argument hidden_layers cannot be None"
+            assert(
+                self.hidden_layers is not None), f"Argument hidden_layers cannot be None"
 
         if self.v_net_layers is None:
             self.v_net_layers = config["v_net_layers"]
-            assert(self.v_net_layers is not None), f"Argument v_net_layers cannot be None"
+            assert(
+                self.v_net_layers is not None), f"Argument v_net_layers cannot be None"
 
         if self.a_net_layers is None:
             self.a_net_layers = config["a_net_layers"]
-            assert(self.a_net_layers is not None), f"Argument a_net_layers cannot be None"
+            assert(
+                self.a_net_layers is not None), f"Argument a_net_layers cannot be None"
 
         if self.buffer_size is None:
             self.buffer_size = config["buffer_size"]
@@ -113,7 +121,8 @@ class DuelingDQNAgent:
 
         if self.num_episodes is None:
             self.num_episodes = config["num_episodes"]
-            assert(self.num_episodes is not None), f"Argument num_episodes cannot be None"
+            assert(
+                self.num_episodes is not None), f"Argument num_episodes cannot be None"
 
         if self.epsilon is None:
             self.epsilon = config["epsilon"]
@@ -121,7 +130,8 @@ class DuelingDQNAgent:
 
         if self.epsilon_decay_rate is None:
             self.epsilon_decay_rate = config["epsilon_decay_rate"]
-            assert(self.epsilon_decay_rate is not None), f"Argument epsilon_decay_rate cannot be None"
+            assert(
+                self.epsilon_decay_rate is not None), f"Argument epsilon_decay_rate cannot be None"
 
         if self.batch_size is None:
             self.batch_size = config["batch_size"]
@@ -137,7 +147,8 @@ class DuelingDQNAgent:
 
         if self.polyak_const is None:
             self.polyak_const = config["polyak_const"]
-            assert(self.polyak_const is not None), f"Argument polyak_const cannot be None"
+            assert(
+                self.polyak_const is not None), f"Argument polyak_const cannot be None"
 
         if self.render is None:
             self.render = config["render"]
@@ -159,11 +170,10 @@ class DuelingDQNAgent:
             self.save_freq = config["save_freq"]
             assert(self.save_freq is not None), f"Argument save_freq cannot be None"
 
-
     def xavier_init_weights(self, m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
-    
+
     # def preprocess_observation(self, obs):
     #     """
     #     To convert dict observation to numpy observation
@@ -176,7 +186,7 @@ class DuelingDQNAgent:
     #     observation = np.concatenate((observation, obs["tables"].flatten()) )
     #     observation = np.concatenate((observation, obs["plants"].flatten()) )
     #     return observation
-    def preprocess_observation(self,obs):
+    def preprocess_observation(self, obs):
         """
         To convert dict observation to numpy observation
         """
@@ -185,25 +195,25 @@ class DuelingDQNAgent:
         humans = obs["humans"].flatten()
         for i in range(int(round(humans.shape[0]/(6+7)))):
             index = i*(6+7)
-            obs2 = np.concatenate((obs2, humans[index+6:index+6+7]) )
+            obs2 = np.concatenate((obs2, humans[index+6:index+6+7]))
         # return torch.from_numpy(obs2)
         return obs2
 
-    def discrete_to_continuous_action(self ,action:int):
+    def discrete_to_continuous_action(self, action: int):
         """
         Function to return a continuous space action for a given discrete action
         """
         if action == 0:
-            return np.array([0, 1], dtype=np.float32) 
+            return np.array([0, 1], dtype=np.float32)
         # Turning clockwise
         elif action == 1:
-            return np.array([0, -1], dtype=np.float32) 
+            return np.array([0, -1], dtype=np.float32)
         # Turning anti-clockwise and moving forward
         # elif action == 3:
-        #     return np.array([1, 0.5], dtype=np.float32) 
+        #     return np.array([1, 0.5], dtype=np.float32)
         # # Turning clockwise and moving forward
         # elif action == 4:
-        #     return np.array([1, -0.5], dtype=np.float32) 
+        #     return np.array([1, -0.5], dtype=np.float32)
         # # Move forward
         elif action == 2:
             return np.array([1, 0], dtype=np.float32)
@@ -216,23 +226,25 @@ class DuelingDQNAgent:
         #     # Turning anti-clockwise with a reduced speed and rotation
         # elif action == 8:
         #     return np.array([0.5, -1], dtype=np.float32)
-        
+
         else:
             raise NotImplementedError
 
     def get_action(self, current_state, epsilon):
 
-            # exploit
+        # exploit
         with torch.no_grad():
-            q = self.duelingDQN(torch.from_numpy(current_state).reshape(1, -1).float().to(self.device))
+            q = self.duelingDQN(torch.from_numpy(
+                current_state).reshape(1, -1).float().to(self.device))
             action_discrete = torch.argmax(q).item()
-            action_continuous = self.discrete_to_continuous_action(action_discrete)
+            action_continuous = self.discrete_to_continuous_action(
+                action_discrete)
             return action_continuous, action_discrete
 
-    
     def calculate_grad_norm(self):
         total_norm = 0
-        parameters = [p for p in self.duelingDQN.parameters() if p.grad is not None and p.requires_grad]
+        parameters = [p for p in self.duelingDQN.parameters(
+        ) if p.grad is not None and p.requires_grad]
         for p in parameters:
             param_norm = p.grad.detach().data.norm(2)
             total_norm += param_norm.item() ** 2
@@ -243,25 +255,31 @@ class DuelingDQNAgent:
         torch.save(self.duelingDQN.state_dict(), path)
 
     def update(self):
-        curr_state, rew, act, next_state, d = self.experience_replay.sample_batch(self.batch_size)
-                    
+        curr_state, rew, act, next_state, d = self.experience_replay.sample_batch(
+            self.batch_size)
+
         # a_max represents the best action on the next state according to the original network (the network other than the target network)
-        a_max = torch.argmax(self.duelingDQN(torch.from_numpy(next_state).float().to(self.device)), keepdim=True, dim=1)
-        
+        a_max = torch.argmax(self.duelingDQN(torch.from_numpy(
+            next_state).float().to(self.device)), keepdim=True, dim=1)
+
         # calculating target value given by r + (gamma * Q(s', a_max, theta')) where theta' is the target network parameters
         # if the transition has done=True, then the target is just r
 
         # the following calculates Q(s', a) for all a
-        q_from_target_net = self.fixed_targets(torch.from_numpy(next_state).float().to(self.device))
+        q_from_target_net = self.fixed_targets(
+            torch.from_numpy(next_state).float().to(self.device))
 
-        # calculating Q(s', a_max) where a_max was the best action calculated by the original network 
-        q_s_prime_a_max = torch.gather(input=q_from_target_net, dim=1, index=a_max)
+        # calculating Q(s', a_max) where a_max was the best action calculated by the original network
+        q_s_prime_a_max = torch.gather(
+            input=q_from_target_net, dim=1, index=a_max)
 
         # calculating the target. The above quantity is being multiplied element-wise with ~d, so that only the episodes that do not terminate contribute to the second quantity in the additon
-        target = torch.from_numpy(rew).float().to(self.device) + self.gamma * (q_s_prime_a_max * (~torch.from_numpy(d).bool().to(self.device)))
+        target = torch.from_numpy(rew).float().to(self.device) + self.gamma * (
+            q_s_prime_a_max * (~torch.from_numpy(d).bool().to(self.device)))
 
         # the prediction is given by Q(s, a). calculting Q(s,a) for all a
-        q_from_net = self.duelingDQN(torch.from_numpy(curr_state).float().to(self.device))
+        q_from_net = self.duelingDQN(torch.from_numpy(
+            curr_state).float().to(self.device))
 
         # converting the action array to a torch tensor
         act_tensor = torch.from_numpy(act).long().to(self.device)
@@ -278,7 +296,8 @@ class DuelingDQNAgent:
         loss.backward()
 
         # gradient clipping
-        self.total_grad_norm += torch.nn.utils.clip_grad_norm_(self.duelingDQN.parameters(), max_norm=0.5).cpu()
+        self.total_grad_norm += torch.nn.utils.clip_grad_norm_(
+            self.duelingDQN.parameters(), max_norm=0.5).cpu()
         self.optimizer.step()
 
     def plot(self, episode):
@@ -293,166 +312,475 @@ class DuelingDQNAgent:
         if not os.path.isdir(os.path.join(self.save_path, "plots")):
             os.makedirs(os.path.join(self.save_path, "plots"))
 
-        np.save(os.path.join(self.save_path, "plots", "rewards"), np.array(self.rewards), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "losses"), np.array(self.episode_loss), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "exploration_rates"), np.array(self.epsilon), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(self.total_grad_norm/self.batch_size), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "successes"), np.array(self.has_reached_goal), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "collisions"), np.array(self.has_collided), allow_pickle=True, fix_imports=True)
-        np.save(os.path.join(self.save_path, "plots", "steps_to_reach"), np.array(self.steps), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "rewards"),
+                np.array(self.rewards), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "losses"), np.array(
+            self.episode_loss), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "exploration_rates"),
+                np.array(self.epsilon), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "grad_norms"), np.array(
+            self.total_grad_norm/self.batch_size), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "successes"), np.array(
+            self.has_reached_goal), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "collisions"), np.array(
+            self.has_collided), allow_pickle=True, fix_imports=True)
+        np.save(os.path.join(self.save_path, "plots", "steps_to_reach"),
+                np.array(self.steps), allow_pickle=True, fix_imports=True)
 
-        self.writer.add_scalar("reward / epsiode", self.episode_reward, episode)
+        self.writer.add_scalar(
+            "reward / epsiode", self.episode_reward, episode)
         self.writer.add_scalar("loss / episode", self.episode_loss, episode)
-        self.writer.add_scalar("exploration rate / episode", self.epsilon, episode)
-        self.writer.add_scalar("Average total grad norm / episode", (self.total_grad_norm/self.batch_size), episode)
-        self.writer.add_scalar("ending in sucess? / episode", self.has_reached_goal, episode)
-        self.writer.add_scalar("has collided? / episode", self.has_collided, episode)
-        self.writer.add_scalar("Steps to reach goal / episode", self.steps, episode)
-        self.writer.flush()  
+        self.writer.add_scalar(
+            "exploration rate / episode", self.epsilon, episode)
+        self.writer.add_scalar("Average total grad norm / episode",
+                               (self.total_grad_norm/self.batch_size), episode)
+        self.writer.add_scalar("ending in sucess? / episode",
+                               self.has_reached_goal, episode)
+        self.writer.add_scalar("has collided? / episode",
+                               self.has_collided, episode)
+        self.writer.add_scalar(
+            "Steps to reach goal / episode", self.steps, episode)
+        self.writer.flush()
 
-    def train(self):
-        self.loss_fn = nn.MSELoss()
-        self.optimizer = optim.Adam(self.duelingDQN.parameters(), lr=self.lr)
-        self.rewards = []
-        self.losses = []
-        self.exploration_rates = []
-        self.grad_norms = []
-        self.successes = []
-        self.collisions = []
-        self.steps_to_reach = []
-
-        self.average_reward = 0
-
-        # train loop
-        for i in range(self.num_episodes):
-            current_obs = self.env.reset()
-            current_obs = self.preprocess_observation(current_obs)
-            done = False
-            self.episode_reward = 0
-            self.total_grad_norm = 0
-            self.episode_loss = 0
-            self.has_reached_goal = 0
-            self.has_collided = 0
-            self.steps = 0
-
-
-            
-            while not done: 
-                # sampling an action from the current state
-                action_continuous, action_discrete = self.get_action(current_obs, self.epsilon)
-
-                # taking a step in the environment
-                next_obs, reward, done, info = self.env.step(action_continuous)
-
-                # incrementing total steps
-                self.steps += 1
-
-                # preprocessing the observation, i.e padding the observation with zeros if it is lesser than the maximum size
-                next_obs = self.preprocess_observation(next_obs)
-                
-                # rendering if reqd
-                if self.render and ((i+1) % self.render_freq == 0):
-                    self.env.render()
-
-                # storing the rewards
-                self.episode_reward += reward
-
-                # storing whether the agent reached the goal
-                if info["REACHED_GOAL"]:
-                    self.has_reached_goal = 1
-                
-                if info["COLLISION"]:
-                    self.has_collided = 1
-                    self.steps = self.env.EPISODE_LENGTH
-
-                # storing the current state transition in the replay buffer. 
-                self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
-
-
-                # sampling a mini-batch of state transitions if the replay buffer has sufficent examples
-                if len(self.experience_replay) > self.batch_size:
-                    self.update()
-
-                # setting the current observation to the next observation
-                current_obs = next_obs
-
-                # updating the fixed targets using polyak update
-                with torch.no_grad():
-                    for p_target, p in zip(self.fixed_targets.parameters(), self.duelingDQN.parameters()):
-                        p_target.data.mul_(self.polyak_const)
-                        p_target.data.add_((1 - self.polyak_const) * p.data)
-
-
-            # decaying epsilon
-            if self.epsilon > self.min_epsilon:
-                self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
-
-            # plotting using tensorboard
-            print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
-            self.plot(i+1)
-
-            # saving model
-            if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.episode_reward >= self.average_reward:
-                if not os.path.isdir(self.save_path):
-                    os.makedirs(self.save_path)
-                try:
-                    self.save_model(os.path.join(self.save_path, "episode"+ str(i+1).zfill(8) + ".pth"))
-                except:
-                    print("Error in saving model")
-
-            # updating the average reward
-            if (i+1) % self.save_freq == 0:
-                self.average_reward = 0
-            else:
-                self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
-            
-   
-    def eval(self, num_episodes=1000, path=None):
+    def eval(self, num_episodes=50, path=None):
         if path is None:
             path = os.getcwd()
 
-       
-            self.duelingDQN.load_state_dict(torch.load('./models/duelingDQN_input_23_512_128_Exp_1/episode00198250.pth'))
+            self.duelingDQN.load_state_dict(torch.load(
+                './models/duelingDQN_input_23_512_128_Exp_1/episode00198250.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models/duelingDQN_input_23_512_128_Exp_2/episode00078850.pth'))
             # self.duelingDQN.load_state_dict(torch.load('./models1/duelingDQN_input_23_512_128_Exp_3/episode00058650.pth'))
 
-    
         self.duelingDQN.eval()
 
         # total_reward = 0
         reward_per_episode = 0
         successive_runs = 0
+
+        total_jerk_count = 0
+        total_velocity = np.array([0.0, 0.0])
+        total_path_length = 0
+        total_time = 0
+        total_idle_time = 0
+
+        # Add counters for the conditions
+        out_of_map_count = 0
+        human_collision_count = 0
+        reached_goal_count = 0
+        max_steps_count = 0
+        discomfort_count = 0
+
+        # Initialize lists to store values for each episode
+        discomfort_counts = []
+        jerk_counts = []
+        velocities = []
+        path_lengths = []
+        times = []
+        out_of_maps = []
+        human_collisions = []
+        reached_goals = []
+        max_steps = []
+        episode_run = []
+        successive_run = []
+        episode_reward = []
+        idle_times = []
         for i in range(num_episodes):
             o = self.env.reset()
-            o = self.preprocess_observation(o)
             total_reward = 0
             done = False
+            t = 0
+            idle_time = 0
+            path_length = 0
+            prev_vel = np.array([0.0, 0.0])
+            jerk = np.array([0.0, 0.0])
+            prev_acc = np.array([0.0, 0.0])
+            jerk_count = 0
+            velocity_sum = np.array([0.0, 0.0])
+            total_out_of_map = 0
+            total_discomfort_count = 0
+            total_human_collision = 0
+            total_reached_goal = 0
+            total_max_steps = 0
+            prev_pos = o["goal"][-2:]
+            o = self.preprocess_observation(o)
             while not done:
+                t = t + 1
+
                 act_continuous, act_discrete = self.get_action(o, 0)
                 new_state, reward, done, info = self.env.step(act_continuous)
+                new_state__ = new_state
                 new_state = self.preprocess_observation(new_state)
                 total_reward += reward
 
-                self.env.render()
+                # self.env.render()
 
                 if info["REACHED_GOAL"]:
                     successive_runs += 1
+                    reached_goal_count += 1
+                # Update the counters based on the info
+                if info["OUT_OF_MAP"]:
+                    out_of_map_count += 1
+                if info["HUMAN_COLLISION"]:
+                    human_collision_count += 1
+                # if info["REACHED_GOAL"]:
+                #     reached_goal_count += 1
+                if info["MAX_STEPS"]:
+                    max_steps_count += 1
+                if info["DISCOMFORT_CROWDNAV"]:
+                    discomfort_count += 1
+                # Calculate idle time
+                if act_discrete == 3:
+                    idle_time += 1
 
+                # Calculate agent velocity, path length and jerk
+                current_pos = new_state__["goal"][-2:]
+                current_vel = (current_pos - prev_pos) / t
+                # print("current_pos")
+                # print(current_pos)
+                # print("")
+                # print("current_vel")
+                # print(current_vel)
+                # print("")
+                # print("prev_pos")
+                # print(prev_pos)
+                # print("")
+
+                path_length += np.linalg.norm(current_pos - prev_pos)
+                current_acc = (current_vel - prev_vel) / t
+                jerk = (current_acc - (prev_vel - prev_acc) / t) / t
                 o = new_state
-            reward_per_episode += total_reward
 
+                # Calculate number of jerks
+                if np.linalg.norm(jerk) > 0.01:  # Threshold for jerk
+                    jerk_count += 1
+
+                # Sum the velocities for later calculation of average velocity
+                velocity_sum += current_vel
+
+                # Update previous values for next calculation
+                prev_pos = current_pos
+                prev_vel = current_vel
+                prev_acc = current_acc
+
+            # Calculate average velocity
+            average_velocity = velocity_sum / t
+            # Compute the magnitude of the velocity
+            average_velocity = np.linalg.norm(average_velocity)
+            
+            # Update total values
+            total_jerk_count += (jerk_count/t)
+            total_velocity += average_velocity
+            total_path_length += path_length
+            total_time += t
+            total_idle_time += (idle_time/t)
+
+            # # Print the metrics
+            # print(f"Idle Time: {idle_time * t}s")
+            # print(f"Path Length: {path_length}")
+            # print(f"Final Velocity: {current_vel}")
+            # print(f"Final Jerk: {jerk}")
+            total_out_of_map += out_of_map_count  # /num_episodes
+            total_discomfort_count += (discomfort_count   / t)
+            total_human_collision += human_collision_count  # / num_episodes
+            total_reached_goal += reached_goal_count  # / num_episodes
+            total_max_steps += max_steps_count  # / num_episodes
+
+            reward_per_episode += total_reward
+            print("Episode [{}/{}] finished after {} timesteps".format(i +
+                  1, num_episodes, t), flush=True)
+
+            # Append the values for each episode
+            discomfort_counts.append(discomfort_count)
+            jerk_counts.append(jerk_count)
+            velocities.append(average_velocity)
+            path_lengths.append(path_length)
+            times.append(t)
+            out_of_maps.append(out_of_map_count)
+            human_collisions.append(human_collision_count)
+            reached_goals.append(reached_goal_count)
+            max_steps.append(max_steps_count)
+            episode_run.append(i)
+            successive_run.append(successive_runs)
+            # episode_reward.append(reward_per_episode)
+            episode_reward.append(total_reward)
+            idle_times.append(idle_time)
+            
+            t = 0
+            successive_runs = 0
+            out_of_map_count = 0
+            human_collision_count = 0
+            path_length = 0
+            max_steps_count = 0
+            discomfort_count = 0   
+            reached_goal_count = 0
+            # reward_per_episode = 0
+            idle_time = 0   
+            # jerk_count = 0
+            # self.velocity_sum = 0
+            
+            
+        # Calculate averages over all episodes
+        avg_jerk_count = total_jerk_count / num_episodes
+        avg_velocity = total_velocity / num_episodes
+        avg_path_length = total_path_length / num_episodes
+        avg_time = total_time / num_episodes
+        avg_idle_time = total_idle_time / num_episodes
+
+        # Calculate averages for the counters
+        avg_out_of_map = total_out_of_map  /num_episodes
+        avg_discomfort_count = total_discomfort_count  / num_episodes
+        avg_human_collision = total_human_collision  / num_episodes
+        avg_reached_goal = total_reached_goal  / num_episodes
+        avg_max_steps = total_max_steps  / num_episodes
+
+        # Print the averages
+        print(f"Average Idle Time Count: {avg_idle_time}")
+        print(f"Average Discomfort Count: {avg_discomfort_count}")
+        print(f"Average Jerk Count: {avg_jerk_count}")
+        print(f"Average Velocity: {avg_velocity}")
+        print(f"Average Path Length: {avg_path_length}")
+        print(f"Average Time: {avg_time}s")
+        print(f"Average Out of Map: {avg_out_of_map}")
+        print(f"Average Human Collision: {avg_human_collision}")
+        print(f"Average Reached Goal: {avg_reached_goal}")
+        print(f"Average Max Steps : {avg_max_steps}")
         print(f"Total episodes run: {num_episodes}")
         print(f"Total successive runs: {successive_runs}")
         print(f"Average reward per episode: {reward_per_episode/num_episodes}")
+
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        if not os.path.exists("RESULTS"):
+            os.makedirs("RESULTS")
+
+     # Calculate averages and store them in a dictionary
+        averages_dict = {
+            "Average Idle Time Count": avg_idle_time,
+            "Average Discomfort Count": avg_discomfort_count,
+            "Average Jerk Count": avg_jerk_count,
+            "Average Velocity": avg_velocity,
+            "Average Path Length": avg_path_length,
+            "Average Time": avg_time,
+            "Average Out of Map": avg_out_of_map,
+            "Average Human Collision": avg_human_collision,
+            "Average Reached Goal": avg_reached_goal,
+            "Average Max Steps": avg_max_steps,
+            "Total episodes run": num_episodes,
+            "Total successive runs": successive_runs,
+            "Average reward per episode": reward_per_episode/num_episodes,
+        }
+        # Convert the dictionary to a pandas DataFrame
+        df = pd.DataFrame([averages_dict])
+
+        # Save the DataFrame to a CSV file
+        df.to_csv('RESULTS/duelingDQNAveragesresults.csv', index=False)
+
+        # Save the DataFrame to a JSON file
+        df.to_json('RESULTS/duelingDQNAveragesresults.json', orient='records')
+
+
+        # Create a DataFrame with the collected data
+        data = pd.DataFrame({
+            'Discomfort Counts': discomfort_counts,
+            'Jerk Counts': jerk_counts,
+            'Velocities': velocities,
+            'Path Lengths': path_lengths,
+            'Times': times,
+            'Out of Maps': out_of_maps,
+            'Human Collisions': human_collisions,
+            'Reached Goals': reached_goals,
+            'Max Steps': max_steps,
+            'Episode Run': episode_run,
+            'Ruccessive Run': successive_run,
+            'Episode Reward': episode_reward,
+            'Idle Times': idle_times
+        })
+
+        # Save DataFrame to csv
+        data.to_csv('RESULTS/duelingDQNresults.csv', index=False)
+
+        # Save DataFrame to json
+        data.to_json('RESULTS/duelingDQNresults.json', orient='records')
+
+        # Plot results
+        plt.figure(figsize=(10, 6))
+
+        # Plot Idle Times
+        plt.subplot(3,4,1)
+        plt.plot(idle_times)
+        plt.title('Idle Times')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Idle Time')
+
+        # Plot Successive Run Counts
+        plt.subplot(3,4,2)
+        plt.plot(successive_run)
+        plt.title('Successive Run')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Successive Run Count')
+
+        # Plot Episode Reward Counts
+        plt.subplot(3,4,3)
+        plt.plot(episode_reward)
+        plt.title('Episode Reward')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Episode Reward')
+
+        # Plot Discomfort Counts
+        plt.subplot(3,4,4)
+        plt.plot(discomfort_counts)
+        plt.title('Discomfort Counts')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Discomfort Count')
+
+        # Plot Jerk Counts
+        plt.subplot(3,4,5)
+        plt.plot(jerk_counts)
+        plt.title('Jerk Counts')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Jerk Count')
+
+        # Plot Velocities
+        plt.subplot(3,4,6)
+        plt.plot(velocities)
+        plt.title('Velocities')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Velocity')
+
+        # Plot Path Lengths
+        plt.subplot(3,4,7)
+        plt.plot(path_lengths)
+        plt.title('Path Lengths')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Path Length')
+
+        # Plot Times
+        plt.subplot(3,4,8)
+        plt.plot(times)
+        plt.title('Times')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Time')
+
+        # Plot Out of Maps
+        plt.subplot(3,4,9)
+        plt.plot(out_of_maps)
+        plt.title('Out of Maps')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Out of Map Count')
+
+        # Plot Human Collisions
+        plt.subplot(3,4,10)
+        plt.plot(human_collisions)
+        plt.title('Human Collisions')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Human Collision Count')
+
+        # Plot Reached Goals
+        plt.subplot(3,4,11)
+        plt.plot(reached_goals)
+        plt.title('Reached Goals')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Reached Goal Count')
+
+        # Plot Max Steps
+        plt.subplot(3,4,12)
+        plt.plot(max_steps)
+        plt.title('Max Steps')
+        plt.xlabel('Number of Episode')
+        plt.ylabel('Max Step Count')
+
+        plt.tight_layout()
+        plt.show()
+
+############################################# HIST ######################################
+        fig, axs = plt.subplots(3, 4, figsize=(10, 10))
+
+        # Plot Idle Times
+        axs[0, 0].hist(idle_times, bins=30)
+        axs[0, 0].set_title('Idle Times Histogram')
+        axs[0, 0].set_xlabel('Idle Time')
+        axs[0, 0].set_ylabel('Frequency')
+
+        # Plot Successive Run Counts
+        axs[0, 1].hist(successive_run, bins=30)
+        axs[0, 1].set_title('Successive Run Histogram')
+        axs[0, 1].set_xlabel('Successive Run Count')
+        axs[0, 1].set_ylabel('Frequency')
+
+        # Plot Episode Reward Counts
+        axs[0, 2].hist(episode_reward, bins=30)
+        axs[0, 2].set_title('Episode Reward Histogram')
+        axs[0, 2].set_xlabel('Episode Reward')
+        axs[0, 2].set_ylabel('Frequency')
+
+        # Plot Discomfort Counts
+        axs[0, 3].hist(discomfort_counts, bins=30)
+        axs[0, 3].set_title('Discomfort Counts Histogram')
+        axs[0, 3].set_xlabel('Discomfort Count')
+        axs[0, 3].set_ylabel('Frequency')
+
+        # Plot Jerk Counts
+        axs[1, 0].hist(jerk_counts, bins=30)
+        axs[1, 0].set_title('Jerk Counts Histogram')
+        axs[1, 0].set_xlabel('Jerk Count')
+        axs[1, 0].set_ylabel('Frequency')
+
+        # Plot Velocities
+        axs[1, 1].hist(velocities, bins=30)
+        axs[1, 1].set_title('Velocities Histogram')
+        axs[1, 1].set_xlabel('Velocity')
+        axs[1, 1].set_ylabel('Frequency')
+
+        # Plot Path Lengths
+        axs[1, 2].hist(path_lengths, bins=30)
+        axs[1, 2].set_title('Path Lengths Histogram')
+        axs[1, 2].set_xlabel('Path Length')
+        axs[1, 2].set_ylabel('Frequency')
+
+        # Plot Times
+        axs[1, 3].hist(times, bins=30)
+        axs[1, 3].set_title('Times Histogram')
+        axs[1, 3].set_xlabel('Time')
+        axs[1, 3].set_ylabel('Frequency')
+
+        # Plot Out of Maps
+        axs[2, 0].hist(out_of_maps, bins=30)
+        axs[2, 0].set_title('Out of Maps Histogram')
+        axs[2, 0].set_xlabel('Out of Map Count')
+        axs[2, 0].set_ylabel('Frequency')
+
+        # Plot Human Collisions
+        axs[2, 1].hist(human_collisions, bins=30)
+        axs[2, 1].set_title('Human Collisions Histogram')
+        axs[2, 1].set_xlabel('Human Collision Count')
+        axs[2, 1].set_ylabel('Frequency')
+
+        # Plot Reached Goals
+        axs[2, 2].hist(reached_goals, bins=30)
+        axs[2, 2].set_title('Reached Goals Histogram')
+        axs[2, 2].set_xlabel('Reached Goal Count')
+        axs[2, 2].set_ylabel('Frequency')
+
+        # Plot Max Steps
+        axs[2, 3].hist(max_steps, bins=30)
+        axs[2, 3].set_title('Max Steps Histogram')
+        axs[2, 3].set_xlabel('Max Step Count')
+        axs[2, 3].set_ylabel('Frequency')
+
+        plt.tight_layout()
+        plt.show()
+
 
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
     env.configure("./configs/env_timestep_1.yaml")
     env.set_padded_observations(True)
+    env.seed(123)
 
     # config file for the model
     config = "./configs/duelingDQN.yaml"
-    input_layer_size = 23 #env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
-    agent = DuelingDQNAgent(env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
-    agent.eval(num_episodes=1000, path=None)
-    
+    # env.observation_space["goal"].shape[0] + env.observation_space["humans"].shape[0] + env.observation_space["laptops"].shape[0] + env.observation_space["tables"].shape[0] + env.observation_space["plants"].shape[0]
+    input_layer_size = 23
+    agent = DuelingDQNAgent(
+        env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
+    agent.eval(num_episodes=50, path=None)
