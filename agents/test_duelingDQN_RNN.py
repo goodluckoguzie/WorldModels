@@ -15,7 +15,6 @@ from torch.utils.tensorboard import SummaryWriter
 from agents.models import MLP, ExperienceReplay
 import sys
 sys.path.append('./WorldModels')
-import sys
 from hparams import RobotFrame_Datasets_Timestep_1 as datas
 
 from hparams import HyperParams as hp
@@ -312,19 +311,6 @@ class DuelingDQNAgent:
     def xavier_init_weights(self, m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
-    
-    # def preprocess_observation(self, obs):
-    #     """
-    #     To convert dict observation to numpy observation
-    #     """
-    #     assert(type(obs) == dict)
-    #     observation = np.array([], dtype=np.float32)
-    #     observation = np.concatenate((observation, obs["goal"].flatten()) )
-    #     observation = np.concatenate((observation, obs["humans"].flatten()) )
-    #     observation = np.concatenate((observation, obs["laptops"].flatten()) )
-    #     observation = np.concatenate((observation, obs["tables"].flatten()) )
-    #     observation = np.concatenate((observation, obs["plants"].flatten()) )
-    #     return observation
 
 
     def preprocess_observation(self,obs):
@@ -486,13 +472,32 @@ class DuelingDQNAgent:
         self.successive_run = []
         self.episode_reward_ = []
         self.idle_times = []
+
+        def transform_processed_observation_into_raw(sample):
+
+            ind_pos = [0,1]
+            goal_obs = [sample[i] for i in ind_pos]
+            goal_obs = np.array(goal_obs)
+            humans = []
+            for human_num in range(2, sample.size()[0],7):
+                humans.append(sample[human_num:human_num + 4])
+
+            return goal_obs, humans
+
+        def compute_distance_from_origin(pos):
+            """Compute Euclidean distance between origin (0, 0) and a point."""
+            return np.sqrt(pos[0] ** 2 + pos[1] ** 2)
+
+        self.personal_space_radius = 2.02  # Define your personal space radius
+        self.personal_space_compliances = []
         ################################################################
         for i in range(num_episodes):
-            total_reward = 0
 
             current_obs = self.env.reset()
             #########################################################
+            self.personal_space_invasions = 0
             t = 0
+            total_reward = 0
             self.idle_time = 0
             self.path_length = 0
             self.prev_vel = np.array([0.0, 0.0])
@@ -500,12 +505,12 @@ class DuelingDQNAgent:
             self.prev_acc = np.array([0.0, 0.0])
             self.jerk_count = 0
             self.velocity_sum = np.array([0.0, 0.0])
-            self.total_out_of_map = 0
-            self.total_discomfort_count = 0
-            self.total_human_collision = 0
-            self.total_reached_goal = 0
-            self.total_max_steps = 0
-            self.average_velocity = 0
+            # self.total_out_of_map = 0
+            # self.total_discomfort_count = 0
+            # self.total_human_collision = 0
+            # self.total_reached_goal = 0
+            # self.total_max_steps = 0
+            # self.average_velocity = 0
             self.prev_pos = current_obs["goal"][-2:]
             #################################################################           
             current_obs = self.preprocess_observation(current_obs)
@@ -566,15 +571,6 @@ class DuelingDQNAgent:
 
                 # next_obs = torch.cat((next_obs.to(self.device), hidden[0].to(self.device)), -1)
 
-                
-
-                # storing whether the agent reached the goal
-                # if info["REACHED_GOAL"]:
-                #     self.has_reached_goal = 1
-                #     self.successive_runs += 1                
-                # if info["COLLISION"]:
-                #     self.has_collided = 1
-                #     self.steps = self.env.EPISODE_LENGTH
                 ####################################################################################
                 if info["REACHED_GOAL"]:
                     self.reached_goal_count += 1
@@ -598,6 +594,13 @@ class DuelingDQNAgent:
                 # Calculate idle time
                 if action_discrete == 3:
                     self.idle_time += 1
+
+                _, humans_obs = transform_processed_observation_into_raw(torch.from_numpy(next_obs_))
+                # Calculate distance from agent (0, 0) to each human
+                for human_pos in humans_obs:
+                    if compute_distance_from_origin(human_pos) < self.personal_space_radius:
+                        self.personal_space_invasions += 1
+                        break  # No need to check other humans once we found one violation
 
                 # Calculate agent velocity, path length and jerk
                 current_pos = next_obs_raw["goal"][-2:]
@@ -628,16 +631,13 @@ class DuelingDQNAgent:
                 self.prev_vel = current_vel
                 self.prev_acc = current_acc
                 ######################################################################
-
-                # next_obs = next_obs.squeeze(0).squeeze(0).cpu()
                 current_obs = current_obs.squeeze(0).squeeze(0).cpu()
-                # storing the current state transition in the replay buffer.
-                # self.experience_replay.insert((current_obs, reward, action_discrete, next_obs, done))
                 current_obs = next_obs_
                 unsqueezed_action = unsqueezed_action.squeeze(0).squeeze(0)
 
                 # self.env.render()
             ###############################################################################
+            self.personal_space_compliance = (t - self.personal_space_invasions) / t
             # Calculate average velocity
             self.velocity_sum = self.velocity_sum / t
 
@@ -645,22 +645,22 @@ class DuelingDQNAgent:
             self.velocity_sum = np.linalg.norm(self.velocity_sum)
 
             # Update total values
-            self.total_jerk_count += (self.jerk_count/t)
-            self.total_velocity += self.velocity_sum
-            self.total_path_length += self.path_length
-            self.total_time += t
-            self.total_idle_time += (self.idle_time/t)
+            # self.total_jerk_count += (self.jerk_count/t)
+            # self.total_velocity += self.velocity_sum
+            # self.total_path_length += self.path_length
+            # self.total_time += t
+            # self.total_idle_time += (self.idle_time/t)
 
             # # Print the metrics
             # print(f"Idle Time: {idle_time * t}s")
             # print(f"Path Length: {path_length}")
             # print(f"Final Velocity: {current_vel}")
             # print(f"Final Jerk: {jerk}")
-            self.total_out_of_map += self.out_of_map_count  # /num_episodes
-            self.total_discomfort_count += (self.discomfort_count   / t)
-            self.total_human_collision += self.human_collision_count  # / num_episodes
-            self.total_reached_goal += self.reached_goal_count  # / num_episodes
-            self.total_max_steps += self.max_steps_count  # / num_episodes
+            # self.total_out_of_map += self.out_of_map_count  # /num_episodes
+            # self.total_discomfort_count += (self.discomfort_count   / t)
+            # self.total_human_collision += self.human_collision_count  # / num_episodes
+            # self.total_reached_goal += self.reached_goal_count  # / num_episodes
+            # self.total_max_steps += self.max_steps_count  # / num_episodes
             # self.reward_per_episode += self.episode_reward  total_reward
             ###############################################################################
 
@@ -671,7 +671,7 @@ class DuelingDQNAgent:
 
             # Append the values for each episode
             self.discomfort_counts.append(self.discomfort_count/ t)
-            self.jerk_counts.append(self.jerk_count)
+            self.jerk_counts.append(self.jerk_count/ t)
             self.velocities.append(self.velocity_sum)
             self.path_lengths.append(self.path_length)
             self.times.append(t)
@@ -683,49 +683,51 @@ class DuelingDQNAgent:
             self.successive_run.append(self.successive_runs)
             # episode_reward.append(reward_per_episode)
             self.episode_reward_.append(self.episode_reward)
-            self.idle_times.append(self.idle_time)
-            
+            self.idle_times.append(self.idle_time/t)
+            self.personal_space_compliances.append(self.personal_space_compliance)
+
             t = 0
             self.successive_runs = 0
             self.out_of_map_count = 0
             self.human_collision_count = 0
-            # path_length = 0
-            # max_steps_count = 0
-            # discomfort_count = 0   
+            self.path_length = 0
+            self.max_steps_count = 0
+            self.discomfort_count = 0   
             self.reached_goal_count = 0
             # reward_per_episode = 0
-            # idle_time = 0   
-            # jerk_count = 0
+            self.idle_time = 0   
+            self.jerk_count = 0
             # self.velocity_sum = 0
             
-        # Calculate averages over all episodes
-        avg_jerk_count = self.total_jerk_count / num_episodes
-        avg_velocity = self.total_velocity / num_episodes
-        avg_path_length = self.total_path_length / num_episodes
+        # # Calculate averages over all episodes
+        # avg_jerk_count = self.total_jerk_count / num_episodes
+        # avg_velocity = self.total_velocity / num_episodes
+        # avg_path_length = self.total_path_length / num_episodes
         avg_time = self.total_time / num_episodes
-        avg_idle_time = self.total_idle_time / num_episodes
+        # avg_idle_time = self.total_idle_time / num_episodes
 
-        # Calculate averages for the counters
-        avg_out_of_map = self.total_out_of_map  /num_episodes
-        avg_discomfort_count = self.total_discomfort_count  / num_episodes
-        avg_human_collision = self.total_human_collision  / num_episodes
-        avg_reached_goal = self.total_reached_goal  / num_episodes
-        avg_max_steps = self.total_max_steps  / num_episodes
+        # # Calculate averages for the counters
+        # avg_out_of_map = self.total_out_of_map  /num_episodes
+        # avg_discomfort_count = self.total_discomfort_count  / num_episodes
+        # avg_human_collision = self.total_human_collision  / num_episodes
+        # avg_reached_goal = self.total_reached_goal  / num_episodes
+        # avg_max_steps = self.total_max_steps  / num_episodes
 
         # Print the averages
-        print(f"Average Idle Time Count: {avg_idle_time}")
-        print(f"Average Discomfort Count: {avg_discomfort_count}")
-        print(f"Average Jerk Count: {avg_jerk_count}")
-        print(f"Average Velocity: {avg_velocity}")
-        print(f"Average Path Length: {avg_path_length}")
-        print(f"Average Time: {avg_time}s")
-        print(f"Average Out of Map: {avg_out_of_map}")
-        print(f"Average Human Collision: {avg_human_collision}")
-        print(f"Average Reached Goal: {avg_reached_goal}")
-        print(f"Average Max Steps : {avg_max_steps}")
+        print(f"Average Idle Time Count: {np.mean(self.idle_times)}")
+        print(f"Average Discomfort Count: {np.mean(self.discomfort_counts)}")
+        print(f"Average Jerk Count: {np.mean(self.jerk_counts)}")
+        print(f"Average Velocity: {np.mean(self.velocities)}")
+        print(f"Average Path Length: {np.mean(self.path_lengths)}")
+        print(f"Average Time: {avg_time}")
+        print(f"Average Out of Map: {np.mean(self.out_of_maps)}")
+        print(f"Average Human Collision: {np.mean(self.human_collisions)}")
+        print(f"Average Reached Goal: {np.mean(self.reached_goals)}")
+        print(f"Average Max Steps : {np.mean(self.max_steps)}")
         print(f"Total episodes run: {num_episodes}")
-        print(f"Total successive runs: {self.successive_runs}")
+        print(f"Total successive runs: {np.sum(self.successive_run)}")
         print(f"Average reward per episode: {np.mean(self.episode_reward_)}")
+        print(f"Personal Space Compliances: {np.mean(self.personal_space_compliances)}")
 
         import pandas as pd
         import matplotlib.pyplot as plt
@@ -734,28 +736,32 @@ class DuelingDQNAgent:
 
      # Calculate averages and store them in a dictionary
         averages_dict = {
-            "Average Idle Time Count": avg_idle_time,
-            "Average Discomfort Count": avg_discomfort_count,
-            "Average Jerk Count": avg_jerk_count,
-            "Average Velocity": avg_velocity,
-            "Average Path Length": avg_path_length,
+            "Average Idle Time Count": np.mean(self.idle_times),
+            "Average Discomfort Count": np.mean(self.discomfort_counts),
+            "Average Jerk Count": np.mean(self.jerk_counts),
+            "Average Velocity": np.mean(self.velocities),
+            "Average Path Length": np.mean(self.path_lengths),
             "Average Time": avg_time,
-            "Average Out of Map": avg_out_of_map,
-            "Average Human Collision": avg_human_collision,
-            "Average Reached Goal": avg_reached_goal,
-            "Average Max Steps": avg_max_steps,
+            "Average Out of Map": np.mean(self.out_of_maps),
+            "Average Human Collision": np.mean(self.human_collisions),
+            "Average Reached Goal": np.mean(self.reached_goals),
+            "Average Max Steps": np.mean(self.max_steps),
             "Total episodes run": num_episodes,
-            "Total successive runs": self.successive_runs,
-            "Average reward per episode": self.reward_per_episode/num_episodes,
+            "Total successive runs": np.sum(self.successive_runs),
+            "Average reward per episode": np.mean(self.episode_reward_),
+            "Personal Space Compliances": np.mean(self.personal_space_compliances)
+
+
+    
         }
         # Convert the dictionary to a pandas DataFrame
         df = pd.DataFrame([averages_dict])
 
         # Save the DataFrame to a CSV file
-        df.to_csv('RESULTS/duelingDQNAveragesresults.csv', index=False)
+        df.to_csv('RESULTS/WMduelingDQNAveragesresults.csv', index=False)
 
         # Save the DataFrame to a JSON file
-        df.to_json('RESULTS/duelingDQNAveragesresults.json', orient='records')
+        df.to_json('RESULTS/WMduelingDQNAveragesresults.json', orient='records')
 
 
         # Create a DataFrame with the collected data
@@ -772,14 +778,16 @@ class DuelingDQNAgent:
             'Episode Run': self.episode_run,
             'Ruccessive Run': self.successive_run,
             'Episode Reward': self.episode_reward_,
-            'Idle Times': self.idle_times
+            'Idle Times': self.idle_times,
+            'Personal Space Compliances': self.personal_space_compliances
+
         })
 
         # Save DataFrame to csv
-        data.to_csv('RESULTS/duelingDQNresults.csv', index=False)
+        data.to_csv('RESULTS/WMduelingDQNresults.csv', index=False)
 
         # Save DataFrame to json
-        data.to_json('RESULTS/duelingDQNresults.json', orient='records')
+        data.to_json('RESULTS/WMduelingDQNresults.json', orient='records')
 
         # Plot results
         plt.figure(figsize=(10, 6))
@@ -854,12 +862,19 @@ class DuelingDQNAgent:
         plt.xlabel('Number of Episode')
         plt.ylabel('Human Collision Count')
 
-        # Plot Reached Goals
+        # # Plot Reached Goals
+        # plt.subplot(3,4,11)
+        # plt.plot(self.reached_goals)
+        # plt.title('Reached Goals')
+        # plt.xlabel('Number of Episode')
+        # plt.ylabel('Reached Goal Count')
+
+        # Plot Personal Space Compliances
         plt.subplot(3,4,11)
-        plt.plot(self.reached_goals)
-        plt.title('Reached Goals')
+        plt.plot(self.personal_space_compliances)
+        plt.title('Personal Space Compliances')
         plt.xlabel('Number of Episode')
-        plt.ylabel('Reached Goal Count')
+        plt.ylabel('Compliance Rate')
 
         # Plot Max Steps
         plt.subplot(3,4,12)
@@ -867,6 +882,8 @@ class DuelingDQNAgent:
         plt.title('Max Steps')
         plt.xlabel('Number of Episode')
         plt.ylabel('Max Step Count')
+
+
 
         plt.tight_layout()
         plt.show()
@@ -934,10 +951,16 @@ class DuelingDQNAgent:
         axs[2, 1].set_xlabel('Human Collision Count')
         axs[2, 1].set_ylabel('Frequency')
 
-        # Plot Reached Goals
-        axs[2, 2].hist(self.reached_goals, bins=30)
-        axs[2, 2].set_title('Reached Goals Histogram')
-        axs[2, 2].set_xlabel('Reached Goal Count')
+        # # Plot Reached Goals
+        # axs[2, 2].hist(self.reached_goals, bins=30)
+        # axs[2, 2].set_title('Reached Goals Histogram')
+        # axs[2, 2].set_xlabel('Reached Goal Count')
+        # axs[2, 2].set_ylabel('Frequency')
+
+        # Plot Personal Space Compliances Histogram
+        axs[2, 2].hist(self.personal_space_compliances, bins=30)
+        axs[2, 2].set_title('Personal Space Compliances Histogram')
+        axs[2, 2].set_xlabel('Compliance Rate')
         axs[2, 2].set_ylabel('Frequency')
 
         # Plot Max Steps
@@ -945,6 +968,8 @@ class DuelingDQNAgent:
         axs[2, 3].set_title('Max Steps Histogram')
         axs[2, 3].set_xlabel('Max Step Count')
         axs[2, 3].set_ylabel('Frequency')
+
+
 
         plt.tight_layout()
         plt.show()
