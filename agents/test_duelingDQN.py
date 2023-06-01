@@ -342,7 +342,7 @@ class DuelingDQNAgent:
             "Steps to reach goal / episode", self.steps, episode)
         self.writer.flush()
 
-    def eval(self, num_episodes=50, path=None):
+    def eval(self, num_episodes=500, path=None):
         if path is None:
             path = os.getcwd()
 
@@ -483,7 +483,8 @@ class DuelingDQNAgent:
                 if np.linalg.norm(jerk) > 0.01:  # Threshold for jerk
                     jerk_count += 1
 
-                personal_space_compliance = (t - personal_space_invasions) / t
+                # personal_space_compliance = (t - personal_space_invasions) / t
+
 
                 # Sum the velocities for later calculation of average velocity
                 velocity_sum += current_vel
@@ -492,6 +493,8 @@ class DuelingDQNAgent:
                 prev_pos = current_pos
                 prev_vel = current_vel
                 prev_acc = current_acc
+
+            personal_space_compliance = (t - personal_space_invasions) / t
 
             # Calculate average velocity
             average_velocity = velocity_sum / t
@@ -521,8 +524,8 @@ class DuelingDQNAgent:
                   1, num_episodes, t), flush=True)
 
             # Append the values for each episode
-            discomfort_counts.append(discomfort_count / t)
-            jerk_counts.append(jerk_count / t)
+            discomfort_counts.append(discomfort_count )
+            jerk_counts.append(jerk_count )
             velocities.append(np.linalg.norm(average_velocity))
             path_lengths.append(path_length)
             times.append(t)
@@ -534,7 +537,7 @@ class DuelingDQNAgent:
             successive_run.append(successive_runs)
             # episode_reward.append(reward_per_episode)
             episode_reward.append(total_reward)
-            idle_times.append(idle_time / t)
+            idle_times.append(idle_time )
             personal_space_compliances.append(personal_space_compliance)
 
             t = 0
@@ -581,6 +584,20 @@ class DuelingDQNAgent:
         print(f"Average reward per episode: {np.mean(episode_reward)}")
         print(f"Personal Space Compliances: {np.mean(personal_space_compliances)}")
 
+        print(f"Total Idle Time Count: {np.sum(idle_times)}")
+        print(f"Total Discomfort Count: {np.sum(discomfort_counts)}")
+        print(f"Total Jerk Count: {np.sum(jerk_counts)}")
+        print(f"Total Velocity: {np.sum(velocities)}")
+        print(f"Total Path Length: {np.sum(path_lengths)}")
+        print(f"Total Time: {avg_time}")
+        print(f"Total Out of Map: {np.sum(out_of_maps)}")
+        print(f"Total Human Collision: {np.sum(human_collisions)}")
+        print(f"Total Reached Goal: {np.sum(reached_goals)}")
+        print(f"Total Max Steps : {np.sum(max_steps)}")
+        print(f"Total episodes run: {num_episodes}")
+        print(f"Total successive runs: {np.sum(successive_run)}")
+        print(f"Total Personal Space Compliances: {np.sum(personal_space_compliances)}")
+
         import pandas as pd
         import matplotlib.pyplot as plt
         if not os.path.exists("RESULTS"):
@@ -616,22 +633,24 @@ class DuelingDQNAgent:
 
         # Create a DataFrame with the collected data
         data = pd.DataFrame({
-            'Discomfort Counts': discomfort_counts,
+            'Human Discomfort': discomfort_counts,
             'Jerk Counts': jerk_counts,
             'Velocities': velocities,
-            'Path Lengths': path_lengths,
-            'Times': times,
-            'Out of Maps': out_of_maps,
+            'Distance Traveled': path_lengths,
+            'Simulation Time': times,
+            'Wall Collisions': out_of_maps,
             'Human Collisions': human_collisions,
-            'Reached Goals': reached_goals,
+            'Reached Goal': reached_goals,
             'Max Steps': max_steps,
             'Episode Run': episode_run,
-            'Ruccessive Run': successive_run,
-            'Episode Reward': episode_reward,
-            'Idle Times': idle_times,
-            'Personal Space Compliances': personal_space_compliances
+            'Successful Run': successive_run,
+            'Reward': episode_reward,
+            'Idle Time': idle_times,
+            'Personal Space Compliances Rate': personal_space_compliances
 
         })
+
+
 
         # Save DataFrame to csv
         data.to_csv('RESULTS/duelingDQNresults.csv', index=False)
@@ -641,6 +660,7 @@ class DuelingDQNAgent:
 
         # Plot results
         plt.figure(figsize=(10, 6))
+        plt.suptitle('Line Plots for Episode Metrics - DuelingDQN + Predicted Hidden State', fontsize=10)
 
         # Plot Idle Times
         plt.subplot(3,4,1)
@@ -737,7 +757,8 @@ class DuelingDQNAgent:
         plt.show()
 
 ############################################# HIST ######################################
-        fig, axs = plt.subplots(3, 4, figsize=(10, 10))
+        fig, axs = plt.subplots(3, 4, figsize=(15, 5))
+        plt.suptitle('Line Plots for Episode Metrics - DuelingDQN Model', fontsize=10)
 
         # Plot Idle Times
         axs[0, 0].hist(idle_times, bins=30)
@@ -833,4 +854,4 @@ if __name__ == "__main__":
     input_layer_size = 23
     agent = DuelingDQNAgent(
         env, config, input_layer_size=input_layer_size, run_name="duelingDQN_SocNavEnv")
-    agent.eval(num_episodes=50, path=None)
+    agent.eval(num_episodes=500, path=None)

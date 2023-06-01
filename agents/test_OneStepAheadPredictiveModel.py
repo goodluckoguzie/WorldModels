@@ -382,7 +382,7 @@ class DuelingDQNAgent:
             action_continuous = self.discrete_to_continuous_action(action_discrete)
             return action_continuous, action_discrete
 
-    def eval(self, num_episodes=50, path=None):
+    def eval(self, num_episodes=500, path=None):
 
 
         sys.path.append('./WorldModels')
@@ -693,13 +693,13 @@ class DuelingDQNAgent:
             ###############################################################################
 
             self.episode_reward = total_reward
-            print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, i), flush=True)
+            print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, t), flush=True)
             ########################################################################################################
 
 
             # Append the values for each episode
-            self.discomfort_counts.append(self.discomfort_count/ t)
-            self.jerk_counts.append(self.jerk_count/ t)
+            self.discomfort_counts.append(self.discomfort_count)
+            self.jerk_counts.append(self.jerk_count)
             self.velocities.append(self.velocity_sum)
             self.path_lengths.append(self.path_length)
             self.times.append(t)
@@ -711,9 +711,9 @@ class DuelingDQNAgent:
             self.successive_run.append(self.successive_runs)
             # episode_reward.append(reward_per_episode)
             self.episode_reward_.append(self.episode_reward)
-            self.idle_times.append(self.idle_time/t)
+            self.idle_times.append(self.idle_time)
             self.personal_space_compliances.append(self.personal_space_compliance)
-            
+
             t = 0
             self.successive_runs = 0
             self.out_of_map_count = 0
@@ -784,36 +784,36 @@ class DuelingDQNAgent:
         df = pd.DataFrame([averages_dict])
 
         # Save the DataFrame to a CSV file
-        df.to_csv('RESULTS/WMduelingDQNAveragesresults.csv', index=False)
+        df.to_csv('RESULTS/duelingDQNTwoStepAheadAveragesresults.csv', index=False)
 
         # Save the DataFrame to a JSON file
-        df.to_json('RESULTS/WMduelingDQNAveragesresults.json', orient='records')
+        df.to_json('RESULTS/duelingDQNTwoStepAheadAveragesresults.json', orient='records')
 
 
         # Create a DataFrame with the collected data
         data = pd.DataFrame({
-            'Discomfort Counts': self.discomfort_counts,
+            'Human Discomfort': self.discomfort_counts,
             'Jerk Counts': self.jerk_counts,
             'Velocities': self.velocities,
-            'Path Lengths': self.path_lengths,
-            'Times': self.times,
-            'Out of Maps': self.out_of_maps,
+            'Distance Traveled': self.path_lengths,
+            'Simulation Time': self.times,
+            'Wall Collisions': self.out_of_maps,
             'Human Collisions': self.human_collisions,
-            'Reached Goals': self.reached_goals,
+            'Reached Goal': self.reached_goals,
             'Max Steps': self.max_steps,
             'Episode Run': self.episode_run,
-            'Ruccessive Run': self.successive_run,
-            'Episode Reward': self.episode_reward_,
-            'Idle Times': self.idle_times,
-            'Personal Space Compliances': self.personal_space_compliances
+            'Successful Run': self.successive_run,
+            'Reward': self.episode_reward_,
+            'Idle Time': self.idle_times,
+            'Personal Space Compliances Rate': self.personal_space_compliances
 
         })
 
         # Save DataFrame to csv
-        data.to_csv('RESULTS/WMduelingDQNresults.csv', index=False)
+        data.to_csv('RESULTS/duelingDQNTwoStepAheadresults.csv', index=False)
 
         # Save DataFrame to json
-        data.to_json('RESULTS/WMduelingDQNresults.json', orient='records')
+        data.to_json('RESULTS/duelingDQNTwoStepAheadresults.json', orient='records')
 
         # Plot results
         plt.figure(figsize=(10, 6))

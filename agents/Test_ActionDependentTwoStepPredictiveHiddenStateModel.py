@@ -180,28 +180,7 @@ class DuelingDQNAgent:
 
         # print(os.getcwd())
         self.vae = VAE(n_latents,n_hiddens,n_latents).to(device)
-
-
         self.rnn = RNN(n_latents, n_actions, n_hiddens).to(device)
-
-        # # self.ckpt_dir = hp.ckpt_dir#'ckpt'
-        # # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
-        # # self.vae_state = torch.load(self.ckpt)
-        # # self.vae.load_state_dict(self.vae_state['model'])
-        # # self.vae.eval()
-        # # print('Loaded vae ckpt {}'.format(self.ckpt))       
-        # # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        # # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16', '015robotframe.pth.tar')))[-1] #
-
-        # # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
-        # rnn_state = torch.load( self.ckpt, map_location={'cuda:1': str(self.device)})
-        # self.rnn.load_state_dict(rnn_state['model'])
-        # self.rnn.eval()
-        # print('Loaded rnn_state ckpt {}'.format(self.ckpt))
-
-
-
         # declaring the network
         self.duelingDQN = DuelingDQN(self.input_layer_size, self.hidden_layers, self.v_net_layers, self.a_net_layers).to(self.device)
 
@@ -300,31 +279,11 @@ class DuelingDQNAgent:
             self.save_freq = config["save_freq"]
             assert(self.save_freq is not None), f"Argument save_freq cannot be None"
 
-        # if self.ckpt_dir is None:
-        #     self.ckpt_dir = config["ckpt_dir"]
-        #     assert(self.ckpt_dir is not None), f"Argument ckpt_dir  cannot be None"
-
-        # if self.ckpt_dir is None:
-        #     self.ckpt_dir = config["ckpt_dir"]
-        #     assert(self.ckpt_dir is not None), f"Argument ckpt_dir  cannot be None"
-
 
     def xavier_init_weights(self, m):
         if type(m) == nn.Linear:
             nn.init.xavier_uniform_(m.weight)
     
-    # def preprocess_observation(self, obs):
-    #     """
-    #     To convert dict observation to numpy observation
-    #     """
-    #     assert(type(obs) == dict)
-    #     observation = np.array([], dtype=np.float32)
-    #     observation = np.concatenate((observation, obs["goal"].flatten()) )
-    #     observation = np.concatenate((observation, obs["humans"].flatten()) )
-    #     observation = np.concatenate((observation, obs["laptops"].flatten()) )
-    #     observation = np.concatenate((observation, obs["tables"].flatten()) )
-    #     observation = np.concatenate((observation, obs["plants"].flatten()) )
-    #     return observation
 
 
     def preprocess_observation(self,obs):
@@ -382,64 +341,28 @@ class DuelingDQNAgent:
             action_continuous = self.discrete_to_continuous_action(action_discrete)
             return action_continuous, action_discrete
 
-    def eval(self, num_episodes=50, path=None):
-
-
-        sys.path.append('./WorldModels')
-        # from RNN.RNN import LSTM,RNN
-  
-        # self.data_path = self.data_dir# if not self.extra else self.extra_dir
+    def eval(self, num_episodes=500, path=None):
 
         self.ckpt_dir = hp.ckpt_dir#'ckpt'
-        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
-        # self.vae_state = torch.load(self.ckpt)
-        # self.vae.load_state_dict(self.vae_state['model'])
-        # self.vae.eval()
-        # print('Loaded vae ckpt {}'.format(self.ckpt))
 
         sys.path.append('./WorldModels')
-        # from RNN.RNN import LSTM,RNN
-  
-        # self.data_path = self.data_dir# if not self.extra else self.extra_dir
 
         self.ckpt_dir = hp.ckpt_dir#'ckpt'
-        # self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae', '*k.pth.tar')))[-1]
-        # self.vae_state = torch.load(self.ckpt)
-        # self.vae.load_state_dict(self.vae_state['model'])
-        # self.vae.eval()
-        # print('Loaded vae ckpt {}'.format(self.ckpt))
-
-
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         n_hiddens = 256
         n_hiddensrnn = 256
         n_latents = 16 #47
         n_actions = 2
-
-        # print(os.getcwd())n_hiddens
-        # self.vae = VAE(self.input_dim,n_hiddens,n_latents).to(device)
         self.vae = VAE(self.input_dim,n_hiddens,n_latents).to(device)
-
-
         self.rnn = RNN(n_latents, n_actions, n_hiddensrnn).to(device)
         self.ckpt_dir = datas.ckpt_dir#'ckpt'
-
         self.ckpt = sorted(glob.glob(os.path.join(self.ckpt_dir, 'vae_16', '*k.pth.tar')))[-1]
 
         self.vae_state = torch.load(self.ckpt)
         self.vae.load_state_dict(self.vae_state['model'])
         self.vae.eval()
-        print('Loaded vae ckpt {}'.format(self.ckpt))  
-
- 
-        # print('Loaded vae ckpt {}'.format(self.ckpt))       
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'DQN_RobotFrameDatasetsTimestep1window_16', '010DQN_trainedRobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'mainNonPrePaddedRobotFrameDatasetsTimestep1window_16', '005mainrobotframe.pth.tar')))[-1] #RobotFrameDatasetsTimestep05window_16
+        print('Loaded vae ckpt {}'.format(self.ckpt))   
         self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_16_16', '00000056robotframemain16.pth.tar')))[-1] #
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_199_16', '00000046robotframemain16.pth.tar')))[-1] #
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'RobotFrameDatasetsTimestep1window_100_16', '00000046robotframemain16.pth.tar')))[-1] #
-
-        # self.ckpt  = sorted(glob.glob(os.path.join(self.ckpt_dir, 'rnn', '*.pth.tar')))[-1]
         rnn_state = torch.load( self.ckpt, map_location={'cuda': str(self.device)})
         self.rnn.load_state_dict(rnn_state['model'])
         self.rnn.eval()
@@ -768,13 +691,13 @@ class DuelingDQNAgent:
             ###############################################################################
 
             self.episode_reward = total_reward
-            print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, i), flush=True)
+            print("Episode [{}/{}] finished after {} timesteps".format(i + 1, num_episodes, t), flush=True)
             ########################################################################################################
 
 
             # Append the values for each episode
-            self.discomfort_counts.append(self.discomfort_count/ t)
-            self.jerk_counts.append(self.jerk_count/ t)
+            self.discomfort_counts.append(self.discomfort_count)
+            self.jerk_counts.append(self.jerk_count)
             self.velocities.append(self.velocity_sum)
             self.path_lengths.append(self.path_length)
             self.times.append(t)
@@ -786,7 +709,7 @@ class DuelingDQNAgent:
             self.successive_run.append(self.successive_runs)
             # episode_reward.append(reward_per_episode)
             self.episode_reward_.append(self.episode_reward)
-            self.idle_times.append(self.idle_time/t)
+            self.idle_times.append(self.idle_time)
             self.personal_space_compliances.append(self.personal_space_compliance)
             
             t = 0
@@ -855,6 +778,7 @@ class DuelingDQNAgent:
             "Personal Space Compliances": np.mean(self.personal_space_compliances)
 
         }
+
         # Convert the dictionary to a pandas DataFrame
         df = pd.DataFrame([averages_dict])
 
@@ -867,23 +791,24 @@ class DuelingDQNAgent:
 
         # Create a DataFrame with the collected data
         data = pd.DataFrame({
-            'Discomfort Counts': self.discomfort_counts,
+            'Human Discomfort': self.discomfort_counts,
             'Jerk Counts': self.jerk_counts,
             'Velocities': self.velocities,
-            'Path Lengths': self.path_lengths,
-            'Times': self.times,
-            'Out of Maps': self.out_of_maps,
+            'Distance Traveled': self.path_lengths,
+            'Simulation Time': self.times,
+            'Wall Collisions': self.out_of_maps,
             'Human Collisions': self.human_collisions,
-            'Reached Goals': self.reached_goals,
+            'Reached Goal': self.reached_goals,
             'Max Steps': self.max_steps,
             'Episode Run': self.episode_run,
-            'Ruccessive Run': self.successive_run,
-            'Episode Reward': self.episode_reward_,
-            'Idle Times': self.idle_times,
-            'Personal Space Compliances': self.personal_space_compliances
+            'Successful Run': self.successive_run,
+            'Reward': self.episode_reward_,
+            'Idle Time': self.idle_times,
+            'Personal Space Compliances Rate': self.personal_space_compliances
 
         })
 
+  
         # Save DataFrame to csv
         data.to_csv('RESULTS/ADTSPHSMduelingDQNresults.csv', index=False)
 
@@ -892,6 +817,7 @@ class DuelingDQNAgent:
 
         # Plot results
         plt.figure(figsize=(10, 6))
+        plt.suptitle('Line Plots for Episode Metrics - Action Dependent Two Step Predictive Hidden State Model', fontsize=10)
 
         # Plot Idle Times
         plt.subplot(3,4,1)
@@ -990,7 +916,8 @@ class DuelingDQNAgent:
         plt.show()
 
 ############################################# HIST ######################################
-        fig, axs = plt.subplots(3, 4, figsize=(10, 10))
+        fig, axs = plt.subplots(3, 4, figsize=(15, 5))
+        plt.suptitle('Line Plots for Episode Metrics - Action Dependent Two Step Predictive Hidden State Model', fontsize=10)
 
         # Plot Idle Times
         axs[0, 0].hist(self.idle_times, bins=30)
