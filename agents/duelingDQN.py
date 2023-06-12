@@ -388,12 +388,18 @@ class DuelingDQNAgent:
 
                 self.epsilon = max(self.min_epsilon, self.epsilon)
 
+
             # plotting using tensorboard
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
             self.plot(i+1)
 
+            # update average (always!)
+            self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
+
             # saving model
-            if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.episode_reward >= self.average_reward:
+            # if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.episode_reward >= self.average_reward:
+            if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.average_reward >= self.best_average_reward:
+                self.best_average_reward = self.average_reward
                 if not os.path.isdir(self.save_path):
                     os.makedirs(self.save_path)
                 try:
@@ -406,10 +412,7 @@ class DuelingDQNAgent:
             # updating the average reward
             if (i+1) % self.save_freq == 0:
                 self.average_reward = 0
-            else:
-                self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
-            
-   
+
     def eval(self, num_episodes, path=None):
         if path is not None:
             self.duelingDQN.load_state_dict(torch.load(path, map_location=torch.device(self.device)))

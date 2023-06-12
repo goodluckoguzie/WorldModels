@@ -656,19 +656,31 @@ class DuelingDQNAgent:
                         p_target.data.add_((1 - self.polyak_const) * p.data)
 
 
-            # decaying epsilon
+            # # decaying epsilon
+            # if self.epsilon > self.min_epsilon:
+            #     self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
             if self.epsilon > self.min_epsilon:
-                self.epsilon -= (self.epsilon_decay_rate)*self.epsilon
 
+                self.epsilon *= self.epsilon_decay_rate
+
+                self.epsilon = max(self.min_epsilon, self.epsilon)
+                
             # plotting using tensorboard
             print(f"Episode {i+1} Reward: {self.episode_reward} Loss: {self.episode_loss}")
             self.plot(i+1)
 
+            # update average (always!)
+            self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
+
             # saving model
-            if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.episode_reward >= self.average_reward:
+            # if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.episode_reward >= self.average_reward:
+            if (self.save_path is not None) and ((i+1)%self.save_freq == 0) and self.average_reward >= self.best_average_reward:
+                self.best_average_reward = self.average_reward
                 if not os.path.isdir(self.save_path):
                     os.makedirs(self.save_path)
                 try:
+                    print("Error in saving model")
+
                     self.save_model(os.path.join(self.save_path, "episode"+ str(i+1).zfill(8) + ".pth"))
                 except:
                     print("Error in saving model")
@@ -676,10 +688,8 @@ class DuelingDQNAgent:
             # updating the average reward
             if (i+1) % self.save_freq == 0:
                 self.average_reward = 0
-            else:
-                self.average_reward = ((i%self.save_freq)*self.average_reward + self.episode_reward)/((i%self.save_freq)+1)
-            
-  
+
+                
 if __name__ == "__main__":
     env = gym.make("SocNavEnv-v1")
     env.configure("./configs/env_timestep_1.yaml")
