@@ -1,107 +1,105 @@
-# Enhancing Reinforcement Learning-based Social Navigation using Predictive World Models
+# Training and Testing Guide
 
+This guide provides step-by-step instructions for training and testing our proposed models: the 2StepAhead Predictive World Model, Multi Action State Predictive Model (MASPM), and Action Dependent Two Step Predictive Model (ADTSPM).
 
+## Table of Contents
+- [Generating data for VAE and RNN](#generating-data-for-vae-and-rnn)
+- [Training the Models](#training-the-models)
+- [Testing the Models](#testing-the-models)
 
-## Description
-This repository contains the code, models, and results of our research on improving Reinforcement Learning (RL) performance in Social Navigation (SN) tasks by applying predictive world models.
+## Generating data for VAE and RNN
+Data in this case are sequences of images from the environment. We can either use the Robot coordinate or the world coordinate.
 
+To generate data, run:
 
+\```sh
+python3 01_generate_dataset_robot_frame.py
+\```
 
-Our research focused on two primary questions: 
-1. Can world models enhance RL-based social navigation?
-2. Are the predictive capabilities of world models beneficial to RL-based social navigation?
+Or:
 
+\```sh
+python3 01_generate_dataset_worldframe.py
+\```
 
+## Training the Models
 
-To address these, we proposed and rigorously evaluated three novel models that integrate world models into the RL framework. These models significantly outperform conventional RL models in complex social navigation tasks, demonstrating the potential of predictive world models.
+### Training the VAE Model
+To train the VAE on our data, run:
 
+\```sh
+python3 02_train_vae.py
+\```
 
+### Training the LSTM-RNN Model
+To train the LSTM-RNN on our data, run:
 
-Despite the success of our models, we highlight the need for continued research, particularly in maintaining personal boundaries in complex social environments.
+\```sh
+python3 05_train_rnn_main_Robotframe.py
+\```
 
+Or:
 
+\```sh
+python3 05_train_rnn_main_worldframe.py
+\```
 
-![Research Overview](images/overview.jpg)
+### Training the Agents
+The following commands are used to train each of our proposed models:
 
+#### MASPM
+\```sh
+python3 train.py -a="maspm" -t="mlp" -e="./configs/env_timestep_1.yaml" -c="./configs/multiActionStatePredictiveModel.yaml" --kwargs run_name=maspm
+\```
 
+#### 2StepAhead MASPM 
+\```sh
+python3 train.py -a="2stepaheadmaspm" -t="mlp" -e="./configs/env_timestep_1.yaml" -c="./configs/2stepaheadmultiActionStatePredictiveModel.yaml" --kwargs run_name=2stepaheadMASPM_EXP_A_SGNN
+\```
 
-## Models
+#### 2StepAhead Predictive Model
+\```sh
+python3 train.py -a="1stepaheadpredictivemodel" -t="mlp" -e="./configs/env_timestep_1.yaml" -c="./configs/1stepaheadpredictivemodel.yaml" --kwargs run_name=2stepaheadpredictivemodel
+\```
 
+## Testing the Models
 
+### Testing the VAE Model
+To test our VAE on our data, run:
 
-### 2StepAhead Predictive World Model
-This model anticipates the future two steps, helping the agent foresee the future states and select an appropriate action accordingly. It showed a significant improvement in performance over conventional RL models.
+\```sh
+python3 test_vae_on_env_main.py
+\```
 
+### Testing the LSTM-RNN Model
+To test our LSTM-RNN on our data, run:
 
+\```sh
+python3 test_robotframe_rnn_on_env_main.py --mode window
+\```
 
-![2StepAhead Model](images/2StepAhead.jpg)
+Or:
 
+\```sh
+python3 test_worldframe_rnn_on_env_main.py --mode window
+\```
 
+### Testing the Agents
+The following commands are used to test each of our proposed models:
 
-### Multi Action State Predictive Model (MASPM)
-MASPM predicts the future state of the world for all possible actions and chooses the action that leads to the most favorable state, resulting in more informed action selection and improved performance.
+#### MASPM
+\```sh
+python3 test.py -a="testmaspm" -t="mlp" -e="./configs/env_timestep_1.yaml" -c="./configs/multiActionStatePredictiveModel.yaml" --kwargs run_name=testmaspm
+\```
 
+#### 2StepAhead MASPM Model
+\```sh
+python3 test.py -a="test2stepaheadmaspm" -t="mlp" -e="./configs/env_timestep_1.yaml" -c="./configs/2stepaheadmultiActionStatePredictiveModel.yaml" --kwargs run_name=2stepaheadmaspm
+\```
 
+#### 2StepAhead Predictive Model
+\```sh
+python3 test.py -a="test1stepaheadpredictivemodel" -t="mlp" -e="./configs/env_timestep_1.yaml" -c="./configs/1stepaheadpredictivemodel.yaml" --kwargs run_name=test2stepaheadpredictivemodel
+\```
 
-![MASPM Model](images/MASPM.jpg)
-
-
-
-### 2StepAhead Multi Action State Predictive Model (2StepAhead MASPM)
-The 2StepAhead MASPM represents an evolution of the initial MASPM and the 2StepAhead method. Its enhanced method enables a two-step-ahead state prediction for each potential action in a set of four available actions. The two-step-ahead prediction horizon facilitates more nuanced decision-making by the DuelingDQN algorithm, which uses the current latent state and the predicted two-step-ahead states for each possible action to determine its next course of action. the most considerable performance improvement among the three models.
-
-
-
-![2StepAhead MASPM Model](images/2StepAheadMASPM.jpg)
-
-
-
-## Performance Metrics and Evaluation
-We deployed diverse metrics to evaluate the performance of our models against the baselines during both training and testing phases.
-
-
-
-During the **training phase**, we focused on:
-- Cumulative reward: The total reward accumulated over time.
-- Training time: The time taken by the model to train.
-- Episodes to convergence: The number of episodes needed for the model to converge.
-
-
-
-During the **testing phase**, we recorded metrics like:
-- Discomfort counts: The number of instances causing discomfort to the humans in the environment.
-- Average velocities: The average speed of the robot during navigation.
-- Distance traveled: The total distance traversed by the robot.
-- Simulation times: The time taken for the simulation.
-- Human collisions: The number of times the robot collided with a human.
-- Max steps: The maximum number of steps taken by the robot in an episode.
-- Successful runs: The number of successful navigation episodes.
-- Idle times: The periods where the robot isn't moving.
-- Personal space compliance rate: The rate at which the robot respects the personal space of humans.
-
-
-
-These metrics encompass the agent’s interactions with humans, its movements, navigation efficiency, task accomplishment, and overall performance in a human-robot interactive environment.
-
-
-
-For detailed performance results, refer to our research paper: [Predictive World Models for Social Navigation](PAPER_LINK.md).
-
-
-
-## Training and Testing
-The training and testing of our world models consist of several steps. Each step includes a command that you can run in your terminal to execute that specific step.
-
-
-
-**Note:** For detailed steps with corresponding commands, please refer to the [Training and Testing Guide](TRAINING_TESTING.md).
-
-
-
-## License
-[License information](LICENSE.md)
-
-
-
-We encourage the academic community to use and build upon our research. Feel free to contact us with any questions or feedback.
- 
+Note: Please adjust the paths and parameters according to your exact setup and configurations.
