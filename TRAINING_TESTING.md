@@ -47,12 +47,12 @@ MASPM predicts the future state of the world for all possible actions and choose
 
 
 
-### Action Dependent Two Step Predictive Model (ADTSPM)
-ADTSPM model combines the strategies used by the two previous models. It predicts two steps ahead for all possible actions and chooses the action leading to the most favorable state. This model showed the most considerable performance improvement among the three models.
+### 2StepAhead Multi Action State Predictive Model (2StepAhead MASPM)
+The 2StepAhead MASPM represents an evolution of the initial MASPM and the 2StepAhead method. Its enhanced method enables a two-step-ahead state prediction for each potential action in a set of four available actions. The two-step-ahead prediction horizon facilitates more nuanced decision-making by the DuelingDQN algorithm, which uses the current latent state and the predicted two-step-ahead states for each possible action to determine its next course of action. the most considerable performance improvement among the three models.
 
 
 
-![ADTSPM Model](images/ADTSPM.jpg)
+![2StepAhead MASPM Model](images/2StepAheadMASPM.jpg)
 
 
 
